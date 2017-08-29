@@ -1,0 +1,223 @@
+#!/bin/bash
+# Collect cloud image status for various clouds.
+#
+# Originally from: https://github.com/smoser/talk-simplestreams
+
+# Copyright 2017 Canonical Ltd.
+# Scott Moser <scott.moser@canonical.com>
+# Joshua Powers <josh.powers@canonical.com>
+
+VERBOSITY=0
+TEMP_D=""
+
+ARCHES=( amd64 arm64 armhf i386 ppc64el s390x )
+RELEASES=( $(ubuntu-distro-info --all) )
+error() { echo "$@" 1>&2; }
+fail() { [ $# -eq 0 ] || error "$@"; exit 1; }
+
+dump_supported() {
+    cat <<EOF
+description    | names
+Azure cloud    | azure   azure-daily   azure-release
+cloud images   | cloud   cloud-daily   cloud-release
+AWS EC2        | ec2     ec2-daily     ec2-release
+Google Compute | gce     gce-daily     gce-release
+MAAS v2        | maas    maas-daily    maas-release
+MAAS v3        | maas3   maas3-daily   maas3-release
+EOF
+}
+
+Usage() {
+    cat <<EOF
+Usage: ${0##*/} [ options ] where [what]
+
+   show information about latest images
+
+   where must be one of:
+EOF
+    dump_supported | sed 's,^,    ,'
+    cat <<EOF
+
+   options:
+      -C | --no-columns    Do not force columns
+      -c | --columns       output columns (default if no --output-format)
+
+      -o | --output-format F   pass output-format along to sstream-query
+      -m | --max           M   give M results (default=1)
+EOF
+}
+
+bad_Usage() { Usage 1>&2; [ $# -eq 0 ] || error "$@"; return 1; }
+cleanup() {
+    [ -z "${TEMP_D}" ] || [ ! -d "${TEMP_D}" ] || rm -Rf "${TEMP_D}"
+}
+
+debug() {
+    local level=${1}; shift;
+    [ "${level}" -gt "${VERBOSITY}" ] && return
+    error "${@}"
+}
+
+inargs() {
+    local i="" n="$1"
+    shift
+    for i in "$@"; do
+        [ "$n" = "$i" ] && return
+    done
+    return 1
+}
+
+main() {
+    local short_opts="hCco:v"
+    local long_opts="help,no-columns,columns,max:,verbose"
+    local getopt_out=""
+
+    # shellcheck disable=SC2015
+    getopt_out=$(getopt --name "${0##*/}" \
+        --options "${short_opts}" --long "${long_opts}" -- "$@") &&
+        eval set -- "${getopt_out}" ||
+        { bad_Usage "$@"; return; }
+
+    local cur="" next="" max=1
+    local columns=""
+
+    while [ $# -ne 0 ]; do
+        cur="$1"; next="$2";
+        case "$cur" in
+            -h|--help) Usage ; exit 0;;
+            -C|--no-columns) columns=false;;
+            -c|--columns) columns=true;;
+            -v|--verbose) VERBOSITY=$((VERBOSITY+1));;
+               --max) max=$next;;
+            --) shift; break;;
+        esac
+        shift;
+    done
+
+    ## check arguments here
+    ## how many args do you expect?
+    if [ $# -eq 0 ]; then
+        set -- cloud-daily
+    fi
+    where="$1"
+    shift
+
+    local tab=$'\t'
+    local maas_fmt="%(release)-7s$tab%(arch)s/%(subarch)s$tab%(version_name)s$tab%(item_name)s"
+    local maas3_fmt="%(release)-7s$tab%(arch)s/%(subarch)s/%(kflavor)s$tab%(version_name)s$tab%(item_name)s"
+    local img_fmt="%(release)-7s$tab%(arch)s$tab%(version_name)s$tab%(item_name)s"
+    local ec2_fmt="%(release)-7s$tab%(version_name)-10s$tab%(crsn)-14s$tab%(root_store)-8s$tab%(virt)-3s$tab%(id)s"
+    local azure_fmt="%(release)-7s$tab%(version_name)-10s$tab%(crsn)-14s$tab%(id)s"
+    local gce_fmt="%(release)-7s$tab%(version_name)-10s$tab%(crsn)-14s$tab%(id)s"
+    local def_filters="" dfmt=""
+    def_filters=( "arch=amd64" )
+    mtype=""
+
+    local uwhere=""
+    case "$where" in
+        maas|maas-daily)
+            mtype="maas"
+            uwhere="maas-eph-daily";;
+        maas3|maas3-daily)
+            mtype="maas3"
+            uwhere="maas3-eph-daily";;
+        maas-release)
+            mtype="maas"
+            uwhere="maas-eph-rel";;
+        cloud-daily|cloud)
+            mtype="cloud"
+            uwhere="uc-dl-daily";;
+        cloud-release)
+            mtype="cloud"
+            uwhere="uc-dl";;
+        ec2-daily|ec2)
+            uwhere="uc-aws-daily"
+            mtype="ec2";;
+        ec2-release)
+            uwhere="uc-aws"
+            mtype="ec2";;
+        azure-daily|azure)
+            uwhere="uc-azure-daily"
+            mtype="azure";;
+        azure-release)
+            uwhere="uc-azure-daily"
+            mtype="azure";;
+        gce-daily|gce)
+            uwhere="uc-gce-daily"
+            mtype="gce";;
+        gce-release)
+            uwhere="uc-gce"
+            mtype="gce";;
+        *) echo "unknown name '$where'. Must be one of:" 1>&2
+           dump_supported 1>&2
+           return 1;;
+    esac
+    case "$mtype" in
+        maas)
+            def_filters=( "${def_filters[@]}" "ftype=root-image.gz" )
+            fmt="$maas_fmt";;
+        maas3)
+            def_filters=( "${def_filters[@]}" "ftype=squashfs" )
+            fmt="$maas3_fmt";;
+        cloud)
+            def_filters=( "${def_filters[@]}" "ftype=disk1.img" )
+            fmt="$img_fmt";;
+        ec2)
+            fmt="${ec2_fmt}";;
+        azure) fmt="${azure_fmt}";;
+        gce) fmt="${gce_fmt}";;
+    esac
+    fmt="--output-format=$fmt"
+    dfmt="$fmt"
+
+    local defaults=true
+    local tok="" filters="" pt="" reltok="" maxarg="--max=$max"
+    filters=( )
+    pt=( )
+    for tok in "$@"; do
+        if inargs "$tok" "${RELEASES[@]}"; then
+            tok="release=$tok"
+            reltok="$tok"
+        elif inargs "$tok" "${ARCHES[@]}"; then
+            tok="arch=$tok"
+        fi
+        case "$tok" in
+            x) defaults=false;;
+            supported) reltok="$tok";;
+            json) fmt="--json";;
+            path) fmt="--output-format=%(path)s";;
+            url) fmt="--output-format=%(item_url)s";;
+            all) maxarg="";;
+            *=*|*~*) filters[${#filters[@]}]="$tok";;
+            *) pt[${#pt[@]}]="$tok";;
+        esac
+    done
+    if [ -z "$reltok" ] || [ "$reltok" = "supported" ]; then
+        local m=""
+        for r in $(ubuntu-distro-info --supported); do
+            m="${m:+${m}|}$r"
+        done
+        def_filters[${#def_filters[@]}]="release~$m"
+    fi
+
+    if [ -z "$columns" ] && [ "$dfmt" = "$fmt" ]; then
+        columns=true
+    fi
+
+    $defaults && filters=( "${def_filters[@]}" "${filters[@]}" )
+
+    cmd=( ./usquery $maxarg "$fmt"
+          "$uwhere" "${pt[@]}" "${filters[@]}" )
+    debug 1 "${cmd[*]}"
+
+    if [ "$columns" = "true" ]; then
+        local delim=" "
+        [ "${fmt#*${tab}}" != "${fmt}" ] && delim="$tab"
+        "${cmd[@]}" | sort | column -t "-s$delim"
+    else
+        "${cmd[@]}"
+    fi
+}
+
+main "$@"
+# vi: ts=4 expandtab

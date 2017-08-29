@@ -1,0 +1,103 @@
+#!/bin/bash
+# Wrapper to sstream-query to collect cloud image data.
+#
+# Originally from: https://github.com/smoser/talk-simplestreams
+#
+# Copyright 2017 Canonical Ltd.
+# Scott Moser <scott.moser@canonical.com>
+# Joshua Powers <josh.powers@canonical.com>
+
+declare -A sdata
+CIU_COM="http://cloud-images.ubuntu.com"
+CIU_COM_R="$CIU_COM/releases"
+CIU_COM_D="$CIU_COM/daily"
+MAAS_v2="http://images.maas.io/ephemeral-v2"
+MAAS_v3="http://images.maas.io/ephemeral-v3"
+
+sdata=(
+  [uc-release]="$CIU_COM_R/streams/v1/index.sjson"
+
+  [uc-aws]="$CIU_COM_R/streams/v1/com.ubuntu.cloud:released:aws.sjson"
+  [uc-aws-daily]="$CIU_COM_D/streams/v1/com.ubuntu.cloud:daily:aws.sjson"
+
+  [uc-azure]="$CIU_COM_R/streams/v1/com.ubuntu.cloud:released:azure.sjson"
+  [uc-azure-daily]="$CIU_COM_D/streams/v1/com.ubuntu.cloud:daily:azure.sjson"
+
+  [uc-gce-daily]="$CIU_COM_D/streams/v1/com.ubuntu.cloud:daily:gce.sjson"
+  [uc-gce]="$CIU_COM_R/streams/v1/com.ubuntu.cloud:released:gce.sjson"
+
+  [uc-daily]="$CIU_COM/daily/streams/v1/index.sjson"
+  [uc-dl]="$CIU_COM_R/streams/v1/com.ubuntu.cloud:released:download.sjson"
+  [uc-dl-daily]="$CIU_COM/daily/streams/v1/com.ubuntu.cloud:daily:download.sjson"
+
+  [maas-release]="$MAAS_v2/releases/streams/v1/index.sjson"
+  [maas-daily]="$MAAS_v2/daily/streams/v1/index.sjson"
+  [maas-eph-rel]="$MAAS_v2/releases/streams/v1/com.ubuntu.maas:v2:download.sjson"
+  [maas-eph-daily]="$MAAS_v2/daily/streams/v1/com.ubuntu.maas:daily:v2:download.sjson"
+
+  [maas3-daily]="$MAAS_v3/daily/streams/v1/index.sjson"
+  [maas3-eph-daily]="$MAAS_v3/daily/streams/v1/com.ubuntu.maas:daily:v3:download.sjson"
+)
+
+SPROG="sstream-query"
+case "$0" in
+   *smirror) SPROG="sstream-mirror";;
+   *squery) SPROG="sstream-query";;
+   *)
+      echo "Expect to be called usmirror or usquery, not ${0##*/}";
+      exit 1;;
+esac
+
+error() { echo "$@" 1>&2; }
+fail() { [ $# -eq 0 ] || error "$@"; exit 1; }
+Usage() {
+   cat <<EOF
+Usage: ${0##*/} name options opt
+   a friendly wrapper to $SPROG.
+
+Name must be one of:
+EOF
+   for i in "${!sdata[@]}"; do
+      printf "%-12s %s\n"  "$i" "${sdata[$i]}"
+   done | sort
+}
+
+name=""
+url=""
+dry=false
+for i in "$@"; do
+   case "$i" in
+      --help) { Usage; exit 0; };;
+      --dry-run) dry=true;;
+      ---dry-run) opts[${#opts[@]}]="--dry-run";;
+      images)
+         opts[${#opts[@]}]="--output-format=%(version_name)s %(id)s %(pubname)s"
+         args[${#args[@]}]="datatype=image-ids";;
+      -*) opts[${#opts[@]}]="$i";;
+      *)
+         # the first argument is 'name'
+         if [ -z "$name" ]; then
+             name="$i"
+             [ -n "${sdata[$name]}" ] ||
+                fail "unknown name $name. see '--help' for list"
+             url=${sdata[$name]}
+             i="$url"
+         fi
+         args[${#args[@]}]="$i"
+         ;;
+   esac
+done
+
+[ -n "$name" ] || { Usage 1>&2; exit 1; }
+
+keyopt=""
+case "$url" in
+   *.json) :;;
+   *) keyopt="--keyring=/usr/share/keyrings/ubuntu-cloudimage-keyring.gpg";;
+esac
+
+cmd=( "$SPROG" ${keyopt:+"${keyopt}"} "${opts[@]}" "${args[@]}" )
+
+$dry && echo "${cmd[@]}" && exit
+
+"${cmd[@]}"
