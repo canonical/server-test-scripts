@@ -57,7 +57,7 @@ def call_image_status(cloud, stream, release):
                                stderr=subprocess.PIPE)
     out, _ = process.communicate()
     try:
-        return json.loads(out)
+        return json.loads(out.decode('utf8'))
     except json.decoder.JSONDecodeError:
         return None
 
