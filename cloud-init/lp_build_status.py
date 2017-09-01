@@ -26,11 +26,11 @@ def print_results(distro, build_pass, build_error=''):
     footer = "</testsuite>"
 
     if build_pass:
-        result = '<testcase classname="%s" name="Build"/>' % distro
+        result = '\t<testcase classname="%s" name="Build"/>\n' % distro
     else:
-        result = ('<testcase classname="%s" name="Build">'
-                  '<failure type="BuildFailure">%s</failure>'
-                  '</testcase>' % (distro, build_error))
+        result = ('\t<testcase classname="%s" name="Build">\n'
+                  '\t\t<failure type="BuildFailure">%s</failure>\n'
+                  '\t</testcase>\n' % (distro, build_error))
 
     with open(RESULTS_FILENAME, 'w') as out:
         out.write('%s\n\t%s\n%s\n' % (header, result, footer))

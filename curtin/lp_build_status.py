@@ -30,9 +30,9 @@ def print_results(results):
         if result['pass']:
             content += '\t<testcase classname="%s" name="Build"/>\n' % distro
         else:
-            content += ('\t<testcase classname="%s" name="Build">'
-                      '<failure type="BuildFailure">%s</failure>'
-                      '</testcase>\n' % (distro, result['buildstate']))
+            content += ('\t<testcase classname="%s" name="Build">\n'
+                      '\t\t<failure type="BuildFailure">%s</failure>\n'
+                      '\n</testcase>\n' % (distro, result['buildstate']))
 
     with open(RESULTS_FILENAME, 'w') as out:
         out.write('%s\n%s%s\n' % (header, content, footer))
