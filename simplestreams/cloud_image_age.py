@@ -87,12 +87,11 @@ if __name__ == '__main__':
     PARSER = argparse.ArgumentParser()
     PARSER.add_argument('-d', '--daily', action='store_true',
                         help='Search daily versus release')
-    PARSER.add_argument('release', default=None,
+    PARSER.add_argument('release', nargs='?',
+                        default=UbuntuDistroInfo().devel(),
                         help='Ubuntu release to search for')
     ARGS = PARSER.parse_args()
 
-    if not ARGS.release:
-        ARGS.release = UbuntuDistroInfo().devel()
     if ARGS.release not in SUPPORTED_RELEASES:
         print('Invalid release, choose from: %s' % SUPPORTED_RELEASES)
         sys.exit(1)
