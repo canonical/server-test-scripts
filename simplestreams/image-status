@@ -2,7 +2,7 @@
 # Collect cloud image status for various clouds.
 #
 # Originally from: https://github.com/smoser/talk-simplestreams
-
+#
 # Copyright 2017 Canonical Ltd.
 # Scott Moser <scott.moser@canonical.com>
 # Joshua Powers <josh.powers@canonical.com>
