@@ -130,7 +130,7 @@ main() {
     vm_exec "$VM_DEVEL" "sudo apt-get install -y snapcraft"
     vm_exec "$VM_DEVEL" "sudo snap install core"
     vm_exec "$VM_DEVEL" "git clone -b $branch $url git-ubuntu"
-    vm_exec "$VM_DEVEL" "cd git-ubuntu; snapcraft snap"
+    vm_exec "$VM_DEVEL" "cd git-ubuntu; https_proxy=http://squid.internal:3128 snapcraft snap"
 
     vm_pull "$VM_DEVEL" "git-ubuntu/$SNAP" "$TEMP_D/$SNAP"
 
