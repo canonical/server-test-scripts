@@ -37,8 +37,10 @@ Usage: ${0##*/} [ -hv ] [ -u repo_url ]
    git-ubuntu integration test wrapper
 
    options:
-      -u --url      URL to repo to build and run tests from
-                    otherwise uses master
+      -b --branch   Specific branch to checkout, default: master
+      -u --url      URL to repo to build and run tests from,
+                      default: https://git.launchpad.net/usd-importer
+
 EOF
 }
 
@@ -90,8 +92,8 @@ vm_push() {
 }
 
 main() {
-    local short_opts="hu:v"
-    local long_opts="help,url:,verbose"
+    local short_opts="b:hu:v"
+    local long_opts="branch:,help,url:,verbose"
     local getopt_out=""
     getopt_out=$(getopt --name "${0##*/}" \
         --options "${short_opts}" --long "${long_opts}" -- "$@") ||
@@ -100,10 +102,12 @@ main() {
         { bad_usage; return; }
 
     local url="https://git.launchpad.net/usd-importer"
+    local branch="master"
     local cur="" next=""
     while [ $# -ne 0 ]; do
         cur="$1"; next="$2";
         case "$cur" in
+            -b|--branch) branch=$next; shift;;
             -h|--help) usage ; exit 0;;
             -u|--url) url=$next; shift;;
             -v|--verbose) VERBOSITY=$((VERBOSITY+1));;
@@ -112,14 +116,12 @@ main() {
         shift;
     done
 
-    [ $# -lt 2 ] || { bad_usage "too many arguments"; return; }
-
     TEMP_D=$(mktemp -d "${TMPDIR:-/tmp}/${0##*/}.XXXXXX") ||
         fail "failed to make tempdir"
     trap cleanup EXIT
 
     # program starts here
-    echo "Using: $url"
+    echo "Using: $branch @ $url"
     echo "Creating $DEVEL VM to build snap..."
     vm_launch "$VM_DEVEL" "$DEVEL" ||
         fail "could not create $DEVEL VM"
@@ -127,7 +129,7 @@ main() {
     vm_exec "$VM_DEVEL" "sudo apt-get update"
     vm_exec "$VM_DEVEL" "sudo apt-get install -y snapcraft"
     vm_exec "$VM_DEVEL" "sudo snap install core"
-    vm_exec "$VM_DEVEL" "git clone $url git-ubuntu"
+    vm_exec "$VM_DEVEL" "git clone -b $branch $url git-ubuntu"
     vm_exec "$VM_DEVEL" "cd git-ubuntu; snapcraft snap"
 
     vm_pull "$VM_DEVEL" "git-ubuntu/$SNAP" "$TEMP_D/$SNAP"
@@ -143,7 +145,7 @@ main() {
     vm_exec "$VM_LTS" "sudo snap install core"
     vm_exec "$VM_LTS" "sudo snap install --dangerous --classic $SNAP"
     vm_exec "$VM_LTS" "snap list"
-    vm_exec "$VM_LTS" "git clone $url git-ubuntu"
+    vm_exec "$VM_LTS" "git clone -b $branch $url git-ubuntu"
     vm_exec "$VM_LTS" "git config --global gitubuntu.lpuser usd-importer-bot"
     vm_exec "$VM_LTS" "git config --global user.email \"test@ubuntu.com\""
     vm_exec "$VM_LTS" "git config --global user.name \"Test User\""
