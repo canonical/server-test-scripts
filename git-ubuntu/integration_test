@@ -50,7 +50,7 @@ vm_launch() {
 
     uvt-simplestreams-libvirt --verbose \
         sync --source http://cloud-images.ubuntu.com/daily \
-        "release=$release" arch="$ARCH"
+        "release~($release)" arch="$ARCH"
     uvt-kvm create "$name" release="$release" label=daily
     uvt-kvm wait --insecure "$name"
 }
@@ -155,7 +155,7 @@ main() {
     vm_exec "$VM_LTS" "git config --global gitubuntu.lpuser usd-importer-bot"
     vm_exec "$VM_LTS" "git config --global user.email \"test@ubuntu.com\""
     vm_exec "$VM_LTS" "git config --global user.name \"Test User\""
-    vm_exec "$VM_LTS" "bash -l -c ./git-ubuntu/tests/bin/integration-test"
+    vm_exec "$VM_LTS" "bash -l -c $proxy ./git-ubuntu/tests/bin/integration-test"
 
     vm_destroy "$VM_LTS"
 
