@@ -16,7 +16,7 @@ VM_LTS="$LTS-$NAME_RAND"
 
 error() { echo "$@" 1>&2; }
 fail() { [ $# -eq 0 ] || error "$@"; exit 1; }
-bad_usage() { usage 1>&2; [ $# -eq 0 ] || error "$@"; return 1; }
+bad_usage() { usage 1>&2; return 1; }
 
 cleanup() {
     [ -z "${TEMP_D}" ] || [ ! -d "${TEMP_D}" ] || rm -Rf "${TEMP_D}"
@@ -103,6 +103,7 @@ main() {
 
     local url="https://git.launchpad.net/usd-importer"
     local branch="master"
+    local proxy=""
     local cur="" next=""
     while [ $# -ne 0 ]; do
         cur="$1"; next="$2";
@@ -121,7 +122,12 @@ main() {
     trap cleanup EXIT
 
     # program starts here
-    echo "Using: $branch @ $url"
+    if [ ! -z "${https_proxy-}" ]; then
+        echo "Using proxy: ${https_proxy}"
+        proxy="https_proxy=${https_proxy}"
+    fi
+
+    echo "Testing: $branch @ $url"
     echo "Creating $DEVEL VM to build snap..."
     vm_launch "$VM_DEVEL" "$DEVEL" ||
         fail "could not create $DEVEL VM"
@@ -130,7 +136,7 @@ main() {
     vm_exec "$VM_DEVEL" "sudo apt-get install -y snapcraft"
     vm_exec "$VM_DEVEL" "sudo snap install core"
     vm_exec "$VM_DEVEL" "git clone -b $branch $url git-ubuntu"
-    vm_exec "$VM_DEVEL" "cd git-ubuntu; https_proxy=http://squid.internal:3128 snapcraft snap"
+    vm_exec "$VM_DEVEL" "cd git-ubuntu; $proxy snapcraft snap"
 
     vm_pull "$VM_DEVEL" "git-ubuntu/$SNAP" "$TEMP_D/$SNAP"
 
