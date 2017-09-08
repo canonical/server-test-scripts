@@ -103,7 +103,6 @@ main() {
 
     local url="https://git.launchpad.net/usd-importer"
     local branch="master"
-    local proxy=""
     local cur="" next=""
     while [ $# -ne 0 ]; do
         cur="$1"; next="$2";
@@ -123,7 +122,6 @@ main() {
 
     # program starts here
     if [ ! -z "${https_proxy-}" ]; then
-        echo "Using proxy: ${https_proxy}"
         proxy="https_proxy=${https_proxy}"
     fi
 
@@ -155,7 +153,13 @@ main() {
     vm_exec "$VM_LTS" "git config --global gitubuntu.lpuser usd-importer-bot"
     vm_exec "$VM_LTS" "git config --global user.email \"test@ubuntu.com\""
     vm_exec "$VM_LTS" "git config --global user.name \"Test User\""
-    vm_exec "$VM_LTS" "bash -l -c $proxy ./git-ubuntu/tests/bin/integration-test"
+
+    if [ ! -z "${http_proxy-}" ]; then
+        proxy="http_proxy=${http_proxy}"
+    fi
+
+    vm_exec "$VM_LTS" "echo 'export $proxy' > ~/.bashrc"
+    vm_exec "$VM_LTS" "bash -l -c ./git-ubuntu/tests/bin/integration-test"
 
     vm_destroy "$VM_LTS"
 
