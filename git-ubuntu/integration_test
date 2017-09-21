@@ -126,30 +126,17 @@ main() {
     fi
 
     echo "Testing: $branch @ $url"
-    echo "Creating $DEVEL VM to build snap..."
-    vm_launch "$VM_DEVEL" "$DEVEL" ||
-        fail "could not create $DEVEL VM"
-
-    vm_exec "$VM_DEVEL" "sudo apt-get update"
-    vm_exec "$VM_DEVEL" "sudo apt-get install -y snapcraft"
-    vm_exec "$VM_DEVEL" "sudo snap install core"
-    vm_exec "$VM_DEVEL" "git clone -b $branch $url git-ubuntu"
-    vm_exec "$VM_DEVEL" "cd git-ubuntu; $proxy snapcraft snap"
-
-    vm_pull "$VM_DEVEL" "git-ubuntu/git-ubuntu_*_amd64.snap" "$TEMP_D/$SNAP"
-
-    vm_destroy "$VM_DEVEL"
-
-    echo "Creating $LTS VM to run tests..."
+    echo "Creating $LTS VM to build and test snap..."
     vm_launch "$VM_LTS" "$LTS" ||
         fail "could not create $LTS VM"
 
-    vm_push "$VM_LTS" "$TEMP_D/$SNAP" "$SNAP"
-
+    vm_exec "$VM_LTS" "sudo apt-get update"
+    vm_exec "$VM_LTS" "sudo apt-get install -y snapcraft"
     vm_exec "$VM_LTS" "sudo snap install core"
-    vm_exec "$VM_LTS" "sudo snap install --dangerous --classic $SNAP"
-    vm_exec "$VM_LTS" "snap list"
     vm_exec "$VM_LTS" "git clone -b $branch $url git-ubuntu"
+    vm_exec "$VM_LTS" "cd git-ubuntu; $proxy snapcraft snap"
+    vm_exec "$VM_LTS" "sudo snap install --dangerous --classic git-ubuntu/git-ubuntu_*_amd64.snap"
+    vm_exec "$VM_LTS" "snap list"
     vm_exec "$VM_LTS" "git config --global gitubuntu.lpuser usd-importer-bot"
     vm_exec "$VM_LTS" "git config --global user.email \"test@ubuntu.com\""
     vm_exec "$VM_LTS" "git config --global user.name \"Test User\""
