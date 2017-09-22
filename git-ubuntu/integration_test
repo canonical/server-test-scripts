@@ -135,16 +135,29 @@ main() {
         vm_exec "$VM_LTS" "echo 'export http_proxy=${http_proxy}' > ~/.bashrc"
     fi
     
+    # Configure LXD networking
+    vm_exec "$VM_LTS" "sudo sed -i 's/LXD_IPV4_ADDR=\"\"/LXD_IPV4_ADDR=\"10.158.98.1\"/' /etc/default/lxd-bridge"
+    vm_exec "$VM_LTS" "sudo sed -i 's/LXD_IPV4_NETMASK=\"\"/LXD_IPV4_NETMASK=\"255.255.255.0\"/' /etc/default/lxd-bridge"
+    vm_exec "$VM_LTS" "sudo sed -i 's/LXD_IPV4_NETWORK=\"\"/LXD_IPV4_NETWORK=\"10.158.98.1\/24\"/' /etc/default/lxd-bridge"
+    vm_exec "$VM_LTS" "sudo sed -i 's/LXD_IPV4_DHCP_RANGE=\"\"/LXD_IPV4_DHCP_RANGE=\"10.158.98.2,10.158.98.254\"/' /etc/default/lxd-bridge"
+    vm_exec "$VM_LTS" "sudo sed -i 's/LXD_IPV4_DHCP_MAX=\"\"/LXD_IPV4_DHCP_MAX=\"252\"/' /etc/default/lxd-bridge"
+    vm_exec "$VM_LTS" "sudo lxd init --auto"
+
+    # Configure Git  
+    vm_exec "$VM_LTS" "git config --global gitubuntu.lpuser usd-importer-bot"
+    vm_exec "$VM_LTS" "git config --global user.email \"test@ubuntu.com\""
+    vm_exec "$VM_LTS" "git config --global user.name \"Test User\""
+    
+    # Install dependencies
     vm_exec "$VM_LTS" "sudo apt-get update"
     vm_exec "$VM_LTS" "sudo apt-get install -y snapcraft"
     vm_exec "$VM_LTS" "sudo snap install core"
+    
+    # Build, Install, & Test
     vm_exec "$VM_LTS" "git clone -b $branch $url git-ubuntu"
     vm_exec "$VM_LTS" "cd git-ubuntu; snapcraft cleanbuild"
     vm_exec "$VM_LTS" "sudo snap install --dangerous --classic git-ubuntu/git-ubuntu_*_amd64.snap"
     vm_exec "$VM_LTS" "snap list"
-    vm_exec "$VM_LTS" "git config --global gitubuntu.lpuser usd-importer-bot"
-    vm_exec "$VM_LTS" "git config --global user.email \"test@ubuntu.com\""
-    vm_exec "$VM_LTS" "git config --global user.name \"Test User\""
     vm_exec "$VM_LTS" "bash -l -c ./git-ubuntu/tests/bin/integration-test"
 
     vm_destroy "$VM_LTS"
