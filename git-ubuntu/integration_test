@@ -126,13 +126,12 @@ main() {
     vm_launch "$VM_LTS" "$LTS" ||
         fail "could not create $LTS VM"
 
-    proxy=''
     if [ ! -z "${https_proxy-}" ]; then
-        proxy="https_proxy=${https_proxy}"
+        vm_exec "$VM_LTS" "lxc profile set default environment.https_proxy ${https_proxy}"
         vm_exec "$VM_LTS" "echo 'export https_proxy=${https_proxy}' > ~/.bashrc"
     fi
     if [ ! -z "${http_proxy-}" ]; then
-        proxy="$proxy http_proxy=${http_proxy}"
+        vm_exec "$VM_LTS" "lxc profile set default environment.http_proxy ${http_proxy}"
         vm_exec "$VM_LTS" "echo 'export http_proxy=${http_proxy}' > ~/.bashrc"
     fi
     
@@ -140,7 +139,7 @@ main() {
     vm_exec "$VM_LTS" "sudo apt-get install -y snapcraft"
     vm_exec "$VM_LTS" "sudo snap install core"
     vm_exec "$VM_LTS" "git clone -b $branch $url git-ubuntu"
-    vm_exec "$VM_LTS" "cd git-ubuntu; $proxy snapcraft cleanbuild"
+    vm_exec "$VM_LTS" "cd git-ubuntu; snapcraft cleanbuild"
     vm_exec "$VM_LTS" "sudo snap install --dangerous --classic git-ubuntu/git-ubuntu_*_amd64.snap"
     vm_exec "$VM_LTS" "snap list"
     vm_exec "$VM_LTS" "git config --global gitubuntu.lpuser usd-importer-bot"
