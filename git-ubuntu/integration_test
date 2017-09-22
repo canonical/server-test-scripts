@@ -142,6 +142,7 @@ main() {
     vm_exec "$VM_LTS" "sudo sed -i 's/LXD_IPV4_DHCP_RANGE=\"\"/LXD_IPV4_DHCP_RANGE=\"10.158.98.2,10.158.98.254\"/' /etc/default/lxd-bridge"
     vm_exec "$VM_LTS" "sudo sed -i 's/LXD_IPV4_DHCP_MAX=\"\"/LXD_IPV4_DHCP_MAX=\"252\"/' /etc/default/lxd-bridge"
     vm_exec "$VM_LTS" "sudo lxd init --auto"
+    vm_exec "$VM_LTS" "sudo dpkg-reconfigure -fnoninteractive -p medium lxd"
 
     # Configure Git  
     vm_exec "$VM_LTS" "git config --global gitubuntu.lpuser usd-importer-bot"
