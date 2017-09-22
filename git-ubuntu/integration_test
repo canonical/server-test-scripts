@@ -140,7 +140,7 @@ main() {
     vm_exec "$VM_LTS" "sudo apt-get install -y snapcraft"
     vm_exec "$VM_LTS" "sudo snap install core"
     vm_exec "$VM_LTS" "git clone -b $branch $url git-ubuntu"
-    vm_exec "$VM_LTS" "cd git-ubuntu; $proxy snapcraft snap"
+    vm_exec "$VM_LTS" "cd git-ubuntu; $proxy snapcraft cleanbuild"
     vm_exec "$VM_LTS" "sudo snap install --dangerous --classic git-ubuntu/git-ubuntu_*_amd64.snap"
     vm_exec "$VM_LTS" "snap list"
     vm_exec "$VM_LTS" "git config --global gitubuntu.lpuser usd-importer-bot"
