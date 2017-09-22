@@ -121,15 +121,21 @@ main() {
     trap cleanup EXIT
 
     # program starts here
-    if [ ! -z "${https_proxy-}" ]; then
-        proxy="https_proxy=${https_proxy}"
-    fi
-
     echo "Testing: $branch @ $url"
     echo "Creating $LTS VM to build and test snap..."
     vm_launch "$VM_LTS" "$LTS" ||
         fail "could not create $LTS VM"
 
+    proxy=''
+    if [ ! -z "${https_proxy-}" ]; then
+        proxy="https_proxy=${https_proxy}"
+        vm_exec "$VM_LTS" "echo 'export https_proxy=${https_proxy}' > ~/.bashrc"
+    fi
+    if [ ! -z "${http_proxy-}" ]; then
+        proxy="$proxy http_proxy=${http_proxy}"
+        vm_exec "$VM_LTS" "echo 'export http_proxy=${http_proxy}' > ~/.bashrc"
+    fi
+    
     vm_exec "$VM_LTS" "sudo apt-get update"
     vm_exec "$VM_LTS" "sudo apt-get install -y snapcraft"
     vm_exec "$VM_LTS" "sudo snap install core"
@@ -140,12 +146,6 @@ main() {
     vm_exec "$VM_LTS" "git config --global gitubuntu.lpuser usd-importer-bot"
     vm_exec "$VM_LTS" "git config --global user.email \"test@ubuntu.com\""
     vm_exec "$VM_LTS" "git config --global user.name \"Test User\""
-
-    if [ ! -z "${http_proxy-}" ]; then
-        proxy="http_proxy=${http_proxy}"
-    fi
-
-    vm_exec "$VM_LTS" "echo 'export $proxy' > ~/.bashrc"
     vm_exec "$VM_LTS" "bash -l -c ./git-ubuntu/tests/bin/integration-test"
 
     vm_destroy "$VM_LTS"
