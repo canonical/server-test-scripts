@@ -11,13 +11,12 @@ import shlex
 import subprocess
 import sys
 
-
-from distro_info import UbuntuDistroInfo
+import distro_info
 
 AGE_LIMIT = 4
 RESULTS_FILENAME = 'results.xml'
 SUPPORTED_CLOUDS = ['azure', 'cloud', 'ec2', 'gce', 'maas', 'maas3']
-SUPPORTED_RELEASES = UbuntuDistroInfo().supported()
+SUPPORTED_RELEASES = distro_info.UbuntuDistroInfo().supported()
 
 
 def print_results(results):
@@ -64,6 +63,16 @@ def call_image_status(cloud, stream, release):
 
 def main(release, daily):
     """Determine oldest image age."""
+    if not release:
+        try:
+            release = distro_info.UbuntuDistroInfo().devel()
+        except distro_info.DistroDataOutdated:
+            release = distro_info.UbuntuDistroInfo().stable()
+
+    if release not in SUPPORTED_RELEASES:
+        print('Invalid release, choose from: %s' % SUPPORTED_RELEASES)
+        sys.exit(1)
+
     today = datetime.utcnow().strftime('%Y%m%d')
     stream = 'daily' if daily else 'release'
     print('%s %s image age on [%s]' % (release, stream, today))
@@ -87,13 +96,8 @@ if __name__ == '__main__':
     PARSER = argparse.ArgumentParser()
     PARSER.add_argument('-d', '--daily', action='store_true',
                         help='Search daily versus release')
-    PARSER.add_argument('release', nargs='?',
-                        default=UbuntuDistroInfo().devel(),
+    PARSER.add_argument('release', nargs='?', default=None,
                         help='Ubuntu release to search for')
     ARGS = PARSER.parse_args()
-
-    if ARGS.release not in SUPPORTED_RELEASES:
-        print('Invalid release, choose from: %s' % SUPPORTED_RELEASES)
-        sys.exit(1)
 
     main(ARGS.release, ARGS.daily)
