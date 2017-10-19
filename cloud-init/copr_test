@@ -84,6 +84,7 @@ start_container() {
     if [ ! -z "${http_proxy-}" ]; then
         debug 1 "configuring proxy ${http_proxy}"
         inside "$name" sh -c "echo proxy=$http_proxy >> /etc/yum.conf"
+        inside "$name" sh -c "sed -i s/enabled=1/enabled=0/ /etc/yum/pluginconf.d/fastestmirror.conf"
     fi
 }
 
@@ -102,10 +103,10 @@ main() {
         { bad_Usage; return; }
 
     local cur=""
-    local group="cloud-init" project="cloud-init-dev" 
+    local group="cloud-init" project="cloud-init-dev"
 
     while [ $# -ne 0 ]; do
-        cur="${1:-}"; 
+        cur="${1:-}";
         case "$cur" in
             -g|--group) group="$cur";;
             -h|--help) Usage; exit 0;;
@@ -158,9 +159,9 @@ EOF
         fail "failed: installing cloud-init"
 
     debug 1 "running cloud-init"
-    inside "$name" sh -c "cloud-init --help" || 
+    inside "$name" sh -c "cloud-init --help" ||
         fail "failed: running cloud-init help"
-    inside "$name" sh -c "yum info cloud-init" || 
+    inside "$name" sh -c "yum info cloud-init" ||
         fail "failed: getting cloud-init info"
 
     return 0
