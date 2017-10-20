@@ -7,11 +7,8 @@ VERBOSITY=0
 TEMP_D=""
 
 ARCH="$(dpkg --print-architecture)"
-DEVEL=$(distro-info --devel)
 LTS=$(distro-info --lts)
 NAME_RAND=$(uuidgen -r | cut -c1-8)
-SNAP="git-ubuntu_0_amd64.snap"
-VM_DEVEL="$DEVEL-$NAME_RAND"
 VM_LTS="$LTS-$NAME_RAND"
 
 error() { echo "$@" 1>&2; }
@@ -20,7 +17,6 @@ bad_usage() { usage 1>&2; return 1; }
 
 cleanup() {
     [ -z "${TEMP_D}" ] || [ ! -d "${TEMP_D}" ] || rm -Rf "${TEMP_D}"
-    vm_destroy "$VM_DEVEL"
     vm_destroy "$VM_LTS"
 }
 
@@ -134,7 +130,7 @@ main() {
         vm_exec "$VM_LTS" "lxc profile set default environment.http_proxy ${http_proxy}"
         vm_exec "$VM_LTS" "echo 'export http_proxy=${http_proxy}' > ~/.bashrc"
     fi
-    
+
     # Configure LXD networking
     vm_exec "$VM_LTS" "sudo sed -i 's/LXD_IPV4_ADDR=\"\"/LXD_IPV4_ADDR=\"10.158.98.1\"/' /etc/default/lxd-bridge"
     vm_exec "$VM_LTS" "sudo sed -i 's/LXD_IPV4_NETMASK=\"\"/LXD_IPV4_NETMASK=\"255.255.255.0\"/' /etc/default/lxd-bridge"
@@ -144,19 +140,20 @@ main() {
     vm_exec "$VM_LTS" "sudo lxd init --auto"
     vm_exec "$VM_LTS" "sudo dpkg-reconfigure -fnoninteractive -p medium lxd"
 
-    # Configure Git  
+    # Configure Git
     vm_exec "$VM_LTS" "git config --global gitubuntu.lpuser usd-importer-bot"
     vm_exec "$VM_LTS" "git config --global user.email \"test@ubuntu.com\""
     vm_exec "$VM_LTS" "git config --global user.name \"Test User\""
-    
+
     # Install dependencies
     vm_exec "$VM_LTS" "sudo apt-get update"
     vm_exec "$VM_LTS" "sudo apt-get install -y snapcraft"
     vm_exec "$VM_LTS" "sudo snap install core"
-    
+
     # Build, Install, & Test
     vm_exec "$VM_LTS" "git clone -b $branch $url git-ubuntu"
-    vm_exec "$VM_LTS" "cd git-ubuntu; snapcraft cleanbuild"
+    vm_exec "$VM_LTS" "cd git-ubuntu; snapcraft cleanbuild" ||
+        fail "Building snap failed!"
     vm_exec "$VM_LTS" "sudo snap install --dangerous --classic git-ubuntu/git-ubuntu_*_amd64.snap"
     vm_exec "$VM_LTS" "snap list"
     vm_exec "$VM_LTS" "bash -l -c ./git-ubuntu/tests/bin/integration-test"
