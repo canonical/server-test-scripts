@@ -35,26 +35,14 @@ cleanup() {
 debug() {
     local level=${1}; shift;
     [ "${level}" -gt "${VERBOSITY}" ] && return
-    error "${@}"
-}
-
-inside_as() {
-    # inside_as(container_name, user, cmd[, args])
-    # executes cmd with args inside container as user in users home dir.
-    local name="$1" user="$2"
-    shift 2
-    local stuffed="" b64=""
-    stuffed=$(getopt --shell sh --options "" -- -- "$@")
-    stuffed=${stuffed# -- }
-    b64=$(printf "%s\n" "$stuffed" | base64 --wrap=0)
-    inside "$name" su "$user" -c \
-        'cd; eval set -- "$(echo '$b64' | base64 --decode)" && exec "$@"'
+    error "::" "${@}"
 }
 
 inside() {
     local name="$1"
     shift
-    lxc exec "$name" -- "$@"
+    debug 2 "executing in $name as root: $*"
+    lxc exec "$name" -- env LC_ALL=C LANG=C "$@"
 }
 
 start_container() {
@@ -73,7 +61,7 @@ start_container() {
         while [ $i -lt 60 ]; do
             getent hosts mirrorlist.centos.org && exit 0
             sleep 2
-        done' 2>&1)
+        done 2>&1')
     ret=$?
     if [ $ret -ne 0 ]; then
         error "Waiting for network in container '$name' failed. [$ret]"
@@ -84,8 +72,28 @@ start_container() {
     if [ ! -z "${http_proxy-}" ]; then
         debug 1 "configuring proxy ${http_proxy}"
         inside "$name" sh -c "echo proxy=$http_proxy >> /etc/yum.conf"
-        inside "$name" sh -c "sed -i s/enabled=1/enabled=0/ /etc/yum/pluginconf.d/fastestmirror.conf"
+        inside "$name" sed -i s/enabled=1/enabled=0/ /etc/yum/pluginconf.d/fastestmirror.conf
     fi
+}
+
+install_pkgs() {
+    local needed="" pair="" pkg="" cmd="" needed=""
+    local name="$1"
+    shift
+    local n max r
+    n=0; max=10;
+    debug 1 "installing packages $*"
+    bcmd="yum install --downloadonly --assumeyes --setopt=keepcache=1"
+    while n=$(($n+1)); do
+       inside "$name" $bcmd "$@"
+       r=$?
+       [ $r -eq 0 ] && { debug 2 "updated cache successfully"; break; }
+       [ $n -ge $max ] && { error "gave up on $bcmd"; exit $r; }
+       nap=$(($n*5))
+       debug 1 ":: failed [$r] ($n/$max). sleeping $nap."
+       sleep $nap
+    done
+    inside "$name" yum install --cacheonly --assumeyes "$@"
 }
 
 delete_container() {
@@ -94,8 +102,8 @@ delete_container() {
 }
 
 main() {
-    local short_opts="ghkpv:"
-    local long_opts="group,help,keep,project,verbose:"
+    local short_opts="g:hkp:v"
+    local long_opts="group:,help,keep,project:,verbose"
     local getopt_out=""
     getopt_out=$(getopt --name "${0##*/}" \
         --options "${short_opts}" --long "${long_opts}" -- "$@") &&
@@ -107,11 +115,12 @@ main() {
 
     while [ $# -ne 0 ]; do
         cur="${1:-}";
+        next="$2"
         case "$cur" in
-            -g|--group) group="$cur";;
+            -g|--group) group="$next";;
             -h|--help) Usage; exit 0;;
             -k|--keep) KEEP=true;;
-            -p|--project) project="$cur";;
+            -p|--project) project="$next";;
             -v|--verbose) VERBOSITY=$((${VERBOSITY}+1));;
             --) shift; break;;
         esac
@@ -150,18 +159,16 @@ EOF
     lxc file push "$TEMP_D/$repo" "$name/etc/yum.repos.d/$repo" ||
         fail "failed: setting up copr.repo"
 
-    debug 1 "installing dependencies"
-    inside "$name" yum install --assumeyes epel-release ||
-        fail "failed: enabling epel-release"
+    install_pkgs "$name" epel-release ||
+        fail "failed to install epel-release"
 
-    debug 1 "installing cloud-init"
-    inside "$name" yum install --assumeyes cloud-init ||
+    install_pkgs "$name" cloud-init ||
         fail "failed: installing cloud-init"
 
     debug 1 "running cloud-init"
-    inside "$name" sh -c "cloud-init --help" ||
+    inside "$name" cloud-init --help ||
         fail "failed: running cloud-init help"
-    inside "$name" sh -c "yum info cloud-init" ||
+    inside "$name" yum info cloud-init ||
         fail "failed: getting cloud-init info"
 
     return 0
