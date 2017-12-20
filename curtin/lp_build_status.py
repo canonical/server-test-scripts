@@ -8,7 +8,7 @@ import json
 from urllib.request import urlopen
 
 BUILD_URL = ('https://api.launchpad.net/devel/~curtin-dev/'
-             '+recipe/curtin-trunk/builds')
+             '+recipe/curtin-daily/builds')
 RESULTS_FILENAME = 'results.xml'
 
 
