@@ -84,7 +84,7 @@ vm_push() {
 
     ip=$(uvt-kvm ip "$name")
     scp -oStrictHostKeyChecking=no "$from" "ubuntu@$ip:$to" ||
-        fail "pull: failed to push '$from' to '$to'"
+        fail "push: failed to push '$from' to '$to'"
 }
 
 main() {
@@ -117,21 +117,24 @@ main() {
     trap cleanup EXIT
 
     # program starts here
-    echo "Testing: $branch @ $url"
-    echo "Creating $LTS VM to build and test snap..."
+    echo "testing $branch@$url"
+    echo "setup: creating $LTS VM to build and test snap"
     vm_launch "$VM_LTS" "$LTS" ||
         fail "could not create $LTS VM"
 
     if [ ! -z "${https_proxy-}" ]; then
+        echo "setup: configuring lxc profile https_proxy"
         vm_exec "$VM_LTS" "lxc profile set default environment.https_proxy ${https_proxy}"
         vm_exec "$VM_LTS" "echo 'export https_proxy=${https_proxy}' > ~/.bashrc"
     fi
     if [ ! -z "${http_proxy-}" ]; then
+        echo "setup: configuring lxc profile http_proxy"
         vm_exec "$VM_LTS" "lxc profile set default environment.http_proxy ${http_proxy}"
         vm_exec "$VM_LTS" "echo 'export http_proxy=${http_proxy}' > ~/.bashrc"
     fi
 
     # Configure LXD networking
+    echo "setup: configuring LXD networking"
     vm_exec "$VM_LTS" "sudo sed -i 's/LXD_IPV4_ADDR=\"\"/LXD_IPV4_ADDR=\"10.158.98.1\"/' /etc/default/lxd-bridge"
     vm_exec "$VM_LTS" "sudo sed -i 's/LXD_IPV4_NETMASK=\"\"/LXD_IPV4_NETMASK=\"255.255.255.0\"/' /etc/default/lxd-bridge"
     vm_exec "$VM_LTS" "sudo sed -i 's/LXD_IPV4_NETWORK=\"\"/LXD_IPV4_NETWORK=\"10.158.98.1\/24\"/' /etc/default/lxd-bridge"
@@ -141,21 +144,28 @@ main() {
     vm_exec "$VM_LTS" "sudo dpkg-reconfigure -fnoninteractive -p medium lxd"
 
     # Configure Git
+    echo "setup: congiuring git user info"
     vm_exec "$VM_LTS" "git config --global gitubuntu.lpuser usd-importer-bot"
     vm_exec "$VM_LTS" "git config --global user.email \"test@ubuntu.com\""
     vm_exec "$VM_LTS" "git config --global user.name \"Test User\""
 
     # Install dependencies
+    echo "setup: installing dependnecies"
     vm_exec "$VM_LTS" "sudo apt-get update"
     vm_exec "$VM_LTS" "sudo apt-get install -y snapcraft"
+    echo "setup: installing core snap"
     vm_exec "$VM_LTS" "sudo snap install core"
 
     # Build, Install, & Test
+    echo "setup: cloning git-ubuntu branch"
     vm_exec "$VM_LTS" "git clone -b $branch $url git-ubuntu"
+    echo "setup: building snap"
     vm_exec "$VM_LTS" "cd git-ubuntu; snapcraft cleanbuild" ||
         fail "Building snap failed!"
+    echo "setup: installing newly built snap"
     vm_exec "$VM_LTS" "sudo snap install --dangerous --classic git-ubuntu/git-ubuntu_*_amd64.snap"
     vm_exec "$VM_LTS" "snap list"
+    echo "setup: running integration test"
     vm_exec "$VM_LTS" "bash -l -c ./git-ubuntu/tests/bin/integration-test"
 
     vm_destroy "$VM_LTS"
