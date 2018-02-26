@@ -1,0 +1,139 @@
+#!/bin/bash
+# git-ubuntu test VM setup
+#
+# Copyright 2018 Canonical Ltd.
+# Joshua Powers <josh.powers@canonical.com>
+set -e
+VERBOSITY=0
+
+rand_name=$(uuidgen -r | cut -c1-8)
+VM_NAME="${1:-xenial-$rand_name}"
+RELEASE="xenial"
+
+error() { echo "$@" 1>&2; }
+fail() { [ $# -eq 0 ] || error "$@"; exit 1; }
+bad_usage() { usage 1>&2; return 1; }
+
+debug() {
+    local level=${1}; shift;
+    [ "${level}" -gt "${VERBOSITY}" ] && return
+    error "${@}"
+}
+
+usage() {
+    cat <<EOF
+Usage: ${0##*/} [ -hv ]
+   git-ubuntu test vm setup
+EOF
+}
+
+vm_launch() {
+    local name=$1 release=$2
+    shift 2
+
+    uvt-simplestreams-libvirt --verbose \
+        sync --source http://cloud-images.ubuntu.com/daily \
+        "release~($release)" arch="amd64"
+    uvt-kvm create "$name" release="$release" label=daily
+    uvt-kvm wait --insecure "$name"
+}
+
+vm_destroy() {
+    local name=$1
+    shift
+
+    if virsh list --name | grep -q "$name"; then
+        uvt-kvm destroy "$name" ||
+            fail "could not destory $name"
+    fi
+}
+
+vm_exec() {
+    local name=$1 cmd=$2
+    shift 2
+
+    uvt-kvm ssh --insecure "$name" -- "$cmd" ||
+        fail "failed: $cmd"
+}
+
+vm_pull() {
+    local name=$1 from=$2 to=$3
+    shift 3
+
+    ip=$(uvt-kvm ip "$name")
+    scp -oStrictHostKeyChecking=no "ubuntu@$ip:$from" "$to" ||
+        fail "pull: failed to pull '$from' to '$to'"
+}
+
+vm_push() {
+    local name=$1 from=$2 to=$3
+    shift 3
+
+    ip=$(uvt-kvm ip "$name")
+    scp -oStrictHostKeyChecking=no "$from" "ubuntu@$ip:$to" ||
+        fail "push: failed to push '$from' to '$to'"
+}
+
+main() {
+    local short_opts="hv"
+    local long_opts="help,verbose"
+    local getopt_out=""
+    getopt_out=$(getopt --name "${0##*/}" \
+        --options "${short_opts}" --long "${long_opts}" -- "$@") ||
+        { bad_usage; return; }
+    eval set -- "${getopt_out}" ||
+        { bad_usage; return; }
+
+    local cur="" next=""
+    while [ $# -ne 0 ]; do
+        cur="$1"; next="$2";
+        case "$cur" in
+            -h|--help) usage ; exit 0;;
+            -v|--verbose) VERBOSITY=$((VERBOSITY+1));;
+            --) shift; break;;
+        esac
+        shift;
+    done
+
+    echo "creating $RELEASE vm to build and test snap"
+    vm_launch "$VM_NAME" "$RELEASE" ||
+        fail "could not create $RELEASE vm"
+
+    if [ ! -z "${https_proxy-}" ]; then
+        echo "configuring lxc profile https_proxy"
+        vm_exec "$VM_NAME" "lxc profile set default environment.https_proxy ${https_proxy}"
+        vm_exec "$VM_NAME" "echo 'export https_proxy=${https_proxy}' > ~/.bashrc"
+    fi
+    if [ ! -z "${http_proxy-}" ]; then
+        echo "configuring lxc profile http_proxy"
+        vm_exec "$VM_NAME" "lxc profile set default environment.http_proxy ${http_proxy}"
+        vm_exec "$VM_NAME" "echo 'export http_proxy=${http_proxy}' > ~/.bashrc"
+    fi
+
+    echo "configuring LXD networking"
+    vm_exec "$VM_NAME" "sudo sed -i 's/LXD_IPV4_ADDR=\"\"/LXD_IPV4_ADDR=\"10.158.98.1\"/' /etc/default/lxd-bridge"
+    vm_exec "$VM_NAME" "sudo sed -i 's/LXD_IPV4_NETMASK=\"\"/LXD_IPV4_NETMASK=\"255.255.255.0\"/' /etc/default/lxd-bridge"
+    vm_exec "$VM_NAME" "sudo sed -i 's/LXD_IPV4_NETWORK=\"\"/LXD_IPV4_NETWORK=\"10.158.98.1\/24\"/' /etc/default/lxd-bridge"
+    vm_exec "$VM_NAME" "sudo sed -i 's/LXD_IPV4_DHCP_RANGE=\"\"/LXD_IPV4_DHCP_RANGE=\"10.158.98.2,10.158.98.254\"/' /etc/default/lxd-bridge"
+    vm_exec "$VM_NAME" "sudo sed -i 's/LXD_IPV4_DHCP_MAX=\"\"/LXD_IPV4_DHCP_MAX=\"252\"/' /etc/default/lxd-bridge"
+    vm_exec "$VM_NAME" "sudo lxd init --auto"
+    vm_exec "$VM_NAME" "sudo dpkg-reconfigure -fnoninteractive -p medium lxd"
+
+    echo "congiuring git user info"
+    vm_exec "$VM_NAME" "git config --global gitubuntu.lpuser usd-importer-bot"
+    vm_exec "$VM_NAME" "git config --global user.email \"test@ubuntu.com\""
+    vm_exec "$VM_NAME" "git config --global user.name \"Test User\""
+    vm_exec "$VM_NAME" "git config --global url.'https://git.launchpad.net/'.insteadOf lp:"
+
+    echo "installing dependnecies"
+    vm_exec "$VM_NAME" "sudo apt-get update"
+    vm_exec "$VM_NAME" "sudo apt-get install -y snapcraft"
+
+    echo "installing core snap"
+    vm_exec "$VM_NAME" "sudo snap install core"
+
+    return 0
+}
+
+main "$@"
+# vi: ts=4 noexpandtab

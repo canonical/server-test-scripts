@@ -148,6 +148,7 @@ main() {
     vm_exec "$VM_LTS" "git config --global gitubuntu.lpuser usd-importer-bot"
     vm_exec "$VM_LTS" "git config --global user.email \"test@ubuntu.com\""
     vm_exec "$VM_LTS" "git config --global user.name \"Test User\""
+    vm_exec "$VM_LTS" "git config --global url.'https://git.launchpad.net/'.insteadOf lp:"
 
     # Install dependencies
     echo "setup: installing dependnecies"
