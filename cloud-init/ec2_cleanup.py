@@ -12,7 +12,7 @@ def clean_ec2():
     client = boto3.client('ec2')
     resource = boto3.resource('ec2')
 
-    print('# searching for vpc')
+    print('# searching for vpcs')
     vpc_tag = [{'Name': 'tag:Name', 'Values': ['cii-*']}]
     for vpc in list(resource.vpcs.filter(Filters=vpc_tag)):
         print('cleaning up vpc %s' % vpc.id)
@@ -47,7 +47,7 @@ def clean_ec2():
         print('deleting ssh key %s' % key['KeyName'])
         client.delete_key_pair(KeyName=key['KeyName'])
 
-    print('# searching for ami')
+    print('# searching for amis')
     for image in resource.images.filter(Owners=['self']).all():
         print('removing custom ami %s' % image.id)
         client.deregister_image(ImageId=image.id)
