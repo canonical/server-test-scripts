@@ -53,8 +53,7 @@ def clean_ec2():
         client.deregister_image(ImageId=image.id)
 
     print('# searching for snapshots')
-    owner_id = boto3.client('sts').get_caller_identity().get('Account')
-    for snapshot in resource.snapshots.filter(OwnerIds=[owner_id]).all():
+    for snapshot in resource.snapshots.filter(OwnerIds=['self']).all():
         print('removing custom snapshot %s' % snapshot.id)
         client.delete_snapshot(SnapshotId=snapshot.id)
 
