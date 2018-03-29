@@ -33,7 +33,7 @@ vm_launch() {
 
     uvt-simplestreams-libvirt --verbose \
         sync --source http://cloud-images.ubuntu.com/daily \
-        "release~($release)" arch="amd64"
+        "release~($release)" arch="amd64" || true
     uvt-kvm create "$name" release="$release" label=daily
     uvt-kvm wait --insecure "$name"
 }
