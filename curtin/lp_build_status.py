@@ -5,6 +5,8 @@ Copyright 2017 Canonical Ltd.
 Joshua Powers <josh.powers@canonical.com>
 """
 import json
+import time
+import urllib
 from urllib.request import urlopen
 
 BUILD_URL = ('https://api.launchpad.net/devel/~curtin-dev/'
@@ -14,8 +16,15 @@ RESULTS_FILENAME = 'results.xml'
 
 def download_build_results():
     """Download Launchpad build results in JSON."""
-    with urlopen(BUILD_URL) as url:
-        data = json.loads(url.read().decode())
+    for _ in range(0, 3):
+        while True:
+            try:
+                with urlopen(BUILD_URL) as url:
+                    data = json.loads(url.read().decode())
+            except urllib.error.HTTPError:
+                time.sleep(10)
+                continue
+            break
 
     return data['entries']
 
