@@ -125,7 +125,8 @@ main() {
         vm_exec "$VM_NAME" "sudo ln -s /snap/bin/lxc /usr/local/bin/lxc"
     fi
 
-    vm_exec "$VM_NAME" "sudo lxd waitready -t 60"
+    # -t 60 doesn't work in lxd 2.0.11-0ubuntu1~16.04.4; --timeout=60 appears to work everywhere
+    vm_exec "$VM_NAME" "sudo lxd waitready --timeout=60"
 
     echo "configuring LXD networking"
     vm_exec "$VM_NAME" "sudo sed -i 's/LXD_IPV4_ADDR=\"\"/LXD_IPV4_ADDR=\"10.158.98.1\"/' /etc/default/lxd-bridge"
