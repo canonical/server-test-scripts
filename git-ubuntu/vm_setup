@@ -9,6 +9,7 @@ VERBOSITY=0
 rand_name=$(uuidgen -r | cut -c1-8)
 VM_NAME="${1:-xenial-$rand_name}"
 RELEASE="xenial"
+SNAPCRAFT_TYPE="deb"
 
 error() { echo "$@" 1>&2; }
 fail() { [ $# -eq 0 ] || error "$@"; exit 1; }
@@ -76,7 +77,7 @@ vm_push() {
 
 main() {
     local short_opts="hv"
-    local long_opts="help,verbose"
+    local long_opts="help,verbose,snapcraft-deb,snapcraft-snap"
     local getopt_out=""
     getopt_out=$(getopt --name "${0##*/}" \
         --options "${short_opts}" --long "${long_opts}" -- "$@") ||
@@ -90,6 +91,8 @@ main() {
         case "$cur" in
             -h|--help) usage ; exit 0;;
             -v|--verbose) VERBOSITY=$((VERBOSITY+1));;
+	    --snapcraft-deb) SNAPCRAFT_TYPE=deb;;
+	    --snapcraft-snap) SNAPCRAFT_TYPE=snap;;
             --) shift; break;;
         esac
         shift;
@@ -100,15 +103,29 @@ main() {
         fail "could not create $RELEASE vm"
 
     if [ ! -z "${https_proxy-}" ]; then
-        echo "configuring lxc profile https_proxy"
-        vm_exec "$VM_NAME" "lxc profile set default environment.https_proxy ${https_proxy}"
+        echo "configuring user profile https_proxy"
         vm_exec "$VM_NAME" "echo 'export https_proxy=${https_proxy}' > ~/.bashrc"
     fi
     if [ ! -z "${http_proxy-}" ]; then
-        echo "configuring lxc profile http_proxy"
-        vm_exec "$VM_NAME" "lxc profile set default environment.http_proxy ${http_proxy}"
+        echo "configuring user profile http_proxy"
         vm_exec "$VM_NAME" "echo 'export http_proxy=${http_proxy}' > ~/.bashrc"
     fi
+
+    echo "installing core snap"
+    vm_exec "$VM_NAME" "sudo snap install core"
+
+    if [ "$SNAPCRAFT_TYPE" = "snap" ]; then
+        # LP: 1746612 "Snapcraft cleanbuild doesn't work if you're not using the LXD snap"
+        # Replace lxd deb with snap
+        vm_exec "$VM_NAME" "sudo apt-get -y purge lxd liblxc1 lxc-common lxcfs lxd-client"
+        vm_exec "$VM_NAME" "sudo rm -rf /var/lib/lxd"
+        vm_exec "$VM_NAME" "sudo snap install lxd"
+
+        # Workaround for LP: #1777445
+        vm_exec "$VM_NAME" "sudo ln -s /snap/bin/lxc /usr/local/bin/lxc"
+    fi
+
+    vm_exec "$VM_NAME" "sudo lxd waitready -t 60"
 
     echo "configuring LXD networking"
     vm_exec "$VM_NAME" "sudo sed -i 's/LXD_IPV4_ADDR=\"\"/LXD_IPV4_ADDR=\"10.158.98.1\"/' /etc/default/lxd-bridge"
@@ -117,7 +134,18 @@ main() {
     vm_exec "$VM_NAME" "sudo sed -i 's/LXD_IPV4_DHCP_RANGE=\"\"/LXD_IPV4_DHCP_RANGE=\"10.158.98.2,10.158.98.254\"/' /etc/default/lxd-bridge"
     vm_exec "$VM_NAME" "sudo sed -i 's/LXD_IPV4_DHCP_MAX=\"\"/LXD_IPV4_DHCP_MAX=\"252\"/' /etc/default/lxd-bridge"
     vm_exec "$VM_NAME" "sudo lxd init --auto"
-    vm_exec "$VM_NAME" "sudo dpkg-reconfigure -fnoninteractive -p medium lxd"
+    if [ "$SNAPCRAFT_TYPE" = "deb" ]; then
+        vm_exec "$VM_NAME" "sudo dpkg-reconfigure -fnoninteractive -p medium lxd"
+    fi
+
+    if [ ! -z "${https_proxy-}" ]; then
+        echo "configuring lxc profile https_proxy"
+        vm_exec "$VM_NAME" "lxc profile set default environment.https_proxy ${https_proxy}"
+    fi
+    if [ ! -z "${http_proxy-}" ]; then
+        echo "configuring lxc profile http_proxy"
+        vm_exec "$VM_NAME" "lxc profile set default environment.http_proxy ${http_proxy}"
+    fi
 
     echo "congiuring git user info"
     vm_exec "$VM_NAME" "git config --global gitubuntu.lpuser usd-importer-bot"
@@ -127,10 +155,16 @@ main() {
 
     echo "installing dependnecies"
     vm_exec "$VM_NAME" "sudo apt-get update"
-    vm_exec "$VM_NAME" "sudo apt-get install -y snapcraft"
 
-    echo "installing core snap"
-    vm_exec "$VM_NAME" "sudo snap install core"
+    if [ "$SNAPCRAFT_TYPE" = "deb" ]; then
+        vm_exec "$VM_NAME" "sudo apt-get install -y snapcraft"
+    elif [ "$SNAPCRAFT_TYPE" = "snap" ]; then
+        vm_exec "$VM_NAME" "sudo snap install --edge --classic snapcraft"
+
+        # Workaround for LP: #1777445
+        vm_exec "$VM_NAME" "sudo ln -s /snap/bin/snapcraft /usr/local/bin/snapcraft"
+    fi
+
 
     return 0
 }
