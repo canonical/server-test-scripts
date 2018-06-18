@@ -53,13 +53,14 @@ start_container() {
     CONTAINER=$name
 
     local out="" ret=""
-    debug 1 "waiting for networking"
+    debug 1 "waiting for boot to finish."
     out=$(inside "$name" sh -c '
         i=0
         while [ $i -lt 60 ]; do
-            getent hosts archive.ubuntu.com && exit 0
+            [ -f /run/cloud-init/result.json ] && exit 0
             sleep 2
-        done 2>&1')
+        done 2>&1
+        exit 1')
     ret=$?
     if [ $ret -ne 0 ]; then
         error "Waiting for network in container '$name' failed. [$ret]"
