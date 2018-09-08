@@ -79,6 +79,20 @@ delete_container() {
     lxc delete --force "$1"
 }
 
+
+retry_on_fail() {
+    local retries=${1} subject=${@:2:1} cmd=${@:3}
+    for i in `seq 1 $retries`; do
+       let "i=i*5"
+       $cmd && s=0 && break || s=$? && echo 'WARNING: failed to $subject. will retry'
+       sleep $i
+    done
+    if [ $s -ne 0 ]; then
+        fail $subject
+    fi
+}
+
+
 main() {
     local short_opts="hv"
     local long_opts="help,verbose"
@@ -116,11 +130,10 @@ main() {
     start_container "ubuntu-daily:$release" "$name"
 
     debug 1 "adding cloud-init daily PPA"
-    inside "$name" add-apt-repository --yes ppa:cloud-init-dev/daily ||
-        fail "failed: adding cloud-init daily PPA"
 
-    inside "$name" apt-get update ||
-        fail "failed: apt-get update"
+    retry_on_fail 4 "adding cloud-init daily PPA" inside "$name" add-apt-repository --yes ppa:cloud-init-dev/daily
+
+    retry_on_fail 4 "apt-get update" inside "$name" apt-get update
 
     debug 1 "downloading from PPA"
     inside "$name" apt-get download cloud-init ||
