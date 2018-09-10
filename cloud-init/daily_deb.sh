@@ -61,7 +61,6 @@ main() {
     uuid=$(uuidgen -t) || { error "no uuidgen"; return 1; }
     name="cloud-init-ubuntu-daily-ppa-${uuid%%-*}"
 
-    release=5ee1af40be67
     rm -Rf download || { error "failed removing download/"; return 1; }
     set -- \
         ctool run-container --verbose --destroy "--name=$name" \
