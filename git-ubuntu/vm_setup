@@ -104,11 +104,15 @@ main() {
 
     if [ ! -z "${https_proxy-}" ]; then
         echo "configuring user profile https_proxy"
-        vm_exec "$VM_NAME" "echo 'export https_proxy=${https_proxy}' > ~/.bashrc"
+        vm_exec "$VM_NAME" "echo 'export https_proxy=${https_proxy}' >> ~/.bashrc"
+	vm_exec "$VM_NAME" "echo 'https_proxy=${https_proxy}' | sudo tee -a /etc/environment"
+	vm_exec "$VM_NAME" "sudo systemctl restart snapd.service"
     fi
     if [ ! -z "${http_proxy-}" ]; then
         echo "configuring user profile http_proxy"
-        vm_exec "$VM_NAME" "echo 'export http_proxy=${http_proxy}' > ~/.bashrc"
+        vm_exec "$VM_NAME" "echo 'export http_proxy=${http_proxy}' >> ~/.bashrc"
+	vm_exec "$VM_NAME" "echo 'http_proxy=${http_proxy}' | sudo tee -a /etc/environment"
+	vm_exec "$VM_NAME" "sudo systemctl restart snapd.service"
     fi
 
     echo "installing core snap"
