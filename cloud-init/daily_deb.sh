@@ -31,6 +31,11 @@ download() {
         fail "Failed apt-get download cloud-init"
 }
 
+get_ctool() {
+    local url="https://raw.githubusercontent.com/CanonicalLtd/uss-tableflip/master/scripts/ctool"
+    wget "$url" -O "$1.$$" && chmod 755 "$1.$$" && mv "$1.$$" "$1"
+}
+
 main() {
     local short_opts="hv"
     local long_opts="help,verbose"
@@ -61,9 +66,11 @@ main() {
     uuid=$(uuidgen -t) || { error "no uuidgen"; return 1; }
     name="cloud-init-ubuntu-daily-ppa-${uuid%%-*}"
 
+    get_ctool "./ctool"
+
     rm -Rf download || { error "failed removing download/"; return 1; }
     set -- \
-        ctool run-container --verbose --destroy "--name=$name" \
+        ./ctool run-container --verbose --destroy "--name=$name" \
         --as-root --artifacts=. "--copy-out=download/" \
         -- "ubuntu-daily:$release" bash -s download
     error "executing: $* <'$0'"
