@@ -72,6 +72,7 @@ main() {
     set -- \
         ./ctool run-container --verbose --destroy "--name=$name" \
         --as-root --artifacts=. "--copy-out=download/" \
+        --boot-wait=120 \
         -- "ubuntu-daily:$release" bash -s download
     error "executing: $* <'$0'"
     "$@" < "$0" || fail "failed executing $* < '$0'"
