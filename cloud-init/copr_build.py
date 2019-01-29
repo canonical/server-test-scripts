@@ -16,7 +16,7 @@ import copr
 
 ID_CLOUD_INIT = 13995
 ID_CLOUD_INIT_DEV = 14567
-TEST_CHROOTS = ['epel-6-x86_64', 'epel-7-x86_64']
+TEST_CHROOTS = ['epel-7-x86_64']
 URL_COPR = "https://copr.fedorainfracloud.org/coprs/g/cloud-init"
 
 DEFAULT_COPR_CONF = os.path.expanduser('~/.config/copr')
