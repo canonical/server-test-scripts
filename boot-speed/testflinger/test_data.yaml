@@ -2,6 +2,13 @@ test_data:
     test_cmds: |
         set -x
 
+        # Print some information about the testflinger host system
+        cat /etc/os-release
+        uname -a
+        id
+        pwd
+        ls -la
+
         mkdir artifacts
         cd artifacts
         date --utc --rfc-3339=ns > job-start-timestamp
