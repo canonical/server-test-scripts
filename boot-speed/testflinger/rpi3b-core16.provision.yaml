@@ -1,0 +1,3 @@
+job_queue: rpi3b
+provision_data:
+    url: http://cdimage.ubuntu.com/ubuntu-core/16/stable/ubuntu-core-16-pi3.img.xz

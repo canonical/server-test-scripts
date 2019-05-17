@@ -1,0 +1,36 @@
+test_data:
+    test_cmds: |
+        set -x
+
+        mkdir artifacts
+        cd artifacts
+        date --utc --rfc-3339=ns > job-start-timestamp
+
+        git clone -b bootspeed --depth 1 https://github.com/paride/server-test-scripts.git sts
+        cp sts/boot-speed/testflinger/bootspeed.sh .
+
+        chmod +x bootspeed.sh
+        scp -p bootspeed.sh ubuntu@$DEVICE_IP:
+
+        ssh ubuntu@$DEVICE_IP ./bootspeed.sh
+
+        scp -r ubuntu@$DEVICE_IP:artifacts boot_0
+
+        reboots=1
+
+        for rebootidx in $(seq 1 $reboots); do
+            echo "Rebooting system for reboot $rebootidx of $reboots"
+            ssh ubuntu@$DEVICE_IP sudo systemctl reboot
+
+            # Wait for the system to be back online (i.e. we can ssh to it).
+            # This is basically what the testflinger agent does, e.g.
+            # https://git.launchpad.net/snappy-device-agents/tree/devices/rpi3/rpi3.py
+            sleep 60
+            if timeout 5m sh -c "until ssh ubuntu@$DEVICE_IP uptime; do sleep 10; done"; then
+                ssh ubuntu@$DEVICE_IP ./bootspeed.sh
+                scp -r ubuntu@$DEVICE_IP:artifacts boot_$rebootidx
+            else
+                touch DEVICE-DID-NOT-SURVIVE-REBOOT
+            fi
+        done
+
