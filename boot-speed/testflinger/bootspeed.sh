@@ -8,17 +8,6 @@ echo
 echo "### Running $0 on the provisioned system"
 echo
 
-# The rpi3bplus-core{16,18} doesn't get reprovisioned before running a new job,
-# so we have to clean up what we left from the previous runs. This is not a
-# problem when doing the full provisioning (as we plan to do for the boot time
-# measurements), but using the pre-provisioned devices is useful for testing,
-# as it is much faster.
-#
-# <plars> paride: yeah, that particular device doesn't get reprovisioned
-# <plars> paride: so it will still have whatever you left behind on it.
-#         there's a bug with cloud init on core18 with rpi3bplus
-rm -rfv artifacts
-
 mkdir -v artifacts
 cd artifacts
 
