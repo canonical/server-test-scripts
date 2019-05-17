@@ -33,7 +33,7 @@ if [ -f boot-speed-measurement-taken-here ]; then
     rm -rfv artifacts
 fi
 
-mkdir -v artifacts
+mkdir -pv artifacts
 cd artifacts
 
 # Wait for `cloud-init status --wait` to exit (with a timeout)

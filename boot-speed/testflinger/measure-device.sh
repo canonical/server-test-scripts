@@ -89,12 +89,18 @@ if [ ! -f artifacts.tgz ]; then
     exit 1
 fi
 
-if ! tar tzf artifacts.tgz artifacts/boot_0/systemd-analyze_time > /dev/null; then
-    print "No valid measurement in artifacts file."
+tar xfzv artifacts.tgz
+
+if [ ! -f artifacts/testflinger-script-ok ]; then
+    echo "Error while executing the testflinger script."
     exit 1
 fi
 
-tar xfzv artifacts.tgz
+if [ ! -f artifacts/boot_0/systemd-analyze_time ]; then
+    echo "No valid measurement in artifacts file."
+    exit 1
+fi
+
 mv artifacts "$datadir/instance_0"
 data_tarball="$datadir.tar.gz"
 tar cfzv "$data_tarball" "$datadir"

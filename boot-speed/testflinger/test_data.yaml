@@ -37,8 +37,13 @@ test_data:
                 scp -r ubuntu@$DEVICE_IP:artifacts boot_$rebootidx
             else
                 touch DEVICE-DID-NOT-SURVIVE-REBOOT-$rebootidx
+                exit 1
             fi
         done
 
-        ssh ubuntu@$DEVICE_IP rm -rfv artifacts
         ssh ubuntu@$DEVICE_IP touch boot-speed-measurement-taken-here
+        ssh ubuntu@$DEVICE_IP rm -rfv artifacts
+
+        # When retrieving the artifacts file we check for the existence of
+        # this file to tell if the measurement was fulle successful.
+        touch testflinger-script-ok
