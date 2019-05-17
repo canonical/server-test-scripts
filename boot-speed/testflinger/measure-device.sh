@@ -8,9 +8,6 @@ if [ $# -ne 2 ]; then
     exit 1
 fi
 
-exit_code=0
-unstable_code=99
-
 # Are the required command available? Fail early if they are not.
 # We rely on the errexit (set -e) option here.
 command -v testflinger-cli
@@ -40,9 +37,7 @@ image_serial=$(curl -s $image_dirname/.publish_info | grep $image_basename | awk
 regexp="^[0-9]{8}(\.[0-9]{1,2})?$"
 if [[ ! "$image_serial" =~ $regexp ]]; then
     echo "WARNING: Image serial not found! Falling back using today's date."
-    echo "WARNING: Will exit with status $unstable_code"
     image_serial=$yyyymmdd
-    exit_code=$unstable_code
 fi
 
 # Generate JSON metadata file
@@ -125,5 +120,3 @@ fi
 mv artifacts "$datadir/instance_0"
 data_tarball="$datadir.tar.gz"
 tar cfzv "$data_tarball" "$datadir"
-
-exit $exit_code
