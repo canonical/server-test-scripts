@@ -46,7 +46,7 @@ fi
 
 # Wait for systemd-analyze to exit with status 0 (success)
 # https://github.com/systemd/systemd/blob/1cae151/src/analyze/analyze.c#L279
-if timeout 10m sh -c "until systemd-analyze time; do sleep 10; done"; then
+if timeout 20m sh -c "until systemd-analyze time; do sleep 20; done"; then
     # Gather the actual data
     systemd-analyze time > systemd-analyze_time
     systemd-analyze blame > systemd-analyze_blame
