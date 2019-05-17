@@ -28,12 +28,14 @@ pwd
 ls -la
 
 if [ -f boot-speed-measurement-taken-here ]; then
-    echo "Device is dirty!"
+    echo "Device is dirty (boot-speed-measurement-taken-here)!"
     # We want to be extra sure not to re-download a past measurement.
     rm -rfv artifacts
+    exit 1
 fi
 
-mkdir -pv artifacts
+rm -rf artifacts
+mkdir -v artifacts
 cd artifacts
 
 # Wait for `cloud-init status --wait` to exit (with a timeout)
