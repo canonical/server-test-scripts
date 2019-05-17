@@ -8,6 +8,9 @@ if [ $# -ne 2 ]; then
     exit 1
 fi
 
+exit_code=0
+unstable_code=99
+
 # Are the required command available? Fail early if they are not.
 # We rely on the errexit (set -e) option here.
 command -v testflinger-cli
@@ -21,6 +24,7 @@ yaml_tail="test_data.yaml"
 yaml_full="$device-$distro.full.yaml"
 
 yyyymmdd=$(date --utc '+%Y%m%d')
+date_rfc3339=$(date --utc --rfc-3339=ns)
 
 echo "Target device: $device"
 echo "Target distribution: $distro"
@@ -28,14 +32,30 @@ echo "Target distribution: $distro"
 datadir="$device-${distro}_$yyyymmdd"
 mkdir -v $datadir
 
+image_url=$(grep "url:" "$yaml_head" | awk '{ print $2 }')
+image_dirname=$(echo $image_url | sed 's|\(.*/\)\(.*\)|\1|')
+image_basename=$(echo $image_url | sed 's|\(.*/\)\(.*\)|\2|')
+image_serial=$(curl -s $image_dirname/.publish_info | grep $image_basename | awk '{ print $2 }')
+
+regexp="^[0-9]{8}(\.[0-9]{1,2})?$"
+if [[ ! "$image_serial" =~ $regexp ]]; then
+    echo "WARNING: Image serial not found! Falling back using today's date."
+    echo "WARNING: Will exit with status $unstable_code"
+    image_serial=$yyyymmdd
+    exit_code=$unstable_code
+fi
+
 # Generate JSON metadata file
 cat > "$datadir/metadata.json" <<EOF
 {
   "date": "$yyyymmdd",
+  "date-rfc3339": "$date_rfc3339",
   "distro": "$distro",
   "type": "device",
   "instance": {
     "device": "$device"
+    "release": "$distro"
+    "image_serial": "$image_serial"
   }
 }
 EOF
@@ -62,7 +82,8 @@ job_id=$(testflinger-cli submit --quiet "$yaml_full")
 echo "testflinger job_id: $job_id"
 
 # Test the job_id for RFC4122 compliance
-if [[ $job_id =~ "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" ]]; then
+regexp="^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+if [[ ! "$job_id" =~ $regexp ]]; then
     echo "Invalid job id!"
     exit 1
 fi
@@ -104,3 +125,5 @@ fi
 mv artifacts "$datadir/instance_0"
 data_tarball="$datadir.tar.gz"
 tar cfzv "$data_tarball" "$datadir"
+
+exit $exit_code
