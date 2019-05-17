@@ -17,6 +17,7 @@ test_data:
         chmod +x bootspeed.sh
         scp -p bootspeed.sh ubuntu@$DEVICE_IP:
 
+        bootid=$(ssh ubuntu@$DEVICE_IP cat /proc/sys/kernel/random/boot_id)
         ssh ubuntu@$DEVICE_IP rm -rfv artifacts
         ssh ubuntu@$DEVICE_IP ./bootspeed.sh
 
@@ -31,8 +32,16 @@ test_data:
             # Wait for the system to be back online (i.e. we can ssh to it).
             # This is basically what the testflinger agent does, e.g.
             # https://git.launchpad.net/snappy-device-agents/tree/devices/rpi3/rpi3.py
-            sleep 60
-            if timeout 5m sh -c "until ssh ubuntu@$DEVICE_IP uptime; do sleep 10; done"; then
+            sleep 120
+            if timeout 8m sh -c "until ssh ubuntu@$DEVICE_IP uptime; do sleep 10; done"; then
+                # Did the device reboot for real?
+                new_bootid=$(ssh ubuntu@$DEVICE_IP cat /proc/sys/kernel/random/boot_id)
+                if [ "$new_bootid" = "$bootid" ]; then
+                    touch DEVICE-DID-NOT-REBOOT
+                    exit 1
+                fi
+                bootid=$new_bootid
+
                 ssh ubuntu@$DEVICE_IP ./bootspeed.sh
                 scp -r ubuntu@$DEVICE_IP:artifacts boot_$rebootidx
             else
