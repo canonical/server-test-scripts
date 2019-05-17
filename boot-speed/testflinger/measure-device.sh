@@ -89,6 +89,11 @@ if [ ! -f artifacts.tgz ]; then
     exit 1
 fi
 
+if ! tar tzf artifacts.tgz artifacts/boot_0/systemd-analyze_time > /dev/null; then
+    print "No valid measurement in artifacts file."
+    exit 1
+fi
+
 tar xfzv artifacts.tgz
 mv artifacts "$datadir/instance_0"
 data_tarball="$datadir.tar.gz"

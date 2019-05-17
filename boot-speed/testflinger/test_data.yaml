@@ -1,6 +1,6 @@
 test_data:
     test_cmds: |
-        set -x
+        set -ex
 
         # Print some information about the testflinger host system
         cat /etc/os-release
