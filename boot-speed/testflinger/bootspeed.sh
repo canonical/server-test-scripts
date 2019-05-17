@@ -61,12 +61,12 @@ cp -v /etc/os-release .
 systemctl list-jobs > systemctl_list-jobs
 
 # Gather additional data
-cp -v /var/log/cloud-init.log .
 cp -v /etc/fstab .
 
 . /etc/os-release
 
 if [ "$NAME" != "Ubuntu Core" ]; then
+    cp -v /var/log/cloud-init.log .
     sudo apt -y install pciutils usbutils
     dpkg-query --list > dpkg-query.out
     sudo lspci -vvv > lspci.out
