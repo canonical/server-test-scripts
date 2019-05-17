@@ -32,7 +32,7 @@ mkdir -v $datadir
 image_url=$(grep "url:" "$yaml_head" | awk '{ print $2 }')
 image_dirname=$(echo $image_url | sed 's|\(.*/\)\(.*\)|\1|')
 image_basename=$(echo $image_url | sed 's|\(.*/\)\(.*\)|\2|')
-image_serial=$(curl -s $image_dirname/.publish_info | grep $image_basename | awk '{ print $2 }')
+image_serial=$(curl -s --noproxy ubuntu.com $image_dirname/.publish_info | grep $image_basename | awk '{ print $2 }')
 
 regexp="^[0-9]{8}(\.[0-9]{1,2})?$"
 if [[ ! "$image_serial" =~ $regexp ]]; then
