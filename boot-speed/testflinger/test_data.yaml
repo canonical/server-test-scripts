@@ -13,9 +13,7 @@ test_data:
         cd artifacts
         date --utc --rfc-3339=ns > job-start-timestamp
 
-        git clone -b bootspeed --depth 1 https://github.com/paride/server-test-scripts.git sts
-        cp sts/boot-speed/testflinger/bootspeed.sh .
-
+        curl -Ss -O https://raw.githubusercontent.com/paride/server-test-scripts/bootspeed/boot-speed/testflinger/bootspeed.sh
         chmod +x bootspeed.sh
         scp -p bootspeed.sh ubuntu@$DEVICE_IP:
 
