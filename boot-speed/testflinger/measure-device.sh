@@ -45,11 +45,10 @@ cat > "$datadir/metadata.json" <<EOF
 {
   "date": "$yyyymmdd",
   "date-rfc3339": "$date_rfc3339",
-  "distro": "$distro",
   "type": "device",
   "instance": {
-    "device": "$device"
-    "release": "$distro"
+    "device": "$device",
+    "release": "$distro",
     "image_serial": "$image_serial"
   }
 }
