@@ -41,17 +41,29 @@ else
     exit 1
 fi
 
-sh -x -c "date --utc --rfc-3339=ns ; \
-          hostname ; \
-          arch ; \
-          uname -a ; \
-          id ; \
-          w ; \
-          pwd ; \
-          ip addr ; \
-          free -m ; \
-          mount ; \
-          df -h" > system-info 2>&1
+date --utc --rfc-3339=ns > date-rfc-3339
+hostname > hostname
+arch > arch
+uname -a > uname-a
+id > id
+w > w
+pwd > pwd
+ip addr > ip-addr
+free-m > free-m
+mount > mount
+df -h > df-h
+
+#sh -x -c "date --utc --rfc-3339=ns ; \
+#          hostname ; \
+#          arch ; \
+#          uname -a ; \
+#          id ; \
+#          w ; \
+#          pwd ; \
+#          ip addr ; \
+#          free -m ; \
+#          mount ; \
+#          df -h" > system-info 2>&1
 
 cp -v /proc/cpuinfo .
 cp -v /etc/os-release .
