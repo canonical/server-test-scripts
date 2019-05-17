@@ -26,7 +26,7 @@ test_data:
 
         for rebootidx in $(seq 1 $reboots); do
             echo "Rebooting system for reboot $rebootidx of $reboots"
-            ssh ubuntu@$DEVICE_IP sudo systemctl reboot
+            ssh ubuntu@$DEVICE_IP sudo systemctl reboot || true
 
             # Wait for the system to be back online (i.e. we can ssh to it).
             # This is basically what the testflinger agent does, e.g.
