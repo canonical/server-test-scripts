@@ -49,7 +49,7 @@ id > id
 w > w
 pwd > pwd
 ip addr > ip-addr
-free-m > free-m
+free -m > free-m
 mount > mount
 df -h > df-h
 
@@ -80,9 +80,9 @@ cp -v /etc/fstab .
 if [ "$NAME" != "Ubuntu Core" ]; then
     cp -v /var/log/cloud-init.log .
     sudo apt -y install pciutils usbutils
-    dpkg-query --list > dpkg-query.out
-    sudo lspci -vvv > lspci.out
-    sudo lsusb -v > lsusb.out
+    dpkg-query --list > dpkg-query.out 2>&1 || true
+    sudo lspci -vvv > lspci.out 2>&1 || true
+    sudo lsusb -v > lsusb.out 2>&1 || true
 fi
 
 snap list > snap_list
