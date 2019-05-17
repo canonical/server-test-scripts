@@ -4,9 +4,34 @@ set -ex
 
 export LC_ALL="C.UTF-8"
 
+
 echo
 echo "### Running $0 on the provisioned system"
 echo
+
+
+# First and foremost, print out some system info.
+# Useful for debugging.
+date --utc --rfc-3339=ns
+cat /etc/os-release
+cat /proc/cpuinfo
+hostname
+arch
+uname -a
+id
+w
+ip addr
+free -m
+mount
+df -h
+pwd
+ls -la
+
+if [ -f boot-speed-measurement-taken-here ]; then
+    echo "Device is dirty!"
+    # We want to be extra sure not to re-download a past measurement.
+    rm -rfv artifacts
+fi
 
 mkdir -v artifacts
 cd artifacts

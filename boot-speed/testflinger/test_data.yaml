@@ -17,6 +17,7 @@ test_data:
         chmod +x bootspeed.sh
         scp -p bootspeed.sh ubuntu@$DEVICE_IP:
 
+        ssh ubuntu@$DEVICE_IP rm -rfv artifacts
         ssh ubuntu@$DEVICE_IP ./bootspeed.sh
 
         scp -r ubuntu@$DEVICE_IP:artifacts boot_0
@@ -35,7 +36,9 @@ test_data:
                 ssh ubuntu@$DEVICE_IP ./bootspeed.sh
                 scp -r ubuntu@$DEVICE_IP:artifacts boot_$rebootidx
             else
-                touch DEVICE-DID-NOT-SURVIVE-REBOOT
+                touch DEVICE-DID-NOT-SURVIVE-REBOOT-$rebootidx
             fi
         done
 
+        ssh ubuntu@$DEVICE_IP rm -rfv artifacts
+        ssh ubuntu@$DEVICE_IP touch boot-speed-measurement-taken-here
