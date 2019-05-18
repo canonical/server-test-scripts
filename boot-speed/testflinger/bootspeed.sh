@@ -101,7 +101,7 @@ if [ "$NAME" != "Ubuntu Core" ]; then
     sudo lsusb -v > lsusb.out 2>&1 || true
 fi
 
-snap list > snap_list
+# snap list > snap_list
 ls -l > directory-listing
 
 echo
