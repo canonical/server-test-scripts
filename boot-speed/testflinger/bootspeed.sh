@@ -9,27 +9,10 @@ echo
 echo "### Running $0 on the provisioned system"
 echo
 
-
-# First and foremost, print out some system info.
-# Useful for debugging.
-date --utc --rfc-3339=ns
-cat /etc/os-release
-cat /proc/cpuinfo
-hostname
-arch
-uname -a
-id
-w
-ip addr
-free -m
-mount
-df -h
-pwd
-ls -la
-
 if [ -f boot-speed-measurement-taken-here ]; then
     echo "Device is dirty (boot-speed-measurement-taken-here)!"
     # We want to be extra sure not to re-download a past measurement.
+    ls -la
     rm -rfv artifacts
     exit 1
 fi
@@ -38,10 +21,33 @@ rm -rf artifacts
 mkdir -v artifacts
 cd artifacts
 
-# Wait for `cloud-init status --wait` to exit (with a timeout)
-if ! timeout 20m cloud-init status --wait; then
+date --utc --rfc-3339=ns | tee date-rfc-3339
+hostname | tee hostname
+arch | tee arch
+uname -a | tee uname-a
+id | tee id
+w | tee w
+pwd | tee pwd
+ip addr | tee ip-addr
+free -m | tee free-m
+mount | tee mount
+df -h | tee df-h
+journalctl --list-boots | tee journalctl_list-boots
+
+cat /proc/cpuinfo | tee cpuinfo
+cat /etc/os-release | tee os-release
+cat /proc/sys/kernel/random/boot_id | tee boot_id
+
+if ! command -v cloud-init >/dev/null; then
+    touch NO-CLOUD-INIT
+elif ! timeout 20m cloud-init status --wait; then
+    # Wait for `cloud-init status --wait` to exit (with a timeout)
     touch CLOUDINIT-DID-NOT-FINISH-IN-TIME
     exit 1
+fi
+
+if [ -f /var/log/cloud-init.log ]; then
+    cp -v /var/log/cloud-init.log .
 fi
 
 # Wait for systemd-analyze to exit with status 0 (success)
@@ -57,18 +63,6 @@ else
     exit 1
 fi
 
-date --utc --rfc-3339=ns > date-rfc-3339
-hostname > hostname
-arch > arch
-uname -a > uname-a
-id > id
-w > w
-pwd > pwd
-ip addr > ip-addr
-free -m > free-m
-mount > mount
-df -h > df-h
-
 #sh -x -c "date --utc --rfc-3339=ns ; \
 #          hostname ; \
 #          arch ; \
@@ -81,8 +75,6 @@ df -h > df-h
 #          mount ; \
 #          df -h" > system-info 2>&1
 
-cp -v /proc/cpuinfo .
-cp -v /etc/os-release .
 
 # There should be no jobs running once boot is finished.
 # This is mostly useful to debug boot timeouts.
@@ -94,14 +86,13 @@ cp -v /etc/fstab .
 . /etc/os-release
 
 if [ "$NAME" != "Ubuntu Core" ]; then
-    cp -v /var/log/cloud-init.log .
     sudo apt -y install pciutils usbutils
     dpkg-query --list > dpkg-query.out 2>&1 || true
     sudo lspci -vvv > lspci.out 2>&1 || true
     sudo lsusb -v > lsusb.out 2>&1 || true
 fi
 
-# snap list > snap_list
+snap list > snap_list
 ls -l > directory-listing
 
 echo
