@@ -9,6 +9,11 @@ test_data:
         pwd
         ls -la
 
+        # Do not auto-update snaps on the provisioned device for now; we'll
+        # update them manually later. If changing this remember that Core
+        # may auto-reboot after a snap refresh.
+        ssh ubuntu@$DEVICE_IP 'sudo snap set system refresh.hold="$(date --date=tomorrow +%Y-%m-%dT%H:%M:%S%:z)"'
+
         mkdir artifacts
         cd artifacts
         date --utc --rfc-3339=ns > job-start-timestamp
@@ -20,8 +25,16 @@ test_data:
         bootid=$(ssh ubuntu@$DEVICE_IP cat /proc/sys/kernel/random/boot_id)
         ssh ubuntu@$DEVICE_IP rm -rfv artifacts
         ssh ubuntu@$DEVICE_IP ./bootspeed.sh
-
         scp -r ubuntu@$DEVICE_IP:artifacts boot_0
+
+        # Refresh the snaps. Running `snap list` after the refresh may
+        # trigger a reboot on Core systems. Take it into account and wait
+        # for the system to be back online before proceeding.
+        ssh ubuntu@$DEVICE_IP sudo snap refresh
+        ssh ubuntu@$DEVICE_IP snap list || true
+        sleep 5
+        timeout 8m sh -c "until ssh ubuntu@$DEVICE_IP uptime; do sleep 10; done"
+        ssh ubuntu@$DEVICE_IP cat /proc/sys/kernel/random/boot_id
 
         reboots=1
 
@@ -32,7 +45,7 @@ test_data:
             # Wait for the system to be back online (i.e. we can ssh to it).
             # This is basically what the testflinger agent does, e.g.
             # https://git.launchpad.net/snappy-device-agents/tree/devices/rpi3/rpi3.py
-            sleep 120
+            sleep 2m
             if timeout 8m sh -c "until ssh ubuntu@$DEVICE_IP uptime; do sleep 10; done"; then
                 # Did the device reboot for real?
                 new_bootid=$(ssh ubuntu@$DEVICE_IP cat /proc/sys/kernel/random/boot_id)
