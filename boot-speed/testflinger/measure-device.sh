@@ -12,6 +12,7 @@ fi
 # We rely on the errexit (set -e) option here.
 command -v testflinger-cli
 command -v timeout
+command -v jq
 
 device=$1
 distro=$2
@@ -90,13 +91,26 @@ fi
 echo
 echo "### POLLING $job_id"
 echo
-timeout 1h testflinger-cli poll $job_id
+if ! timeout 2h testflinger-cli poll $job_id; then
+    echo "testflinger-cli timeout"
+    exit 1
+fi
 echo
 echo "### POLLING FINISHED"
 echo
 
-sleep 10
+sleep 5
+
 testflinger-cli status $job_id
+testflinger-cli results $job_id > testflinger-results.json
+
+# Here we retrieve the test script exit status.
+test_status=$(jq ".test_status" < testflinger-results.json)
+if [ "$test_status" != 0 ]; then
+    echo "Failure: test_status = $test_status. Exiting."
+    exit 1
+fi
+
 testflinger-cli artifacts $job_id
 
 if [ ! -f artifacts.tgz ]; then
@@ -107,7 +121,9 @@ fi
 tar xfzv artifacts.tgz
 
 if [ ! -f artifacts/testflinger-script-ok ]; then
-    echo "Error while executing the testflinger script."
+    # The script should actually never reach this point, as we check
+    # the test script exit code.
+    echo "Error while executing the testflinger script (BUG!)"
     exit 1
 fi
 
