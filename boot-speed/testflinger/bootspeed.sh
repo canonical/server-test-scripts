@@ -21,6 +21,7 @@ rm -rf artifacts
 mkdir -v artifacts
 cd artifacts
 
+# Keep in mind that by using tee(1) we lose the command's exit code!
 date --utc --rfc-3339=ns | tee date-rfc-3339
 hostname | tee hostname
 arch | tee arch
@@ -32,7 +33,7 @@ ip addr | tee ip-addr
 free -m | tee free-m
 mount | tee mount
 df -h | tee df-h
-journalctl --list-boots | tee journalctl_list-boots
+sudo journalctl --list-boots | tee journalctl_list-boots
 
 cat /proc/cpuinfo | tee cpuinfo
 cat /etc/os-release | tee os-release

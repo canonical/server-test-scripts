@@ -36,7 +36,7 @@ test_data:
         #sleep 5
         #timeout 20m sh -c "until ssh ubuntu@$DEVICE_IP 'sudo snap refresh && snap list'; do sleep 1m; done"
         timeout 10m sh -c "until ssh ubuntu@$DEVICE_IP 'snap changes | grep -qv Doing'; do sleep 10s; done"
-        ssh ubuntu@$DEVICE_IP journalctl --list-boots
+        ssh ubuntu@$DEVICE_IP sudo journalctl --list-boots
 
         reboots=1
 
