@@ -31,11 +31,16 @@ test_data:
         # trigger a reboot on Core systems. Take it into account and wait
         # for the system to be back online before proceeding.
         ssh ubuntu@$DEVICE_IP sudo snap refresh
-        sleep 2
+        #sleep 2
         #ssh ubuntu@$DEVICE_IP snap list || true
         #sleep 5
         #timeout 20m sh -c "until ssh ubuntu@$DEVICE_IP 'sudo snap refresh && snap list'; do sleep 1m; done"
-        timeout 10m sh -c "until ssh ubuntu@$DEVICE_IP 'snap changes | tee /dev/stderr | grep -qv Doing'; do sleep 10s; done"
+
+        cmd="until ssh ubuntu@$DEVICE_IP snap changes | tee /dev/stderr | sed '1d;/^\$/d' | awk '{{ if (\$2!=\"Done\") {{ exit 1 }} }}'; do sleep 10s; done"
+        echo $cmd
+        timeout 20m sh -c $cmd
+
+        #timeout 10m sh -c "until ssh ubuntu@$DEVICE_IP snap changes | tee /dev/stderr | sed '1d;/^$/d' | awk '{ if ($2!=\"Done\") { exit 1 } }'; do sleep 10s; done"
         ssh ubuntu@$DEVICE_IP sudo journalctl --list-boots
 
         reboots=1
