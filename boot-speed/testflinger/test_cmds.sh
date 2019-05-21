@@ -31,6 +31,9 @@ scp -r ubuntu@$DEVICE_IP:artifacts boot_0
 ssh ubuntu@$DEVICE_IP snap changes
 ssh ubuntu@$DEVICE_IP sudo snap refresh
 
+# This is a very delicate point, as Ubuntu Core may auto-reboot when snaps
+# are updated. We wait until `snap changes` reports that all the changes are
+# "Done". The command has to output at least one line to be considered valid.
 timeout 40m sh -c "until ssh ubuntu@$DEVICE_IP snap changes |
                                                tee /dev/stderr |
                                                awk '{ if (NR==1 || \$0==\"\") { next } ; if (\$2!=\"Done\") { exit 1 } } END { if (NR==0) { exit 1 } }'
