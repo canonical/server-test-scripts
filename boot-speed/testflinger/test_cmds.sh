@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -ex
+set -o pipefail
 
 # Print some information about the testflinger host system
 cat /etc/os-release

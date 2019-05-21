@@ -1,6 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
 set -ex
+set -o pipefail
 
 export LC_ALL="C.UTF-8"
 
@@ -21,7 +22,7 @@ rm -rf artifacts
 mkdir -v artifacts
 cd artifacts
 
-# Keep in mind that by using tee(1) we lose the command's exit code!
+# Run the script with the `pipefail` option to retain the exit code
 date --utc --rfc-3339=ns | tee date-rfc-3339
 hostname | tee hostname
 arch | tee arch
