@@ -65,19 +65,6 @@ else
     exit 1
 fi
 
-#sh -x -c "date --utc --rfc-3339=ns ; \
-#          hostname ; \
-#          arch ; \
-#          uname -a ; \
-#          id ; \
-#          w ; \
-#          pwd ; \
-#          ip addr ; \
-#          free -m ; \
-#          mount ; \
-#          df -h" > system-info 2>&1
-
-
 # There should be no jobs running once boot is finished.
 # This is mostly useful to debug boot timeouts.
 systemctl list-jobs > systemctl_list-jobs

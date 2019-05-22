@@ -64,15 +64,6 @@ fi
 
 cat "$yaml_head" "$yaml_tail" > "$yaml_full"
 
-#testflinger-cli submit "$yaml_full" | tee testflinger-submit-output
-
-#if ! grep -q "^job_id:" testflinger-submit-output; then
-#    echo "Failed to submit job."
-#    exit 1
-#fi
-
-#job_id=$(awk '/^job_id:/{ print $2 }' testflinger-submit-output)
-
 job_id=$(testflinger-cli submit --quiet "$yaml_full")
 
 echo "testflinger job_id: $job_id"
@@ -83,11 +74,6 @@ if [[ ! "$job_id" =~ $regexp ]]; then
     echo "Invalid job id!"
     exit 1
 fi
-
-#if ! timeout 1h sh -c "until [ \$(testflinger-cli status $job_id) = complete ]; do echo "sleeping..."; sleep 5; done"; then
-#    echo "Timeout: the submitted job didn't finish in time."
-#    exit 1
-#fi
 
 echo
 echo "### POLLING $job_id"
