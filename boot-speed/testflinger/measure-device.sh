@@ -38,8 +38,8 @@ image_serial=$(curl -s --noproxy ubuntu.com $image_dirname/.publish_info | grep 
 
 regexp="^[0-9]{8}(\.[0-9]{1,2})?$"
 if [[ ! "$image_serial" =~ $regexp ]]; then
-    echo "WARNING: Image serial not found! Falling back using today's date."
-    image_serial=$yyyymmdd
+    echo "Invalid or missing image serial!"
+    exit 1
 fi
 
 # Generate JSON metadata file
