@@ -19,7 +19,7 @@ mkdir artifacts
 cd artifacts
 date --utc --rfc-3339=ns > job-start-timestamp
 
-curl -Ss -O https://raw.githubusercontent.com/paride/server-test-scripts/bootspeed/boot-speed/testflinger/bootspeed.sh
+curl -Ss -O https://raw.githubusercontent.com/CanonicalLtd/server-test-scripts/bootspeed/boot-speed/testflinger/bootspeed.sh
 chmod +x bootspeed.sh
 scp -p bootspeed.sh ubuntu@$DEVICE_IP:
 
