@@ -1,0 +1,19 @@
+test_data:
+    test_cmds: |
+        #!/bin/bash
+
+        set -eufx
+        set -o pipefail
+
+        # For historical reasons testflinger calls format() on the test_cmds
+        # string to fill in certain values if desided. That means it tries to
+        # interpret anything between curly braces as a key, so literal curly
+        # braces must be escaped by doubling them up.
+        #
+        # To avoid worrying about escaping and for easiear testing/debugging
+        # we keep the string very simple and just pull and run an external
+        # script.
+
+        wget https://raw.githubusercontent.com/CanonicalLtd/server-test-scripts/bootspeed/boot-speed/testflinger/test_cmds.sh
+        chmod +x test_cmds.sh
+        ./test_cmds.sh
