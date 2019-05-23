@@ -2,7 +2,7 @@ test_data:
     test_cmds: |
         #!/bin/bash
 
-        set -ex
+        set -eufx
         set -o pipefail
 
         # For historical reasons testflinger calls format() on the test_cmds

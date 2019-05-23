@@ -1,8 +1,7 @@
 #!/bin/bash
 
-set -eux
+set -eufx
 set -o pipefail
-shopt -s nullglob
 
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <device> <distro>"
@@ -29,14 +28,14 @@ echo "Target device: $device"
 echo "Target distribution: $distro"
 
 datadir="$device-${distro}_$yyyymmdd"
-mkdir -v $datadir
+mkdir -v "$datadir"
 
 image_url=$(grep "url:" "$yaml_head" | awk '{ print $2 }')
-image_dirname=$(echo $image_url | sed 's|\(.*/\)\(.*\)|\1|')
-image_basename=$(echo $image_url | sed 's|\(.*/\)\(.*\)|\2|')
-image_serial=$(curl -s --noproxy ubuntu.com $image_dirname/.publish_info | grep $image_basename | awk '{ print $2 }') || true
+image_dirname=$(echo "$image_url" | sed 's|\(.*/\)\(.*\)|\1|')
+image_basename=$(echo "$image_url" | sed 's|\(.*/\)\(.*\)|\2|')
+image_serial=$(curl -s --noproxy ubuntu.com "$image_dirname/.publish_info" | grep "$image_basename" | awk '{ print $2 }') || true
 
-regexp="^[0-9]{8}(\.[0-9]{1,2})?$"
+regexp='^[0-9]{8}(\.[0-9]{1,2})?$'
 if [[ ! "$image_serial" =~ $regexp ]]; then
     echo "Invalid or missing image serial!"
     exit 1
@@ -78,7 +77,7 @@ fi
 echo
 echo "### POLLING $job_id"
 echo
-if ! timeout 2h testflinger-cli poll $job_id; then
+if ! timeout 2h testflinger-cli poll "$job_id"; then
     echo "testflinger-cli timeout"
     exit 1
 fi
@@ -88,8 +87,8 @@ echo
 
 sleep 5
 
-testflinger-cli status $job_id
-testflinger-cli results $job_id > testflinger-results.json
+testflinger-cli status "$job_id"
+testflinger-cli results "$job_id" > testflinger-results.json
 
 # Here we retrieve the test script exit status.
 test_status=$(jq ".test_status" < testflinger-results.json)
@@ -98,7 +97,7 @@ if [ "$test_status" != 0 ]; then
     exit 1
 fi
 
-testflinger-cli artifacts $job_id
+testflinger-cli artifacts "$job_id"
 
 if [ ! -f artifacts.tgz ]; then
     echo "Couldn't retrieve artifacts."
