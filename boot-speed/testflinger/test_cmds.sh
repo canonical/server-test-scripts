@@ -36,7 +36,11 @@ ssh ubuntu@$DEVICE_IP sudo snap refresh
 # "Done". The command has to output at least one line to be considered valid.
 timeout 40m sh -c "until ssh ubuntu@$DEVICE_IP snap changes |
                                                tee /dev/stderr |
-                                               awk '{ if (NR==1 || \$0==\"\") { next } ; if (\$2!=\"Done\") { exit 1 } } END { if (NR==0) { exit 1 } }'
+                                               awk '{
+                                                      if (NR==1 || \$0==\"\") { next }
+                                                      if (\$2==\"Doing\") { exit 1 }
+                                                      if (\$2==\"Error\") { system(\"ssh ubuntu@$DEVICE_IP sudo snap refresh\") }
+                                                    } END { if (NR==0) { exit 1 } }'
                    do
                        echo \"[\$(date --utc)] Sleeping...\"
                        sleep 10s
