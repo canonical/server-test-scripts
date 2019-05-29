@@ -10,6 +10,11 @@ id
 pwd
 ls -la
 
+if ssh "ubuntu@$DEVICE_IP" "test -f boot-speed-measurement-taken-here"; then
+    echo "Device is dirty (boot-speed-measurement-taken-here)!"
+    exit 1
+fi
+
 # Do not auto-update snaps on the provisioned device for now; we'll
 # update them manually later. If changing this remember that Core
 # may auto-reboot after a snap refresh.
