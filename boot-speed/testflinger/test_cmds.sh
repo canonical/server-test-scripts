@@ -24,8 +24,8 @@ chmod +x bootspeed.sh
 scp -p bootspeed.sh "ubuntu@$DEVICE_IP:"
 
 bootid=$(ssh "ubuntu@$DEVICE_IP" cat /proc/sys/kernel/random/boot_id)
-ssh "ubuntu@$DEVICE_IP" rm -rfv artifacts
-ssh "ubuntu@$DEVICE_IP" ./bootspeed.sh
+ssh "ubuntu@$DEVICE_IP" rm -rf artifacts
+ssh "ubuntu@$DEVICE_IP" ./bootspeed.sh || exit 1
 scp -r "ubuntu@$DEVICE_IP:artifacts" boot_0
 
 ssh "ubuntu@$DEVICE_IP" snap changes
@@ -67,7 +67,8 @@ for rebootidx in $(seq 1 $reboots); do
         fi
         bootid=$new_bootid
 
-        ssh "ubuntu@$DEVICE_IP" ./bootspeed.sh
+        ssh "ubuntu@$DEVICE_IP" rm -rf artifacts
+        ssh "ubuntu@$DEVICE_IP" ./bootspeed.sh || exit 1
         scp -r "ubuntu@$DEVICE_IP:artifacts" "boot_$rebootidx"
     else
         touch "DEVICE-DID-NOT-SURVIVE-REBOOT-$rebootidx"
