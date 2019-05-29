@@ -39,7 +39,7 @@ timeout 40m sh -c "until ssh ubuntu@$DEVICE_IP snap changes |
                                                awk '{
                                                       if (NR==1 || \$0==\"\") { next }
                                                       if (\$2==\"Doing\") { exit 1 }
-                                                      if (\$2==\"Error\") { system(\"ssh ubuntu@$DEVICE_IP sudo snap refresh\") }
+                                                      if (\$2==\"Error\") { system(\"ssh ubuntu@$DEVICE_IP sudo snap refresh\") ; exit 1 }
                                                     } END { if (NR==0) { exit 1 } }'
                    do
                        echo \"[\$(date --utc)] Sleeping...\"
