@@ -75,6 +75,8 @@ fi
 snap list > snap_list
 ls -l > directory-listing
 
+touch measurement-successful
+
 echo
 echo "### End of $0"
 echo
