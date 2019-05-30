@@ -73,7 +73,7 @@ start_container() {
         debug 1 "configuring proxy ${http_proxy}"
         inside "$name" sh -c "echo proxy=$http_proxy >> /etc/yum.conf"
         inside "$name" sed -i s/enabled=1/enabled=0/ /etc/yum/pluginconf.d/fastestmirror.conf
-        inside "$name" sh -c "sed -i '/^#baseurl=/s/#//' /etc/yum.repos.d/*.repo"
+        inside "$name" sh -c "sed -i '/^#baseurl=/s/#// ; s/^mirrorlist/#mirrorlist/' /etc/yum.repos.d/*.repo"
     fi
 }
 
