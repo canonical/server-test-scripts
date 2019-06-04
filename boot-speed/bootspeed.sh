@@ -5,18 +5,9 @@ set -o pipefail
 
 export LC_ALL="C.UTF-8"
 
-
 echo
 echo "### Running $0 on the provisioned system"
 echo
-
-if [ -f boot-speed-measurement-taken-here ]; then
-    echo "Device is dirty (boot-speed-measurement-taken-here)!"
-    # We want to be extra sure not to re-download a past measurement.
-    ls -la
-    rm -rfv artifacts
-    exit 1
-fi
 
 rm -rf artifacts
 mkdir -v artifacts
@@ -83,6 +74,8 @@ fi
 
 snap list > snap_list
 ls -l > directory-listing
+
+touch measurement-successful
 
 echo
 echo "### End of $0"

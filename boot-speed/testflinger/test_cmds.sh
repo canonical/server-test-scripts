@@ -10,6 +10,11 @@ id
 pwd
 ls -la
 
+if ssh "ubuntu@$DEVICE_IP" "test -f boot-speed-measurement-taken-here"; then
+    echo "Device is dirty (boot-speed-measurement-taken-here)!"
+    exit 1
+fi
+
 # Do not auto-update snaps on the provisioned device for now; we'll
 # update them manually later. If changing this remember that Core
 # may auto-reboot after a snap refresh.
@@ -19,13 +24,13 @@ mkdir artifacts
 cd artifacts
 date --utc --rfc-3339=ns > job-start-timestamp
 
-curl -Ss -O https://raw.githubusercontent.com/CanonicalLtd/server-test-scripts/master/boot-speed/testflinger/bootspeed.sh
+curl -Ss -O https://raw.githubusercontent.com/CanonicalLtd/server-test-scripts/master/boot-speed/bootspeed.sh
 chmod +x bootspeed.sh
 scp -p bootspeed.sh "ubuntu@$DEVICE_IP:"
 
 bootid=$(ssh "ubuntu@$DEVICE_IP" cat /proc/sys/kernel/random/boot_id)
-ssh "ubuntu@$DEVICE_IP" rm -rfv artifacts
-ssh "ubuntu@$DEVICE_IP" ./bootspeed.sh
+ssh "ubuntu@$DEVICE_IP" rm -rf artifacts
+ssh "ubuntu@$DEVICE_IP" ./bootspeed.sh || exit 1
 scp -r "ubuntu@$DEVICE_IP:artifacts" boot_0
 
 ssh "ubuntu@$DEVICE_IP" snap changes
@@ -39,7 +44,7 @@ timeout 40m sh -c "until ssh ubuntu@$DEVICE_IP snap changes |
                                                awk '{
                                                       if (NR==1 || \$0==\"\") { next }
                                                       if (\$2==\"Doing\") { exit 1 }
-                                                      if (\$2==\"Error\") { system(\"ssh ubuntu@$DEVICE_IP sudo snap refresh\") }
+                                                      if (\$2==\"Error\") { system(\"ssh ubuntu@$DEVICE_IP sudo snap refresh\") ; exit 1 }
                                                     } END { if (NR==0) { exit 1 } }'
                    do
                        echo \"[\$(date --utc)] Sleeping...\"
@@ -67,7 +72,8 @@ for rebootidx in $(seq 1 $reboots); do
         fi
         bootid=$new_bootid
 
-        ssh "ubuntu@$DEVICE_IP" ./bootspeed.sh
+        ssh "ubuntu@$DEVICE_IP" rm -rf artifacts
+        ssh "ubuntu@$DEVICE_IP" ./bootspeed.sh || exit 1
         scp -r "ubuntu@$DEVICE_IP:artifacts" "boot_$rebootidx"
     else
         touch "DEVICE-DID-NOT-SURVIVE-REBOOT-$rebootidx"
