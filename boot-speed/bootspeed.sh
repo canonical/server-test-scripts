@@ -52,6 +52,8 @@ if timeout 20m sh -c "until systemd-analyze time; do sleep 20; done"; then
     systemd-analyze critical-chain > systemd-analyze_critical-chain
     systemd-analyze plot > systemd-analyze_plot.svg
 else
+    systemd-analyze blame | tee systemd-analyze_blame
+    ps fauxww | tee ps_fauxww
     touch SYSTEM-DID-NOT-BOOT-IN-TIME
     exit 1
 fi
