@@ -21,8 +21,12 @@ EOF
 bad_Usage() { Usage 1>&2; [ $# -eq 0 ] || error "$@"; return 1; }
 
 download() {
-    add-apt-repository --yes ppa:cloud-init-dev/daily ||
-        fail "Failed to add repo ppa:cloud-init-dev/daily"
+    local err
+    for i in {1..10}; do
+        [ $i -gt 1 ] && sleep $((2**$i))
+        add-apt-repository --yes ppa:cloud-init-dev/daily && err=0 && break || err=$?
+    done
+    (exit $err) || fail "Failed to add repo ppa:cloud-init-dev/daily"
     apt-get update --quiet ||
         fail "Failed apt-get update"
     mkdir download || fail "failed mkdir download in $PWD"
