@@ -45,20 +45,20 @@ fi
 
 # Wait for systemd-analyze to exit with status 0 (success)
 # https://github.com/systemd/systemd/blob/1cae151/src/analyze/analyze.c#L279
-if timeout 20m sh -c "until systemd-analyze time; do sleep 20; done"; then
-    # Gather the actual data
-    systemd-analyze time > systemd-analyze_time
-    systemd-analyze blame > systemd-analyze_blame
-    systemd-analyze critical-chain > systemd-analyze_critical-chain
-    systemd-analyze plot > systemd-analyze_plot.svg
-else
+if ! timeout 20m sh -c "until systemd-analyze time; do sleep 20; done"; then
+    systemctl list-jobs | tee systemctl_list-jobs
+    systemd-analyze blame | tee systemd-analyze_blame
+    systemd-analyze critical-chain | tee systemd-analyze_critical-chain
+    ps fauxww | tee ps_fauxww
     touch SYSTEM-DID-NOT-BOOT-IN-TIME
     exit 1
 fi
 
-# There should be no jobs running once boot is finished.
-# This is mostly useful to debug boot timeouts.
-systemctl list-jobs > systemctl_list-jobs
+# Gather the systemd data
+systemd-analyze time > systemd-analyze_time
+systemd-analyze blame > systemd-analyze_blame
+systemd-analyze critical-chain > systemd-analyze_critical-chain
+systemd-analyze plot > systemd-analyze_plot.svg
 
 # Gather additional data
 cp -v /etc/fstab .
