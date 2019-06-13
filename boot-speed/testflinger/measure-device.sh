@@ -14,11 +14,13 @@ command -v testflinger-cli
 command -v timeout
 command -v jq
 
+scriptpath=$(dirname "${BASH_SOURCE[0]}")
+
 device=$1
 distro=$2
 
-yaml_head="$device-$distro.provision.yaml"
-yaml_tail="test_data.yaml"
+yaml_head="$scriptpath/$device-$distro.provision.yaml"
+yaml_tail="$scriptpath/test_data.yaml"
 yaml_full="$device-$distro.full.yaml"
 
 yyyymmdd=$(date --utc '+%Y%m%d')
