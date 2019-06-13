@@ -25,15 +25,18 @@ known_clouds = ['ec2', 'gce']
 
 
 class EC2Instspec:
-    def __init__(self, *, release, inst_type, region, ec2_subnetid, ec2_sgid):
+    def __init__(
+            self, *, release, inst_type, region, ec2_subnetid, ec2_sgid,
+            ec2_availability_zone):
         # Defaults. They can't be set as keyword argument defaults because
         # we're always passing all the arguments to __init__, even if they
         # are None. And they can't be set as the argparse default values,
         # as different coulds need different defaults.
         self.region = "us-east-1"
         self.inst_type = "t2.micro"
-        self.subnetid = ""
-        self.sgid = []
+        self.subnetid = ec2_subnetid
+        self.sgid = ec2_sgid
+        self.availability_zone = ec2_availability_zone
 
         # User-specified settings
         self.release = release
@@ -42,10 +45,6 @@ class EC2Instspec:
             self.inst_type = inst_type
         if region:
             self.region = region
-        if ec2_subnetid:
-            self.subnetid = ec2_subnetid
-        if ec2_sgid:
-            self.sgid = [ec2_sgid]
 
     def measure(self, datadir, instances=1, reboots=1):
         """
@@ -62,9 +61,6 @@ class EC2Instspec:
             daily = ec2.daily_image(release=self.release)
 
         print("Daily image for", self.release, "is", daily)
-
-        metadata = gen_metadata(
-            "ec2", self.region, self.inst_type, self.release, daily)
 
         for ninstance in range(instances):
             instance_data = Path(datadir, "instance_" + str(ninstance))
@@ -83,15 +79,29 @@ class EC2Instspec:
                 daily,
                 instance_type=self.inst_type,
                 SubnetId=self.subnetid,
-                SecurityGroupIds=self.sgid
+                SecurityGroupIds=self.sgid,
+                Placement={
+                    'AvailabilityZone': self.availability_zone
+                }
             )
             print("Instance launched.")
+
+            # If the availability zone is not specified a random one is
+            # assigned. We want to make sure the next instances (if any) will
+            # use the same zone, so we save it.
+            if not self.availability_zone:
+                self.availability_zone = instance.availability_zone
 
             try:
                 measure_instance(instance, instance_data, reboots)
             finally:
                 print("Deleting the instance.")
                 instance.delete(wait=False)
+
+        metadata = gen_metadata(
+            cloud="ec2", region=self.region,
+            availability_zone=self.availability_zone, inst_type=self.inst_type,
+            release=self.release, cloudid=daily)
 
         return metadata
 
@@ -207,7 +217,8 @@ def measure_instance(instance, datadir, reboots=1):
         os.unlink(tarball)
 
 
-def gen_metadata(cloud, region, inst_type, release, cloudid):
+def gen_metadata(
+        *, cloud, region, availability_zone='', inst_type, release, cloudid):
     """ Returns the instance metadata as a dictionary """
     yyyymmdd = dt.datetime.utcnow().strftime('%Y%m%d')
     isodate = dt.datetime.utcnow().isoformat()
@@ -221,6 +232,7 @@ def gen_metadata(cloud, region, inst_type, release, cloudid):
     metadata['instance'] = {
         'cloud': cloud,
         'region': region,
+        'availability_zone': availability_zone,
         'instance_type': inst_type,
         'release': release,
         'cloudimage_id': cloudid,
@@ -251,7 +263,8 @@ def main():
     if args.cloud == 'ec2':
         instspec = EC2Instspec(
             release=args.release, inst_type=args.inst_type, region=args.region,
-            ec2_subnetid=args.ec2_subnetid, ec2_sgid=args.ec2_sgid)
+            ec2_subnetid=args.ec2_subnetid, ec2_sgid=args.ec2_sgid,
+            ec2_availability_zone=args.ec2_availability_zone)
     else:
         raise NotImplementedError
 
@@ -283,8 +296,12 @@ def parse_args():
                         default=1, type=int)
     PARSER.add_argument('--instances', help='Number of instances',
                         default=1, type=int)
-    PARSER.add_argument('--ec2-subnetid', help='AWS EC2 SubnetId')
-    PARSER.add_argument('--ec2-sgid', help='AWS EC2 SecurityGroupId')
+    PARSER.add_argument('--ec2-subnetid', help='AWS EC2 SubnetId', default='')
+    PARSER.add_argument('--ec2-availability-zone',
+                        help='AWS EC2 Availability Zone', default='')
+    PARSER.add_argument(
+        '--ec2-sgid', help='AWS EC2 SecurityGroupId', action='append',
+        default=[])
     PARSER.add_argument('--region', help='Cloud region')
     ARGS = PARSER.parse_args()
     return ARGS
