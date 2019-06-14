@@ -141,7 +141,7 @@ def cloudid2serial(id):
     )
     filters = ['id=%s' % id]
     res = stream.query(filters)
-    id = res[0]['id']
+    id = res[0]['version_name']
     return id
 
 
