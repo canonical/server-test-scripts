@@ -56,7 +56,11 @@ class EC2Instspec:
         ec2 = pycloudlib.EC2(tag='bootspeed', region=self.region)
 
         if self.inst_type.split('.')[0] == 'a1':
-            daily = ec2.daily_image(release=self.release, arch='arm64')
+            if self.release == 'xenial' or self.release == 'bionic':
+                # Workaround for LP: #1832386
+                daily = ec2.released_image(release=self.release, arch='arm64')
+            else:
+                daily = ec2.daily_image(release=self.release, arch='arm64')
         else:
             daily = ec2.daily_image(release=self.release)
 
