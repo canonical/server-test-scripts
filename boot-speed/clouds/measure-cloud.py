@@ -64,7 +64,10 @@ class EC2Instspec:
         else:
             daily = ec2.daily_image(release=self.release)
 
+        serial = ec2.image_serial(daily)
+
         print("Daily image for", self.release, "is", daily)
+        print("Image serial:", serial)
 
         for ninstance in range(instances):
             instance_data = Path(datadir, "instance_" + str(ninstance))
@@ -105,7 +108,7 @@ class EC2Instspec:
         metadata = gen_metadata(
             cloud="ec2", region=self.region,
             availability_zone=self.availability_zone, inst_type=self.inst_type,
-            release=self.release, cloudid=daily)
+            release=self.release, cloudid=daily, serial=serial)
 
         return metadata
 
@@ -136,17 +139,6 @@ def create_sftp_client(host, user, port=22, password=None, keyfilepath=None):
         if transport is not None:
             transport.close()
         pass
-
-
-def cloudid2serial(id):
-    stream = pycloudlib.streams.Streams(
-        mirror_url='https://cloud-images.ubuntu.com/daily',
-        keyring_path='/usr/share/keyrings/ubuntu-cloudimage-keyring.gpg'
-    )
-    filters = ['id=%s' % id]
-    res = stream.query(filters)
-    id = res[0]['version_name']
-    return id
 
 
 def measure_instance(instance, datadir, reboots=1):
@@ -222,12 +214,11 @@ def measure_instance(instance, datadir, reboots=1):
 
 
 def gen_metadata(
-        *, cloud, region, availability_zone='', inst_type, release, cloudid):
+        *, cloud, region, availability_zone='', inst_type, release, cloudid,
+        serial):
     """ Returns the instance metadata as a dictionary """
     yyyymmdd = dt.datetime.utcnow().strftime('%Y%m%d')
     isodate = dt.datetime.utcnow().isoformat()
-
-    serial = cloudid2serial(cloudid)
 
     metadata = {}
     metadata['date'] = yyyymmdd
