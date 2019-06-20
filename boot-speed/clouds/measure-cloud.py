@@ -22,6 +22,7 @@ from pathlib import Path
 
 
 known_clouds = ['ec2', 'gce']
+job_timestamp = dt.datetime.utcnow()
 
 
 class EC2Instspec:
@@ -217,11 +218,11 @@ def gen_metadata(
         *, cloud, region, availability_zone='', inst_type, release, cloudid,
         serial):
     """ Returns the instance metadata as a dictionary """
-    yyyymmdd = dt.datetime.utcnow().strftime('%Y%m%d')
-    isodate = dt.datetime.utcnow().isoformat()
+    date = job_timestamp.strftime('%Y%m%d%H%M%S')
+    isodate = job_timestamp.isoformat()
 
     metadata = {}
-    metadata['date'] = yyyymmdd
+    metadata['date'] = date
     metadata['date-rfc3339'] = isodate
     metadata['type'] = "cloud"
     metadata['instance'] = {
@@ -239,13 +240,13 @@ def gen_metadata(
 
 def gen_archivename(metadata):
     """ Generate a standardized measurement directory (and tarball) name """
-    yyyymmdd = metadata['date']
+    date = metadata['date']
     cloud = metadata['instance']['cloud']
     inst_type = metadata['instance']['instance_type']
     release = metadata['instance']['release']
 
-    datadir = cloud + "-" + inst_type + "-" + release + "_" + yyyymmdd
-    return datadir
+    arcname = cloud + "-" + inst_type + "-" + release + "_" + date
+    return arcname
 
 
 def main():
