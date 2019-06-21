@@ -22,6 +22,7 @@ from pathlib import Path
 
 
 known_clouds = ['ec2', 'gce']
+job_timestamp = dt.datetime.utcnow()
 
 
 class EC2Instspec:
@@ -160,8 +161,6 @@ def measure_instance(instance, datadir, reboots=1):
         "wget https://raw.githubusercontent.com/CanonicalLtd/"
         "server-test-scripts/master/boot-speed/bootspeed.sh")
     instance.execute("chmod +x bootspeed.sh")
-    bootid = instance.execute("cat /proc/sys/kernel/random/boot_id")
-    print("boot_id:", bootid)
 
     instance.execute("rm -rf artifacts")
     outstr = instance.execute("./bootspeed.sh 2>&1")
@@ -190,11 +189,6 @@ def measure_instance(instance, datadir, reboots=1):
     for nboot in range(1, reboots+1):
         bootdir = "boot_" + str(nboot)
         instance.restart()
-        new_bootid = instance.execute("cat /proc/sys/kernel/random/boot_id")
-        if new_bootid == bootid:
-            print("Cloud instance did not reboot!")
-            sys.exit(1)
-        bootid = new_bootid
         instance.execute("rm -rf artifacts")
         outstr = instance.execute("./bootspeed.sh 2>&1")
         print(outstr)
@@ -217,11 +211,11 @@ def gen_metadata(
         *, cloud, region, availability_zone='', inst_type, release, cloudid,
         serial):
     """ Returns the instance metadata as a dictionary """
-    yyyymmdd = dt.datetime.utcnow().strftime('%Y%m%d')
-    isodate = dt.datetime.utcnow().isoformat()
+    date = job_timestamp.strftime('%Y%m%d%H%M%S')
+    isodate = job_timestamp.isoformat()
 
     metadata = {}
-    metadata['date'] = yyyymmdd
+    metadata['date'] = date
     metadata['date-rfc3339'] = isodate
     metadata['type'] = "cloud"
     metadata['instance'] = {
@@ -239,13 +233,13 @@ def gen_metadata(
 
 def gen_archivename(metadata):
     """ Generate a standardized measurement directory (and tarball) name """
-    yyyymmdd = metadata['date']
+    date = metadata['date']
     cloud = metadata['instance']['cloud']
     inst_type = metadata['instance']['instance_type']
     release = metadata['instance']['release']
 
-    datadir = cloud + "-" + inst_type + "-" + release + "_" + yyyymmdd
-    return datadir
+    arcname = cloud + "-" + inst_type + "-" + release + "_" + date
+    return arcname
 
 
 def main():
