@@ -161,8 +161,6 @@ def measure_instance(instance, datadir, reboots=1):
         "wget https://raw.githubusercontent.com/CanonicalLtd/"
         "server-test-scripts/master/boot-speed/bootspeed.sh")
     instance.execute("chmod +x bootspeed.sh")
-    bootid = instance.execute("cat /proc/sys/kernel/random/boot_id")
-    print("boot_id:", bootid)
 
     instance.execute("rm -rf artifacts")
     outstr = instance.execute("./bootspeed.sh 2>&1")
@@ -191,11 +189,6 @@ def measure_instance(instance, datadir, reboots=1):
     for nboot in range(1, reboots+1):
         bootdir = "boot_" + str(nboot)
         instance.restart()
-        new_bootid = instance.execute("cat /proc/sys/kernel/random/boot_id")
-        if new_bootid == bootid:
-            print("Cloud instance did not reboot!")
-            sys.exit(1)
-        bootid = new_bootid
         instance.execute("rm -rf artifacts")
         outstr = instance.execute("./bootspeed.sh 2>&1")
         print(outstr)
