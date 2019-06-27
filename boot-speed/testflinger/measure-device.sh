@@ -23,7 +23,7 @@ yaml_head="$scriptpath/$device-$distro.provision.yaml"
 yaml_tail="$scriptpath/test_data.yaml"
 yaml_full="$device-$distro.full.yaml"
 
-yyyymmdd=$(date --utc '+%Y%m%d')
+yyyymmdd=$(date --utc '+%Y%m%d%H%M%S')
 date_rfc3339=$(date --utc --rfc-3339=ns)
 
 echo "Target device: $device"
@@ -64,6 +64,10 @@ if [ ! -f "$yaml_head" ]; then
 fi
 
 cat "$yaml_head" "$yaml_tail" > "$yaml_full"
+
+echo "=== Testflinger yaml ==="
+cat "$yaml_full"
+echo "=== End of testflinger yaml ==="
 
 job_id=$(testflinger-cli submit --quiet "$yaml_full")
 
