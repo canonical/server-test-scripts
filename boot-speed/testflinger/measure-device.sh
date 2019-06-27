@@ -23,7 +23,7 @@ yaml_head="$scriptpath/$device-$distro.provision.yaml"
 yaml_tail="$scriptpath/test_data.yaml"
 yaml_full="$device-$distro.full.yaml"
 
-yyyymmdd=$(date --utc '+%Y%m%d')
+yyyymmdd=$(date --utc '+%Y%m%d%H%M%S')
 date_rfc3339=$(date --utc --rfc-3339=ns)
 
 echo "Target device: $device"
