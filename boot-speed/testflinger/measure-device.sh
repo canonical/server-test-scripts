@@ -65,6 +65,10 @@ fi
 
 cat "$yaml_head" "$yaml_tail" > "$yaml_full"
 
+echo "=== Testflinger yaml ==="
+cat "$yaml_full"
+echo "=== End of testflinger yaml ==="
+
 job_id=$(testflinger-cli submit --quiet "$yaml_full")
 
 echo "testflinger job_id: $job_id"
