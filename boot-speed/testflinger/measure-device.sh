@@ -83,7 +83,7 @@ fi
 echo
 echo "### POLLING $job_id"
 echo
-if ! timeout 2h testflinger-cli poll "$job_id"; then
+if ! timeout 16h testflinger-cli poll "$job_id"; then
     echo "testflinger-cli timeout"
     testflinger-cli cancel "$job_id" || true
     exit 1
