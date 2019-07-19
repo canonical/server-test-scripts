@@ -1,3 +1,3 @@
 job_queue: dragonboard
 provision_data:
-    url: http://cdimage.ubuntu.com/ubuntu-core/16/beta/current/ubuntu-core-16-armhf+raspi3.img.xz
+    url: http://cdimage.ubuntu.com/ubuntu-core/16/beta/current/ubuntu-core-16-arm64+snapdragon.img.xz
