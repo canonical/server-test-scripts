@@ -27,7 +27,7 @@ def clean_ec2():
 
     resource = boto3.resource('ec2')
     inst_tag = [{'Name': 'tag:Name', 'Values': ['bootspeed-*']}]
-    stale_instances = set()
+    stale_instances = []
     for vpc in list(resource.vpcs.all()):
         print('Cleaning up vpc %s' % vpc.id)
         for instance in vpc.instances.filter(Filters=inst_tag):
@@ -40,7 +40,7 @@ def clean_ec2():
                     print('  Instance started %s seconds ago' % tdelta)
                     if tdelta > max_inst_age*60:
                         print("  Stale instance, terminating.")
-                        stale_instances.add(instance)
+                        stale_instances.append(instance)
                         instance.terminate()
                     break
 
