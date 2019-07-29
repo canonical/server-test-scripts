@@ -26,6 +26,9 @@ def check_test_chroot(tasks):
     """Checks the status of specific chroots for testing."""
     print('\nChecking stauts of test chroot(s):\n')
     for chroot in TEST_CHROOTS:
+        if chroot not in tasks:
+            raise Exception('chroot {} unexpectedly not in tasks ({})'.format(
+                chroot, tasks))
         print('%24s: %s' % (chroot, tasks[chroot]))
         if tasks[chroot] != 'succeeded':
             print('Build failed!')
