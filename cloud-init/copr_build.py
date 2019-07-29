@@ -94,7 +94,7 @@ def mention_expiration_on_creds(conf_file):
         exp_lines = [l for l in contents.splitlines()
                      if 'expiration' in l]
     except FileNotFoundError:
-        print("Did not find creds file: %s" % copr_conf)
+        print("Did not find creds file: %s" % (conf_file,))
 
     if exp_lines:
         print("From your config:")
