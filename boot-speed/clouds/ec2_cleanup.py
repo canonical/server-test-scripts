@@ -7,11 +7,15 @@ Paride Legovini <paride.legovini@canonical.com>
 """
 import boto3
 import datetime as dt
+import os
 import re
 
 
 def clean_ec2():
     """Clean up all running EC2 instances tagged 'bootspeed-*'."""
+
+    # Maximum instance age (in minutes)
+    max_inst_age = os.environ.get('MAX_EC2_INST_AGE', 120)
 
     # Seconds since epoch; will be compared with the timestamp we put
     # in the instance tag to determine if instances are stale.
@@ -30,7 +34,7 @@ def clean_ec2():
                     timestamp = int(tag['Value'].split("-")[1])
                     tdelta = now - timestamp
                     print('Instance started %s seconds ago' % tdelta)
-                    if tdelta > 3*3600:
+                    if tdelta > max_inst_age*60:
                         print("Terminating stale instance.")
                         stale_instances.append(instance)
                         instance.terminate()
@@ -41,6 +45,7 @@ def clean_ec2():
         instance.wait_until_terminated()
 
     print("Done")
+
 
 if __name__ == '__main__':
     clean_ec2()
