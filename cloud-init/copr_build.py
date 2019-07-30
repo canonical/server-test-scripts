@@ -26,6 +26,9 @@ def check_test_chroot(tasks):
     """Checks the status of specific chroots for testing."""
     print('\nChecking stauts of test chroot(s):\n')
     for chroot in TEST_CHROOTS:
+        if chroot not in tasks:
+            raise Exception('chroot {} unexpectedly not in tasks ({})'.format(
+                chroot, tasks))
         print('%24s: %s' % (chroot, tasks[chroot]))
         if tasks[chroot] != 'succeeded':
             print('Build failed!')
@@ -91,7 +94,7 @@ def mention_expiration_on_creds(conf_file):
         exp_lines = [l for l in contents.splitlines()
                      if 'expiration' in l]
     except FileNotFoundError:
-        print("Did not find creds file: %s" % copr_conf)
+        print("Did not find creds file: %s" % (conf_file,))
 
     if exp_lines:
         print("From your config:")
@@ -114,11 +117,11 @@ def main(srpm, copr_conf=DEFAULT_COPR_CONF, dev=None):
     except Exception as e:
         mention_expiration_on_creds(copr_conf)
         raise e
-        
+
     # 2018-03-05: adding sleep to let builds ramp up
     # this after a {'state': ['Not a valid choice.']} exception
     time.sleep(120)
-    
+
     tasks = get_build_tasks(build)
     check_build_status(build, tasks)
     check_test_chroot(tasks)
