@@ -11,9 +11,11 @@ import datetime as dt
 import glob
 import json
 import logging
+import platform
 import tarfile
+import tempfile
+import time
 import os
-import paramiko
 import pycloudlib
 import shutil
 import sys
@@ -21,14 +23,17 @@ import sys
 from pathlib import Path
 
 
-known_clouds = ['ec2', 'gce']
+known_clouds = ['kvm', 'lxd', 'ec2', 'gce']
 job_timestamp = dt.datetime.utcnow()
 
 
 class EC2Instspec:
+    cloud = 'ec2'
+
     def __init__(
             self, *, release, inst_type, region, ec2_subnetid, ec2_sgid,
-            ec2_availability_zone):
+            ec2_availability_zone, ssh_pubkey_path, ssh_privkey_path,
+            ssh_keypair_name):
         # Defaults. They can't be set as keyword argument defaults because
         # we're always passing all the arguments to __init__, even if they
         # are None. And they can't be set as the argparse default values,
@@ -38,6 +43,9 @@ class EC2Instspec:
         self.subnetid = ec2_subnetid
         self.sgid = ec2_sgid
         self.availability_zone = ec2_availability_zone
+        self.ssh_pubkey_path = ssh_pubkey_path
+        self.ssh_privkey_path = ssh_privkey_path
+        self.ssh_keypair_name = ssh_keypair_name
 
         # User-specified settings
         self.release = release
@@ -55,6 +63,15 @@ class EC2Instspec:
         print('Perforforming measurement on Amazon EC2')
 
         ec2 = pycloudlib.EC2(tag='bootspeed', region=self.region)
+
+        if not self.ssh_pubkey_path:
+            self.ssh_pubkey_path = ec2.key_pair.public_key_path
+        if not self.ssh_privkey_path:
+            self.ssh_privkey_path = ec2.key_pair.private_key_path
+        if not self.ssh_keypair_name:
+            self.ssh_keypair_name = ec2.key_pair.name
+        ec2.use_key(self.ssh_pubkey_path, self.ssh_privkey_path,
+                    self.ssh_keypair_name)
 
         if self.inst_type.split('.')[0] == 'a1':
             if self.release == 'xenial' or self.release == 'bionic':
@@ -107,43 +124,109 @@ class EC2Instspec:
                 instance.delete(wait=False)
 
         metadata = gen_metadata(
-            cloud="ec2", region=self.region,
+            cloud=self.cloud, region=self.region,
             availability_zone=self.availability_zone, inst_type=self.inst_type,
             release=self.release, cloudid=daily, serial=serial)
 
         return metadata
 
 
-def create_sftp_client(host, user, port=22, password=None, keyfilepath=None):
-    """
-    create_sftp_client(host, port, user, password, keyfilepath) -> SFTPClient
-    """
-    sftp = None
-    key = None
-    transport = None
-    try:
-        if keyfilepath is not None:
-            # Get private key used to authenticate user.
-            key = paramiko.RSAKey.from_private_key_file(keyfilepath)
+class LXDInstspec:
+    cloud = 'lxd'
 
-        # Create Transport object using supplied method of authentication.
-        transport = paramiko.Transport((host, port))
-        transport.connect(None, user, password, key)
+    def __init__(self, *, release, inst_type):
+        self.inst_type = ""
+        self.release = release
 
-        sftp = paramiko.SFTPClient.from_transport(transport)
+        if inst_type:
+            self.inst_type = inst_type
 
-        return sftp
-    except Exception as e:
-        print('An creating SFTP client: %s: %s' % (e.__class__, e))
-        if sftp is not None:
-            sftp.close()
-        if transport is not None:
-            transport.close()
-        pass
+    def measure(self, datadir, instances=1, reboots=1):
+        """
+        Measure LXD containers.
+        Returns the measurement metadata as a dictionary
+        """
+        print('Perforforming measurement on LXD')
+
+        lxd = pycloudlib.LXD(tag='bootspeed')
+        image = lxd.daily_image(release=self.release)
+        serial = lxd.image_serial(image)
+
+        for ninstance in range(instances):
+            instance_data = Path(datadir, "instance_" + str(ninstance))
+            instance_data.mkdir()
+
+            name = "bootspeed-" + str(int(dt.datetime.utcnow().timestamp()))
+
+            print("Launching instance", ninstance+1, "of", instances)
+            instance = lxd.launch(name, image, inst_type=self.inst_type)
+            print("Instance launched.")
+
+            try:
+                measure_instance(instance, instance_data, reboots)
+            finally:
+                print("Deleting the instance.")
+                instance.delete()
+
+        # On LXD we can consider the machine the measurement is run on as the
+        # 'region'; platform.node() returns its hostname.
+        region = platform.node()
+        metadata = gen_metadata(
+            cloud=self.cloud, region=region, inst_type=self.inst_type,
+            release=self.release, cloudid=image, serial=serial)
+
+        return metadata
+
+
+class KVMInstspec:
+    cloud = 'kvm'
+
+    def __init__(self, *, release, inst_type):
+        self.inst_type = ""
+        self.release = release
+
+        if inst_type:
+            self.inst_type = inst_type
+
+    def measure(self, datadir, instances=1, reboots=1):
+        """
+        Measure KVM instances.
+        Returns the measurement metadata as a dictionary
+        """
+        print('Perforforming measurement on KVM')
+
+        kvm = pycloudlib.KVM(tag='bootspeed')
+        image = kvm.daily_image(release=self.release)
+        serial = kvm.image_serial(image)
+
+        for ninstance in range(instances):
+            instance_data = Path(datadir, "instance_" + str(ninstance))
+            instance_data.mkdir()
+
+            name = "bootspeed-" + str(int(dt.datetime.utcnow().timestamp()))
+
+            print("Launching instance", ninstance+1, "of", instances)
+            instance = kvm.launch(name, image, inst_type=self.inst_type)
+            print("Instance launched.")
+
+            try:
+                measure_instance(instance, instance_data, reboots)
+            finally:
+                print("Deleting the instance.")
+                instance.delete()
+
+        # On KVM we can consider the machine the measurement is run on as the
+        # 'region'; platform.node() returns its hostname.
+        region = platform.node()
+        metadata = gen_metadata(
+            cloud=self.cloud, region=region, inst_type=self.inst_type,
+            release=self.release, cloudid=image, serial=serial)
+
+        return metadata
 
 
 def measure_instance(instance, datadir, reboots=1):
-    print("Measuring instance", instance.id)
+    print("*** Measuring instance ***")
 
     # Use the same command (and hence format) used when measuring devices
     os.system("date --utc --rfc-3339=ns > " +
@@ -156,12 +239,10 @@ def measure_instance(instance, datadir, reboots=1):
     instance.execute(
         'sudo snap set system refresh.hold='
         '"$(date --date=tomorrow +%Y-%m-%dT%H:%M:%S%:z)"')
-
     instance.execute(
         "wget https://raw.githubusercontent.com/CanonicalLtd/"
         "server-test-scripts/master/boot-speed/bootspeed.sh")
     instance.execute("chmod +x bootspeed.sh")
-
     instance.execute("rm -rf artifacts")
     outstr = instance.execute("./bootspeed.sh 2>&1")
     print(outstr)
@@ -171,39 +252,40 @@ def measure_instance(instance, datadir, reboots=1):
     # Test for the existence of the file bootspeed.sh creates if it reached to
     # the end of the measurement with no errors.
     outstr = instance.execute("test -f artifacts/measurement-successful"
-                              "&& echo ok")
+                              " && echo ok")
     if outstr != "ok":
         print("Measurement failed (missing measurement-successful)!")
         sys.exit(1)
 
     instance.execute("mv artifacts boot_0")
     instance.execute("tar czf boot_0.tar.gz boot_0")
-
-    sftpclient = create_sftp_client(
-        instance.ip, 'ubuntu', keyfilepath=instance.key_pair.private_key_path)
-    sftpclient.get("boot_0.tar.gz", "boot_0.tar.gz")
-    sftpclient.close()
-
+    instance.pull_file("boot_0.tar.gz", "boot_0.tar.gz")
     instance.execute("sudo snap refresh")
 
     for nboot in range(1, reboots+1):
         bootdir = "boot_" + str(nboot)
-        instance.restart()
+
+        if instance._type == 'kvm':
+            # Ugly workaround for:
+            # https://github.com/CanonicalLtd/multipass/issues/903
+            try:
+                instance.restart()
+            except RuntimeError:
+                pass
+            time.sleep(120)
+        else:
+            instance.restart()
+
         instance.execute("rm -rf artifacts")
         outstr = instance.execute("./bootspeed.sh 2>&1")
         print(outstr)
         instance.execute("mv artifacts " + bootdir)
         instance.execute("tar czf " + bootdir + ".tar.gz " + bootdir)
-
-        sftpclient = create_sftp_client(
-            instance.ip, 'ubuntu',
-            keyfilepath=instance.key_pair.private_key_path)
-        sftpclient.get(bootdir + ".tar.gz", bootdir + ".tar.gz")
-        sftpclient.close()
+        instance.pull_file(bootdir + ".tar.gz", bootdir + ".tar.gz")
 
     for tarball in glob.glob('boot_*.tar.gz'):
         with tarfile.open(tarball, "r:gz") as tar:
-            tar.extractall(path=str(datadir))
+            tar.extractall(path=datadir)
         os.unlink(tarball)
 
 
@@ -253,25 +335,30 @@ def main():
         instspec = EC2Instspec(
             release=args.release, inst_type=args.inst_type, region=args.region,
             ec2_subnetid=args.ec2_subnetid, ec2_sgid=args.ec2_sgid,
-            ec2_availability_zone=args.ec2_availability_zone)
+            ec2_availability_zone=args.ec2_availability_zone,
+            ssh_pubkey_path=args.ssh_pubkey_path,
+            ssh_privkey_path=args.ssh_privkey_path,
+            ssh_keypair_name=args.ssh_keypair_name)
+    elif args.cloud == 'lxd':
+        instspec = LXDInstspec(release=args.release, inst_type=args.inst_type)
+    elif args.cloud == 'kvm':
+        instspec = KVMInstspec(release=args.release, inst_type=args.inst_type)
     else:
         raise NotImplementedError
 
-    tmp_datadir = Path("data")
-    tmp_datadir.mkdir()
+    tmp_datadir = tempfile.mkdtemp(prefix='bootspeed-', dir=os.getcwd())
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     metadata = instspec.measure(tmp_datadir, args.instances, args.reboots)
 
-    # str() needed for compatibility with Python <= 3.5
-    with open(str(Path(tmp_datadir, "metadata.json")), 'w') as mdfile:
+    with open(Path(tmp_datadir, "metadata.json"), 'w') as mdfile:
         json.dump(metadata, mdfile)
 
     archivename = gen_archivename(metadata)
     with tarfile.open((archivename + ".tar.gz"), "w:gz") as tar:
-        tar.add(str(tmp_datadir), arcname=archivename)
+        tar.add(tmp_datadir, arcname=archivename)
 
-    shutil.rmtree(str(tmp_datadir))
+    shutil.rmtree(tmp_datadir)
 
 
 def parse_args():
@@ -285,6 +372,12 @@ def parse_args():
                         default=1, type=int)
     PARSER.add_argument('--instances', help='Number of instances',
                         default=1, type=int)
+    PARSER.add_argument('--ssh-pubkey-path', help="Override pycloudlib's "
+                        "default for the SSH public key to use", default=None)
+    PARSER.add_argument('--ssh-privkey-path', help="Override pycloudlib's "
+                        "default for the SSH private key to sue", default=None)
+    PARSER.add_argument('--ssh-keypair-name', help="Override pycloudlib's "
+                        " default for the SSH keypair name", default=None)
     PARSER.add_argument('--ec2-subnetid', help='AWS EC2 SubnetId', default='')
     PARSER.add_argument('--ec2-availability-zone',
                         help='AWS EC2 Availability Zone', default='')
