@@ -8,6 +8,7 @@ Paride Legovini <paride.legovini@canonical.com>
 
 import argparse
 import datetime as dt
+import distro_info
 import glob
 import json
 import logging
@@ -24,6 +25,7 @@ from pathlib import Path
 
 
 known_clouds = ['kvm', 'lxd', 'ec2', 'gce']
+distro_metanames = ('lts', 'stable', 'latest', 'devel')
 job_timestamp = dt.datetime.utcnow()
 
 
@@ -62,6 +64,12 @@ class EC2Instspec:
         """
         print('Perforforming measurement on Amazon EC2')
 
+        if self.release in distro_metanames:
+            release = metaname2release(self.release)
+            print("Resolved %s to %s" % (self.release, release))
+        else:
+            release = self.release
+
         ec2 = pycloudlib.EC2(tag='bootspeed', region=self.region)
 
         if not self.ssh_pubkey_path:
@@ -74,17 +82,17 @@ class EC2Instspec:
                     self.ssh_keypair_name)
 
         if self.inst_type.split('.')[0] == 'a1':
-            if self.release == 'xenial' or self.release == 'bionic':
+            if release == 'xenial' or release == 'bionic':
                 # Workaround for LP: #1832386
-                daily = ec2.released_image(release=self.release, arch='arm64')
+                daily = ec2.released_image(release=release, arch='arm64')
             else:
-                daily = ec2.daily_image(release=self.release, arch='arm64')
+                daily = ec2.daily_image(release=release, arch='arm64')
         else:
-            daily = ec2.daily_image(release=self.release)
+            daily = ec2.daily_image(release=release)
 
         serial = ec2.image_serial(daily)
 
-        print("Daily image for", self.release, "is", daily)
+        print("Daily image for", release, "is", daily)
         print("Image serial:", serial)
 
         for ninstance in range(instances):
@@ -323,6 +331,13 @@ def gen_archivename(metadata):
     arcname = cloud + "-" + inst_type + "-" + release + "_" + date
     return arcname
 
+def metaname2release(metaname):
+    if metaname == 'latest':
+        # 'all' is a list of codenames of all known releases, including
+        # the development one, in the release order.
+        return distro_info.UbuntuDistroInfo().all[-1]
+
+    return getattr(distro_info.UbuntuDistroInfo(), metaname)()
 
 def main():
     args = parse_args()
