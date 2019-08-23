@@ -156,9 +156,18 @@ class LXDInstspec:
         """
         print('Perforforming measurement on LXD')
 
+        if self.release in distro_metanames:
+            release = metaname2release(self.release)
+            print("Resolved %s to %s" % (self.release, release))
+        else:
+            release = self.release
+
         lxd = pycloudlib.LXD(tag='bootspeed')
-        image = lxd.daily_image(release=self.release)
+        image = lxd.daily_image(release=release)
         serial = lxd.image_serial(image)
+
+        print("Daily image for", release, "is", image)
+        print("Image serial:", serial)
 
         for ninstance in range(instances):
             instance_data = Path(datadir, "instance_" + str(ninstance))
@@ -203,9 +212,18 @@ class KVMInstspec:
         """
         print('Perforforming measurement on KVM')
 
+        if self.release in distro_metanames:
+            release = metaname2release(self.release)
+            print("Resolved %s to %s" % (self.release, release))
+        else:
+            release = self.release
+
         kvm = pycloudlib.KVM(tag='bootspeed')
-        image = kvm.daily_image(release=self.release)
+        image = kvm.daily_image(release=release)
         serial = kvm.image_serial(image)
+
+        print("Daily image for", release, "is", image)
+        print("Image serial:", serial)
 
         for ninstance in range(instances):
             instance_data = Path(datadir, "instance_" + str(ninstance))
