@@ -41,7 +41,7 @@ class EC2Instspec:
         # are None. And they can't be set as the argparse default values,
         # as different coulds need different defaults.
         self.region = "us-east-1"
-        self.inst_type = "t2.micro"
+        self.inst_type = inst_type
         self.subnetid = ec2_subnetid
         self.sgid = ec2_sgid
         self.availability_zone = ec2_availability_zone
@@ -52,8 +52,6 @@ class EC2Instspec:
         # User-specified settings
         self.release = release
 
-        if inst_type:
-            self.inst_type = inst_type
         if region:
             self.region = region
 
@@ -117,7 +115,7 @@ class EC2Instspec:
                     'AvailabilityZone': self.availability_zone
                 }
             )
-            print("Instance launched.")
+            print("Instance launched (%s)" % instance.id)
 
             # If the availability zone is not specified a random one is
             # assigned. We want to make sure the next instances (if any) will
@@ -143,11 +141,8 @@ class LXDInstspec:
     cloud = 'lxd'
 
     def __init__(self, *, release, inst_type):
-        self.inst_type = ""
+        self.inst_type = inst_type
         self.release = release
-
-        if inst_type:
-            self.inst_type = inst_type
 
     def measure(self, datadir, instances=1, reboots=1):
         """
@@ -177,7 +172,7 @@ class LXDInstspec:
 
             print("Launching instance", ninstance+1, "of", instances)
             instance = lxd.launch(name, image, inst_type=self.inst_type)
-            print("Instance launched.")
+            print("Instance launched (%s)" % name)
 
             try:
                 measure_instance(instance, instance_data, reboots)
@@ -199,11 +194,8 @@ class KVMInstspec:
     cloud = 'kvm'
 
     def __init__(self, *, release, inst_type):
-        self.inst_type = ""
+        self.inst_type = inst_type
         self.release = release
-
-        if inst_type:
-            self.inst_type = inst_type
 
     def measure(self, datadir, instances=1, reboots=1):
         """
@@ -233,7 +225,7 @@ class KVMInstspec:
 
             print("Launching instance", ninstance+1, "of", instances)
             instance = kvm.launch(name, image, inst_type=self.inst_type)
-            print("Instance launched.")
+            print("Instance launched (%s)" % name)
 
             try:
                 measure_instance(instance, instance_data, reboots)
@@ -269,45 +261,50 @@ def measure_instance(instance, datadir, reboots=1):
         "wget https://raw.githubusercontent.com/CanonicalLtd/"
         "server-test-scripts/master/boot-speed/bootspeed.sh")
     instance.execute("chmod +x bootspeed.sh")
-    instance.execute("rm -rf artifacts")
-    outstr = instance.execute("./bootspeed.sh 2>&1")
-    print(outstr)
-    outstr = instance.execute("find artifacts")
-    print(outstr)
 
-    # Test for the existence of the file bootspeed.sh creates if it reached to
-    # the end of the measurement with no errors.
-    outstr = instance.execute("test -f artifacts/measurement-successful"
-                              " && echo ok")
-    if outstr != "ok":
-        print("Measurement failed (missing measurement-successful)!")
-        sys.exit(1)
+    for nboot in range(0, reboots+1):
+        print("Measuring boot %d" % nboot)
 
-    instance.execute("mv artifacts boot_0")
-    instance.execute("tar czf boot_0.tar.gz boot_0")
-    instance.pull_file("boot_0.tar.gz", "boot_0.tar.gz")
-    instance.execute("sudo snap refresh")
-
-    for nboot in range(1, reboots+1):
-        bootdir = "boot_" + str(nboot)
-
-        if instance._type == 'kvm':
-            # Ugly workaround for:
-            # https://github.com/CanonicalLtd/multipass/issues/903
-            try:
+        if nboot > 0:
+            if instance._type == 'kvm':
+                # Ugly workaround for:
+                # https://github.com/CanonicalLtd/multipass/issues/903
+                try:
+                    instance.restart()
+                except RuntimeError:
+                    pass
+                time.sleep(120)
+            else:
                 instance.restart()
-            except RuntimeError:
-                pass
-            time.sleep(120)
-        else:
-            instance.restart()
 
         instance.execute("rm -rf artifacts")
         outstr = instance.execute("./bootspeed.sh 2>&1")
         print(outstr)
+        outstr = instance.execute("find artifacts")
+        print("----- remote listing")
+        print(outstr)
+        print("----- end of remote listing")
+
+        # Test for the existence of the file bootspeed.sh creates if it
+        # reached the end of the measurement with no errors.
+        outstr = instance.execute("test -f artifacts/measurement-successful"
+                                  " && echo ok")
+        if outstr == "ok":
+            print("artifacts/measurement-successful present => SUCCESS")
+        else:
+            print("Measurement failed (missing measurement-successful)!")
+            sys.exit(1)
+
+        bootdir = "boot_" + str(nboot)
+        print("Prepare the measurement data tarball")
         instance.execute("mv artifacts " + bootdir)
         instance.execute("tar czf " + bootdir + ".tar.gz " + bootdir)
+        print("Pull the tarball")
         instance.pull_file(bootdir + ".tar.gz", bootdir + ".tar.gz")
+
+        if nboot == 0 and reboots:
+            print("Refresh snaps")
+            instance.execute("sudo snap refresh")
 
     for tarball in glob.glob('boot_*.tar.gz'):
         with tarfile.open(tarball, "r:gz") as tar:
@@ -398,7 +395,8 @@ def parse_args():
     PARSER = argparse.ArgumentParser()
     PARSER.add_argument('-c', '--cloud', help='Cloud to measure',
                         choices=known_clouds, required=True)
-    PARSER.add_argument('-t', '--inst-type', help='Instance type')
+    PARSER.add_argument('-t', '--inst-type', help='Instance type',
+                        default='t2.micro')
     PARSER.add_argument('-r', '--release',
                         help='Ubuntu release to measure', required=True)
     PARSER.add_argument('--reboots', help='Number of reboots',
