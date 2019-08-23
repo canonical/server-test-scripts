@@ -65,7 +65,7 @@ cp -v /etc/fstab .
 . /etc/os-release
 
 if [ "$NAME" != "Ubuntu Core" ]; then
-    sudo apt -y install pciutils usbutils
+    sudo apt-get -y install pciutils usbutils
     dpkg-query --list > dpkg-query.out 2>&1 || true
     sudo lspci -vvv > lspci.out 2>&1 || true
     sudo lsusb -v > lsusb.out 2>&1 || true
