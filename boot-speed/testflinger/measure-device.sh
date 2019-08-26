@@ -1,7 +1,13 @@
 #!/bin/bash
 
-set -eufx
+# -E is needed to trap ERR when running in "errexit" mode (set -e).
+set -Eeufx
 set -o pipefail
+
+# Jenkins may export the job timeout in minutes in the BUILD_TIMEOUT env
+# variable. IF BUILD_TIMEOUT is set, allocate 95% (57/60) of it for the
+# testflinger run. If it is not set, set the timeout to 0 (i.e. no timeout).
+testflinger_timeout=$((${BUILD_TIMEOUT:-0}*57))
 
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <device> <distro>"
@@ -33,8 +39,8 @@ datadir="$device-${distro}_$yyyymmdd"
 mkdir -v "$datadir"
 
 image_url=$(grep "url:" "$yaml_head" | awk '{ print $2 }')
-image_dirname=$(echo "$image_url" | sed 's|\(.*/\)\(.*\)|\1|')
-image_basename=$(echo "$image_url" | sed 's|\(.*/\)\(.*\)|\2|')
+image_dirname=${image_url%/*}
+image_basename=${image_url##*/}
 image_serial=$(curl -s --noproxy ubuntu.com "$image_dirname/.publish_info" | grep "$image_basename" | awk '{ print $2 }') || true
 
 regexp='^[0-9]{8}(\.[0-9]{1,2})?$'
@@ -71,6 +77,13 @@ echo "=== End of testflinger yaml ==="
 
 job_id=$(testflinger-cli submit --quiet "$yaml_full")
 
+function cleanup {
+	echo "Error detected, cancelling the submitted job."
+	testflinger-cli cancel "$job_id" || true
+}
+
+trap cleanup ERR
+
 echo "testflinger job_id: $job_id"
 
 # Test the job_id for RFC4122 compliance
@@ -80,17 +93,9 @@ if [[ ! "$job_id" =~ $regexp ]]; then
     exit 1
 fi
 
-echo
 echo "### POLLING $job_id"
-echo
-if ! timeout 16h testflinger-cli poll "$job_id"; then
-    echo "testflinger-cli timeout"
-    testflinger-cli cancel "$job_id" || true
-    exit 1
-fi
-echo
+timeout "$testflinger_timeout" testflinger-cli poll "$job_id"
 echo "### POLLING FINISHED"
-echo
 
 sleep 5
 
@@ -125,6 +130,7 @@ if [ ! -f artifacts/boot_0/systemd-analyze_time ]; then
     exit 1
 fi
 
-mv artifacts "$datadir/instance_0"
+mv -v artifacts "$datadir/instance_0"
+mv -v testflinger-results.json "$datadir/instance_0/"
 data_tarball="$datadir.tar.gz"
 tar cfzv "$data_tarball" "$datadir"
