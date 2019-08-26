@@ -130,6 +130,7 @@ if [ ! -f artifacts/boot_0/systemd-analyze_time ]; then
     exit 1
 fi
 
-mv artifacts "$datadir/instance_0"
+mv -v artifacts "$datadir/instance_0"
+mv -v testflinger-results.json "$datadir/instance_0/"
 data_tarball="$datadir.tar.gz"
 tar cfzv "$data_tarball" "$datadir"
