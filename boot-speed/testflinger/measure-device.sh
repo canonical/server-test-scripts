@@ -4,6 +4,11 @@
 set -Eeufx
 set -o pipefail
 
+# Jenkins may export the job timeout in minutes in the BUILD_TIMEOUT env
+# variable. IF BUILD_TIMEOUT is set, allocate 95% (57/60) of it for the
+# testflinger run. If it is not set, set the timeout to 0 (i.e. no timeout).
+testflinger_timeout=$((${BUILD_TIMEOUT:-0}*57))
+
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <device> <distro>"
     exit 1
@@ -88,17 +93,9 @@ if [[ ! "$job_id" =~ $regexp ]]; then
     exit 1
 fi
 
-echo
 echo "### POLLING $job_id"
-echo
-if ! timeout 16h testflinger-cli poll "$job_id"; then
-    echo "testflinger-cli timeout"
-    testflinger-cli cancel "$job_id" || true
-    exit 1
-fi
-echo
+timeout "$testflinger_timeout" testflinger-cli poll "$job_id"
 echo "### POLLING FINISHED"
-echo
 
 sleep 5
 
