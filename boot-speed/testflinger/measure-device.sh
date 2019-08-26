@@ -1,6 +1,7 @@
 #!/bin/bash
 
-set -eufx
+# -E is needed to trap ERR when running in "errexit" mode (set -e).
+set -Eeufx
 set -o pipefail
 
 if [ $# -ne 2 ]; then
@@ -70,6 +71,13 @@ cat "$yaml_full"
 echo "=== End of testflinger yaml ==="
 
 job_id=$(testflinger-cli submit --quiet "$yaml_full")
+
+function cleanup {
+	echo "Error detected, cancelling the submitted job."
+	testflinger-cli cancel "$job_id" || true
+}
+
+trap cleanup ERR
 
 echo "testflinger job_id: $job_id"
 
