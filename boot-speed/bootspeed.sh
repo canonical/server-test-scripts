@@ -30,6 +30,7 @@ sudo journalctl --list-boots | tee journalctl_list-boots
 tee cpuinfo < /proc/cpuinfo
 tee os-release < /etc/os-release
 tee boot_id < /proc/sys/kernel/random/boot_id
+tee meminfo < /proc/meminfo
 
 if ! command -v cloud-init >/dev/null; then
     touch NO-CLOUD-INIT
