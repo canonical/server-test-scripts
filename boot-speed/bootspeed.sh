@@ -27,9 +27,10 @@ mount | tee mount
 df -h | tee df-h
 sudo journalctl --list-boots | tee journalctl_list-boots
 
-cat /proc/cpuinfo | tee cpuinfo
-cat /etc/os-release | tee os-release
-cat /proc/sys/kernel/random/boot_id | tee boot_id
+tee cpuinfo < /proc/cpuinfo
+tee os-release < /etc/os-release
+tee boot_id < /proc/sys/kernel/random/boot_id
+tee meminfo < /proc/meminfo
 
 if ! command -v cloud-init >/dev/null; then
     touch NO-CLOUD-INIT
