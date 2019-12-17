@@ -59,7 +59,10 @@ fi
 systemd-analyze time > systemd-analyze_time
 systemd-analyze blame > systemd-analyze_blame
 systemd-analyze critical-chain > systemd-analyze_critical-chain
-systemd-analyze plot > systemd-analyze_plot.svg
+
+# A bug in older systemd version causes a huge (>2GB) SVG to be generated.
+systemd_version=$(systemd --version | grep -oP -m 1 'systemd \K[0-9]+')
+((systemd_version >= 242)) && systemd-analyze plot > systemd-analyze_plot.svg
 
 # Gather additional data
 cp -v /etc/fstab .
