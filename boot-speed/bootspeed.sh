@@ -73,6 +73,7 @@ if [ "$NAME" != "Ubuntu Core" ]; then
     sudo lsusb -v > lsusb.out 2>&1 || true
 fi
 
+snap debug timings --ensure=seed > snap_debug_timings
 snap list > snap_list
 ls -l > directory-listing
 
