@@ -59,6 +59,7 @@ fi
 systemd-analyze time > systemd-analyze_time
 systemd-analyze blame > systemd-analyze_blame
 systemd-analyze critical-chain > systemd-analyze_critical-chain
+sudo journalctl -o short-monotonic -b > journal.log
 
 # A bug in older systemd version causes a huge (>2GB) SVG to be generated.
 systemd_version=$(systemd --version | grep -oP -m 1 'systemd \K[0-9]+')
