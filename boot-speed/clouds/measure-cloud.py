@@ -22,6 +22,8 @@ import pycloudlib
 import shutil
 import sys
 
+from botocore.exceptions import ClientError
+
 from paramiko.ssh_exception import (
     AuthenticationException,
     SSHException,
@@ -130,16 +132,13 @@ class EC2Instspec:
             )
 
             try:
-                # Hammer the instance SSH daemon to log the first login time.
-                ssh_hammer(instance, self.ssh_privkey_path)
+                measure_instance(instance, instance_data, reboots)
 
                 # If the availability zone is not specified a random one is
                 # assigned. We want to make sure the next instances (if any)
                 # will use the same zone, so we save it.
                 if not self.availability_zone:
                     self.availability_zone = instance.availability_zone
-
-                measure_instance(instance, instance_data, reboots)
             finally:
                 print("Deleting the instance.")
                 instance.delete(wait=False)
@@ -273,14 +272,17 @@ class KVMInstspec:
         return metadata
 
 
-def ssh_hammer(instance, privkeypath):
+def ssh_hammer(instance):
     # Hammer the instance via SSH to record the first SSH login time.
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    private_key = paramiko.RSAKey.from_private_key_file(privkeypath)
+    private_key = paramiko.RSAKey.from_private_key_file(instance.key_pair.private_key_path)
 
     timeout_start = time.time()
-    while time.time() < timeout_start + 300:
+    # Let's be patient here: metal instances are slow to start.
+    timeout_delta = 900
+
+    while time.time() < timeout_start + timeout_delta:
         if not instance.ip:
             time.sleep(0.2)
             continue
@@ -296,15 +298,19 @@ def ssh_hammer(instance, privkeypath):
                 banner_timeout=1,
                 auth_timeout=1,
             )
+            client.exec_command('true')
         except (
             timeout,
             AuthenticationException,
             SSHException,
             EOFError,
             NoValidConnectionsError,
+            ConnectionResetError,
+            ClientError,
         ):
             pass
         else:
+            client.close()
             return
 
     raise TimeoutError("timeout while hammering SSH")
@@ -315,6 +321,10 @@ def measure_instance(instance, datadir, reboots=1):
 
     # Use the same command (and hence format) used when measuring devices
     os.system("date --utc --rfc-3339=ns > " + str(Path(datadir, "job-start-timestamp")))
+
+    # Hammer the instance SSH daemon to log the first login time.
+    if instance._type == "ec2":
+        ssh_hammer(instance)
 
     # Do not refresh the snaps for the moment.
     # Regular Ubuntu Server images do not auto-reboot on snap refreshes as Core
@@ -334,16 +344,15 @@ def measure_instance(instance, datadir, reboots=1):
         print("Measuring boot %d" % nboot)
 
         if nboot > 0:
-            if instance._type == "kvm":
-                # Ugly workaround for:
-                # https://github.com/CanonicalLtd/multipass/issues/903
-                try:
-                    instance.restart()
-                except RuntimeError:
-                    pass
-                time.sleep(120)
+            if instance._type == "ec2":
+                # Separate shutdown/start instead of restart() are needed
+                # to make sure the instance goes down before trying to
+                # connecto to it again.
+                instance.shutdown(wait=True)
+                instance.start(wait=False)
+                ssh_hammer(instance)
             else:
-                instance.restart()
+                instance.restart(wait=True)
 
         instance.execute("rm -rf artifacts")
         outstr = instance.execute("./bootspeed.sh 2>&1")
