@@ -120,9 +120,13 @@ def main(srpm, copr_conf=DEFAULT_COPR_CONF, dev=None):
 
     # 2018-03-05: adding sleep to let builds ramp up
     # this after a {'state': ['Not a valid choice.']} exception
-    time.sleep(180)
+    reps = 6
+    for naptime in [5]*reps + [10]*reps + [30]*reps:
+        time.sleep(naptime)
+        tasks = get_build_tasks(build)
+        if tasks:
+            break
 
-    tasks = get_build_tasks(build)
     check_build_status(build, tasks)
     check_test_chroot(tasks)
     print()
