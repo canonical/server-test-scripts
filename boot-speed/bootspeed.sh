@@ -66,7 +66,9 @@ systemd_version=$(systemd --version | grep -oP -m 1 'systemd \K[0-9]+')
 ((systemd_version >= 242)) && systemd-analyze plot > systemd-analyze_plot.svg
 
 # Gather additional data
-cp -v /etc/fstab .
+
+# /etc/fstab not present in some cases, e.g. in the Groovy LXD images.
+[ -f /etc/fstab ] && cp -v /etc/fstab .
 
 . /etc/os-release
 
