@@ -335,8 +335,8 @@ def measure_instance(instance, datadir, reboots=1):
         '"$(date --date=tomorrow +%Y-%m-%dT%H:%M:%S%:z)"'
     )
     instance.execute(
-        "wget https://raw.githubusercontent.com/paride/"
-        "server-test-scripts/measure_ssh/boot-speed/bootspeed.sh"
+        "wget https://raw.githubusercontent.com/canonical/"
+        "server-test-scripts/master/boot-speed/bootspeed.sh"
     )
     instance.execute("chmod +x bootspeed.sh")
 
