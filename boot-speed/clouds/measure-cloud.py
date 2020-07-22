@@ -96,13 +96,18 @@ class EC2Instspec:
             self.ssh_keypair_name = ec2.key_pair.name
         ec2.use_key(self.ssh_pubkey_path, self.ssh_privkey_path, self.ssh_keypair_name)
 
-        if self.inst_type.split(".")[0] == "a1":
-            daily = ec2.daily_image(release=release, arch="arm64")
-        else:
-            daily = ec2.daily_image(release=release)
+        # Will also catch unknown inst types raising a meaningful exception
+        inst_specs = ec2.client.describe_instance_types(
+            InstanceTypes=[self.inst_type])['InstanceTypes'][0]
 
+        arch = "amd64"
+        if "arm64" in inst_specs["ProcessorInfo"]["SupportedArchitectures"]:
+            arch = "arm64"
+
+        daily = ec2.daily_image(release=release, arch=arch)
         serial = ec2.image_serial(daily)
 
+        print("Instance architecture:", arch)
         print("Daily image for", release, "is", daily)
         print("Image serial:", serial)
 
