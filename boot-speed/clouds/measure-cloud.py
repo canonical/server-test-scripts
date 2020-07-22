@@ -97,11 +97,7 @@ class EC2Instspec:
         ec2.use_key(self.ssh_pubkey_path, self.ssh_privkey_path, self.ssh_keypair_name)
 
         if self.inst_type.split(".")[0] == "a1":
-            if release == "xenial" or release == "bionic":
-                # Workaround for LP: #1832386
-                daily = ec2.released_image(release=release, arch="arm64")
-            else:
-                daily = ec2.daily_image(release=release, arch="arm64")
+            daily = ec2.daily_image(release=release, arch="arm64")
         else:
             daily = ec2.daily_image(release=release)
 
