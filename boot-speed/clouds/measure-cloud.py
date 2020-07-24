@@ -283,11 +283,10 @@ def ssh_hammer(instance):
     timeout_delta = 900
 
     while time.time() < timeout_start + timeout_delta:
-        if not instance.ip:
+        ip = instance.ip
+        if not ip:
             time.sleep(0.2)
             continue
-
-        ip = instance.ip
 
         try:
             client.connect(
