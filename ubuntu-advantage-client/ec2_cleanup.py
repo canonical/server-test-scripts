@@ -63,7 +63,9 @@ def clean_ec2(tag):
         client.delete_key_pair(KeyName=key['KeyName'])
 
     print('# searching for amis matching tag {}'.format(tag))
-    for image in resource.images.filter(Owners=['self']).all():
+    for image in resource.images.filter(
+        Owners=['self'], Filters=tag_filter
+    ).all():
         print('removing custom ami %s' % image.id)
         client.deregister_image(ImageId=image.id)
 
