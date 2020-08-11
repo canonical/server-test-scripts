@@ -40,9 +40,9 @@ def parse_args():
         help="Subscription id used to access azure api"
     )
     parser.add_argument(
-        "--credentials-path", dest="credentials_path",
+        "--credentials-file", dest="credentials_file",
         help="""
-            Path where the credentials file is stored. That file must a be
+            Json file representing the Azure credentials. That file must a be
             a json dict containing all the necessary credentials to manage
             Azure resources. To successfuly be used in this script,
             the json file must have the following keys:  client_id,
@@ -83,22 +83,25 @@ def clean_azure(tag, client_id, client_secret, tenant_id, subscription_id):
                     break
 
 
-def load_azure_config(credentials_path):
-    with open(credentials_path, 'r') as f:
+def load_azure_config(credentials_file):
+    with open(credentials_file, 'r') as f:
         return json.load(f)
 
 
 if __name__ == '__main__':
     args = parse_args()
-    if args.credentials_path:
-        if os.path.exists(args.credentials_path):
-            config_dict = load_azure_config(
-                args.credentials_path
-            )
-            clean_azure(
-                tag=args.tag,
-                **config_dict
-            )
+    if args.credentials_file:
+        if not os.path.exists(args.credentials_file):
+            raise Exception("File {} could not be found".format(
+                args.credentials_file))
+
+        config_dict = load_azure_config(
+            args.credentials_file
+        )
+        clean_azure(
+            tag=args.tag,
+            **config_dict
+        )
     else:
         clean_azure(
             tag=args.tag,
