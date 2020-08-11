@@ -24,19 +24,19 @@ def parse_args():
             "Default: {}".format(CI_DEFAULT_TAG))
     )
     parser.add_argument(
-        "--client-id", dest="client_id", 
+        "--client-id", dest="client_id",
         help="Client id used to access azure api"
     )
     parser.add_argument(
-        "--client-secret", dest="client_secret", 
+        "--client-secret", dest="client_secret",
         help="Client secret used to access azure api"
     )
     parser.add_argument(
-        "--tenant-id", dest="tenant_id", 
+        "--tenant-id", dest="tenant_id",
         help="Tenant id used to access azure api"
     )
     parser.add_argument(
-        "--subscription-id", dest="subscription_id", 
+        "--subscription-id", dest="subscription_id",
         help="Subscription id used to access azure api"
     )
     parser.add_argument(
@@ -74,8 +74,8 @@ def clean_azure(tag, client_id, client_secret, tenant_id, subscription_id):
             for tag_value in tags.values():
                 if tag_value.startswith(tag):
                     resource_group_name = resource_group.name
-                    print('# deleting resource group: {}'.format(
-                        resource_group_name))
+                    print('# deleted resource group: {} with tag {}'.format(
+                        resource_group_name, tag))
                     result = resource_client.resource_groups.delete(
                         resource_group_name=resource_group_name
                     )
