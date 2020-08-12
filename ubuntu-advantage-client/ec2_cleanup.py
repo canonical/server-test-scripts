@@ -16,7 +16,7 @@ CI_DEFAULT_TAG = "uaclient-*"
 # CI jobs because VPCs counts are limited to 5 per region.
 # cloud-init has one vpc and uaclient a 2nd shared VPC.
 # If we have any instances running in this VPC, don't try to
-# Remote security_groups, subnets, gateways
+# remove security_groups, subnets, gateways
 SHARED_VPC_TAG = "uaclent-integration"
 
 
@@ -24,35 +24,52 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-t", "--tag", dest="tag", action="store", default=CI_DEFAULT_TAG,
-        help=("Tag used to filter cloud resources for deletion. "
+        help=("Tag used to filter cloud resources for deletion by tag. "
               "Default: {}".format(CI_DEFAULT_TAG))
     )
     parser.add_argument(
-        "-o", "--older-than", dest="older_than", action="store",
-        help=("Tag used to filter cloud resources for deletion. "
-              "Format: MM/DD/YY [HH:MM:SS].")
+        "-b", "--before-date", dest="before_date", action="store",
+        help=("Resources created before this date will be deleted."
+              " Format: MM/DD/YY")
     )
     return parser.parse_args()
 
 
-def get_tag_prefix(older_than):
-    if not older_than:
+def get_time_prefix(tag, before_date):
+    """Return time-based tag prefix used to limit deletion to stale resources
+
+    :param tag: String of the general tag filter provided on the commandline.
+    :param before_date: String of the format mm/dd/yyY
+
+    :return: String to be used for further time-based filtering
+    """
+    if not before_date:
        return ""
-    print('Match only resources created before %s' % older_than)
-    try:
-        time = datetime.datetime.strptime(older_than, "%m/%d/%y %H:%M:%S")
-        return time.strftime("uaclient-ci-%m%d-%H%M%S")
-    except ValueError:
-        time = datetime.datetime.strptime(older_than, "%m/%d/%y")
-        return time.strftime("uaclient-ci-%m%d")
+    if not tag:
+        tag = CI_DEFAULT_TAG.replace('*','')
+    if tag[-1] != "-":
+        tag += "-"
+    print('Match only resources created before %s' % before_date)
+    time = datetime.datetime.strptime(before_date, "%m/%d/%y")
+    return time.strftime(tag + "%m%d")
 
 
-def delete_resource_by_tag(resource, tag, older_than_prefix):
-    """Return whether the resource is older than older_than_prefix or has tag.
+def delete_resource_by_tag(resource, tag, time_prefix):
+    """Return whether the resource is older than time_prefix or has tag.
+
+    :param resource: Either a dict or boto3 instance related to a boto3
+        resource. This can be an instance, security_group, subnet etc. SSH keys
+        are processed as dictionaries which contain a KeyName key.
+
+    :param tag: String provided of the generic filter tag provided on the
+        commandline.
+    :param time_prefix: Optional string providing a more specific time filter.
+        When provided, limit deletion to only those resources older than
+        time_prefix.
 
     If no Name tag present, assume stale and return True
 
-    Returns: True if resource should be deleted
+    :return: True if resource should be deleted
     """
     if isinstance(resource, dict):
         if "KeyName" in resource:
@@ -63,8 +80,8 @@ def delete_resource_by_tag(resource, tag, older_than_prefix):
                 continue
             tag_value = tag["Value"]
 
-    if older_than_prefix:
-        if tag_value >= older_than_prefix:  # Resource is newer
+    if time_prefix:
+        if tag_value >= time_prefix:  # Resource is newer
             return False
     if '*' in tag:
         if not re.match(tag, tag_value):
@@ -74,18 +91,17 @@ def delete_resource_by_tag(resource, tag, older_than_prefix):
     return True
 
 
-def clean_ec2(tag_prefix, older_than=None):
+def clean_ec2(tag_prefix, before_date=None):
     """Clean up all running EC2 instances, VPCs, and storage."""
     client = boto3.client('ec2')
     resource = boto3.resource('ec2')
 
-    time_prefix = get_tag_prefix(older_than)
+    time_prefix = get_time_prefix(tag_prefix, before_date)
     print('# searching for vpcs matching tag {}'.format(
         "uaclient-integration")
     )
     tag_filter = [{'Name': 'tag:Name', 'Values': [tag_prefix]}]
     vpc_filter = [{'Name': 'tag:Name', 'Values': [SHARED_VPC_TAG]}]
-    import pdb; pdb.set_trace()
     for vpc in list(resource.vpcs.filter(Filters=vpc_filter)):
         print('cleaning up vpc %s' % vpc.id)
         wait_instances = []
@@ -101,7 +117,7 @@ def clean_ec2(tag_prefix, older_than=None):
         for inst in skipped_instances:
             print(
                 "left instance %s running; newer than %s" % (
-                    inst.id, older_than
+                    inst.id, before_date
                 )
             )
         for inst in wait_instances:
@@ -113,7 +129,7 @@ def clean_ec2(tag_prefix, older_than=None):
             # CI jobs because VPCs counts are limited to 5 per region.
             # cloud-init has one vpc and uaclient a 2nd shared VPC.
             # If we have any instances running in this VPC, don't try to
-            # Remote security_groups, subnets, gateways
+            # remove security_groups, subnets, gateways
             break
         for security_group in vpc.security_groups.filter(Filters=vpc_filter):
             if not delete_resource_by_tag(
@@ -182,4 +198,4 @@ def clean_ec2(tag_prefix, older_than=None):
 
 if __name__ == '__main__':
     args = parse_args()
-    clean_ec2(args.tag, args.older_than)
+    clean_ec2(args.tag, args.before_date)
