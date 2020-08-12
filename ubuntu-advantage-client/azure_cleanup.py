@@ -5,6 +5,7 @@
 # Lucas Moura <lucas.moura@canonical.com>
 import os
 import json
+import sys
 
 from pycloudlib.azure.util import get_client
 from azure.mgmt.resource import ResourceManagementClient
@@ -15,7 +16,7 @@ import argparse
 CI_DEFAULT_TAG = "uaclient"
 
 
-def parse_args():
+def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-t", "--tag", dest="tag", action="store", default=CI_DEFAULT_TAG,
@@ -50,7 +51,7 @@ def parse_args():
             """
         )
 
-    return parser.parse_args()
+    return parser
 
 
 def clean_azure(tag, client_id, client_secret, tenant_id, subscription_id):
@@ -96,7 +97,19 @@ def load_azure_config(credentials_file):
 
 
 if __name__ == '__main__':
-    args = parse_args()
+    parser = get_parser()
+    args = parser.parse_args()
+    individ_args = all(
+        [
+            args.client_id, args.client_secret,
+            args.tenant_id, args.subscription_id
+        ]
+    )
+    if not any([args.credentials_file, individ_args]):
+        print("Either --credentials-file or tenant and client args required")
+        parser.print_help()
+        sys.exit(1)
+
     if args.credentials_file:
         if not os.path.exists(args.credentials_file):
             raise Exception("File {} could not be found".format(
