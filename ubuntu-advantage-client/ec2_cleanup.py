@@ -7,6 +7,7 @@
 import argparse
 import boto3
 import datetime
+import re
 
 
 CI_DEFAULT_TAG = "uaclient-*"
@@ -22,7 +23,7 @@ def parse_args():
     parser.add_argument(
         "-o", "--older-than", dest="older_than", action="store",
         help=("Tag used to filter cloud resources for deletion. "
-              "Format: MM/DD/YY [HH:MM:SS].)"
+              "Format: MM/DD/YY [HH:MM:SS].")
     )
     return parser.parse_args()
 
@@ -39,16 +40,25 @@ def get_tag_prefix(older_than):
         return time.strftime("uaclient-ci-%m%d")
 
 
-def is_resource_stale(resource, tag_time_prefix):
-    """Return True if the given resource is older than the tag_time_prefix.
+def delete_resource_by_tag(resource, tag, older_than_prefix):
+    """Return whether the resource is older than older_than_prefix or has tag.
 
     If no Name tag present, assume stale and return True
+
+    Returns: True if resource should be deleted
     """
     for tag in resource.tags:
         if tag["Key"] != "Name":
             continue
-        if tag["Value"] >= tag_time_prefix:
-            return False
+        tag_value = tag["Value"]
+        if older_than_prefix:
+            if tag_value >= older_than_prefix:  # Resource is newer
+                return False
+        if '*' in tag:
+            if not re.match(tag, tag_value):
+                return False  # Value !match the cmdline provided -t <regex>
+        elif tag_value != tag:
+            return False  # Value not equal the cmdline provided -t <value>
     return True
 
 
@@ -57,7 +67,7 @@ def clean_ec2(tag_prefix, older_than=None):
     client = boto3.client('ec2')
     resource = boto3.resource('ec2')
 
-    tag_time_prefix = get_tag_prefix(older_than)
+    time_prefix = get_tag_prefix(older_than)
     print('# searching for vpcs matching tag {}'.format(
         "uaclient-integration")
     )
@@ -67,10 +77,10 @@ def clean_ec2(tag_prefix, older_than=None):
         print('cleaning up vpc %s' % vpc.id)
         wait_instances = []
         skipped_instances = []
+        skipped_resources = False
         for instance in vpc.instances.all():
-            if tag_time_prefix:
-                if not is_resource_stale(instance, tag_time_prefix):
-                    skipped_instances.append(instance)
+            if not delete_resource_by_tag(instance, tag_prefix, time_prefix):
+                skipped_instances.append(instance)
             print('terminating instance %s' % instance.id)
             instance.terminate()
             wait_instances.append(instance)
@@ -86,37 +96,49 @@ def clean_ec2(tag_prefix, older_than=None):
             inst.wait_until_terminated()
 
         for security_group in vpc.security_groups.filter(Filters=tag_filter):
-            if not should_delete_resource(security_group, tag_time_prefix):
+            if not delete_resource_by_tag(
+                security_group, tag_prefix, time_prefix
+            ):
+                skipped_resources = True
                 continue
             print('terminating security group %s' % security_group.id)
             security_group.delete()
 
         for subnet in vpc.subnets.filter(Filters=tag_filter):
-            if not should_delete_resource(subnet, tag_time_prefix):
+            if not delete_resource_by_tag(subnet, tag_prefix, time_prefix):
+                skipped_resources = True
                 continue
             print('terminating subnet %s' % subnet.id)
             subnet.delete()
 
         for route_table in vpc.route_tables.filter(Filters=tag_filter):
-            if not should_delete_resource(route_table, tag_time_prefix):
+            if not delete_resource_by_tag(
+                route_table, tag_prefix, time_prefix
+            ):
+                skipped_resources = True
                 continue
             print('terminating route table %s' % route_table.id)
             route_table.delete()
 
-        for internet_gateway in vpc.internet_gateways.filter(Filters=tag_filter):
-            if not should_delete_resource(internet_gateway, tag_time_prefix):
+        for internet_gateway in vpc.internet_gateways.filter(
+            Filters=tag_filter
+        ):
+            if not delete_resource_by_tag(
+                internet_gateway, tag_prefix, time_prefix
+            ):
+                skipped_resources = True
                 continue
             print('terminating internet gateway %s' % internet_gateway.id)
             internet_gateway.detach_from_vpc(VpcId=vpc.id)
             internet_gateway.delete()
-        if not skipped_instances:
+        if not any([skipped_instances, skipped_resources]):
             print('terminating vpc %s' % vpc.id)
             vpc.delete()
 
     print('# searching for ssh keys matching tag {}'.format(tag_prefix))
     key_name = {'Name': 'key-name', 'Values': [tag_prefix]}
     for key in client.describe_key_pairs(Filters=[key_name])['KeyPairs']:
-        if not should_delete_resource(key, tag_time_prefix):
+        if not delete_resource_by_tag(key, tag_prefix, time_prefix):
             continue
         print('deleting ssh key %s' % key['KeyName'])
         client.delete_key_pair(KeyName=key['KeyName'])
@@ -125,14 +147,14 @@ def clean_ec2(tag_prefix, older_than=None):
     for image in resource.images.filter(
         Owners=['self'], Filters=tag_filter
     ).all():
-        if not should_delete_resource(image, tag_time_prefix):
+        if not delete_resource_by_tag(image, tag_prefix, time_prefix):
             continue
         print('removing custom ami %s' % image.id)
         client.deregister_image(ImageId=image.id)
 
     print('# searching for snapshots matching tag {}'.format(tag_prefix))
     for snapshot in resource.snapshots.filter(OwnerIds=['self']).all():
-        if not should_delete_resource(snapshot, tag_time_prefix):
+        if not delete_resource_by_tag(snapshot, tag_prefix, time_prefix):
             continue
         print('removing custom snapshot %s' % snapshot.id)
         client.delete_snapshot(SnapshotId=snapshot.id)
