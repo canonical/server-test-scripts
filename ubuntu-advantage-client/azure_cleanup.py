@@ -85,7 +85,14 @@ def clean_azure(tag, client_id, client_secret, tenant_id, subscription_id):
 
 def load_azure_config(credentials_file):
     with open(credentials_file, 'r') as f:
-        return json.load(f)
+        all_credentials = json.load(f)
+
+        return {
+            "client_id": all_credentials["clientId"],
+            "client_secret": all_credentials["clientSecret"],
+            "tenant_id": all_credentials["tenantId"],
+            "subscription_id": all_credentials["subscriptionId"]
+        }
 
 
 if __name__ == '__main__':
