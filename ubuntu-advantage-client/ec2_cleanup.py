@@ -12,6 +12,13 @@ import re
 
 CI_DEFAULT_TAG = "uaclient-*"
 
+# Our CI pycloudlib use reuses a single shared VPC across multiple
+# CI jobs because VPCs counts are limited to 5 per region.
+# cloud-init has one vpc and uaclient a 2nd shared VPC.
+# If we have any instances running in this VPC, don't try to
+# Remote security_groups, subnets, gateways
+SHARED_VPC_TAG = "uaclent-integration"
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -47,18 +54,23 @@ def delete_resource_by_tag(resource, tag, older_than_prefix):
 
     Returns: True if resource should be deleted
     """
-    for tag in resource.tags:
-        if tag["Key"] != "Name":
-            continue
-        tag_value = tag["Value"]
-        if older_than_prefix:
-            if tag_value >= older_than_prefix:  # Resource is newer
-                return False
-        if '*' in tag:
-            if not re.match(tag, tag_value):
-                return False  # Value !match the cmdline provided -t <regex>
-        elif tag_value != tag:
-            return False  # Value not equal the cmdline provided -t <value>
+    if isinstance(resource, dict):
+        if "KeyName" in resource:
+            tag_value = resource["KeyName"]
+    else:
+        for tag in resource.tags:
+            if tag["Key"] != "Name":
+                continue
+            tag_value = tag["Value"]
+
+    if older_than_prefix:
+        if tag_value >= older_than_prefix:  # Resource is newer
+            return False
+    if '*' in tag:
+        if not re.match(tag, tag_value):
+            return False  # Value !match the cmdline provided -t <regex>
+    elif tag_value != tag:
+        return False  # Value not equal the cmdline provided -t <value>
     return True
 
 
@@ -72,7 +84,8 @@ def clean_ec2(tag_prefix, older_than=None):
         "uaclient-integration")
     )
     tag_filter = [{'Name': 'tag:Name', 'Values': [tag_prefix]}]
-    vpc_filter = [{'Name': 'tag:Name', 'Values': ["uaclient-integration"]}]
+    vpc_filter = [{'Name': 'tag:Name', 'Values': [SHARED_VPC_TAG]}]
+    import pdb; pdb.set_trace()
     for vpc in list(resource.vpcs.filter(Filters=vpc_filter)):
         print('cleaning up vpc %s' % vpc.id)
         wait_instances = []
@@ -95,25 +108,32 @@ def clean_ec2(tag_prefix, older_than=None):
             print("waiting on %s" % inst.id)
             inst.wait_until_terminated()
 
-        for security_group in vpc.security_groups.filter(Filters=tag_filter):
+        if skipped_instances:
+            # Our CI pycloudlib use reuses a single shared VPC across multiple
+            # CI jobs because VPCs counts are limited to 5 per region.
+            # cloud-init has one vpc and uaclient a 2nd shared VPC.
+            # If we have any instances running in this VPC, don't try to
+            # Remote security_groups, subnets, gateways
+            break
+        for security_group in vpc.security_groups.filter(Filters=vpc_filter):
             if not delete_resource_by_tag(
-                security_group, tag_prefix, time_prefix
+                security_group, SHARED_VPC_TAG, time_prefix
             ):
                 skipped_resources = True
                 continue
             print('terminating security group %s' % security_group.id)
             security_group.delete()
 
-        for subnet in vpc.subnets.filter(Filters=tag_filter):
-            if not delete_resource_by_tag(subnet, tag_prefix, time_prefix):
+        for subnet in vpc.subnets.filter(Filters=vpc_filter):
+            if not delete_resource_by_tag(subnet, SHARED_VPC_TAG, time_prefix):
                 skipped_resources = True
                 continue
             print('terminating subnet %s' % subnet.id)
             subnet.delete()
 
-        for route_table in vpc.route_tables.filter(Filters=tag_filter):
+        for route_table in vpc.route_tables.filter(Filters=vpc_filter):
             if not delete_resource_by_tag(
-                route_table, tag_prefix, time_prefix
+                route_table, SHARED_VPC_TAG, time_prefix
             ):
                 skipped_resources = True
                 continue
@@ -121,17 +141,17 @@ def clean_ec2(tag_prefix, older_than=None):
             route_table.delete()
 
         for internet_gateway in vpc.internet_gateways.filter(
-            Filters=tag_filter
+            Filters=vpc_filter
         ):
             if not delete_resource_by_tag(
-                internet_gateway, tag_prefix, time_prefix
+                internet_gateway, SHARED_VPC_TAG, time_prefix
             ):
                 skipped_resources = True
                 continue
             print('terminating internet gateway %s' % internet_gateway.id)
             internet_gateway.detach_from_vpc(VpcId=vpc.id)
             internet_gateway.delete()
-        if not any([skipped_instances, skipped_resources]):
+        if not skipped_resources:
             print('terminating vpc %s' % vpc.id)
             vpc.delete()
 
