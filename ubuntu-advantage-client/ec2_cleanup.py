@@ -46,7 +46,8 @@ def get_time_prefix(tag, before_date):
     if not before_date:
        return ""
     if not tag:
-        tag = CI_DEFAULT_TAG.replace('*','')
+        tag = CI_DEFAULT_TAG
+    tag = tag.replace("*", "")
     if tag[-1] != "-":
         tag += "-"
     print('Match only resources created before %s' % before_date)
@@ -60,7 +61,6 @@ def delete_resource_by_tag(resource, tag, time_prefix):
     :param resource: Either a dict or boto3 instance related to a boto3
         resource. This can be an instance, security_group, subnet etc. SSH keys
         are processed as dictionaries which contain a KeyName key.
-
     :param tag: String provided of the generic filter tag provided on the
         commandline.
     :param time_prefix: Optional string providing a more specific time filter.
@@ -97,9 +97,7 @@ def clean_ec2(tag_prefix, before_date=None):
     resource = boto3.resource('ec2')
 
     time_prefix = get_time_prefix(tag_prefix, before_date)
-    print('# searching for vpcs matching tag {}'.format(
-        "uaclient-integration")
-    )
+    print('# searching for vpcs matching tag {}'.format(SHARED_VPC_TAG))
     tag_filter = [{'Name': 'tag:Name', 'Values': [tag_prefix]}]
     vpc_filter = [{'Name': 'tag:Name', 'Values': [SHARED_VPC_TAG]}]
     for vpc in list(resource.vpcs.filter(Filters=vpc_filter)):
