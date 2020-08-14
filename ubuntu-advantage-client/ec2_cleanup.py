@@ -17,7 +17,7 @@ CI_DEFAULT_TAG = "uaclient-*"
 # cloud-init has one vpc and uaclient a 2nd shared VPC.
 # If we have any instances running in this VPC, don't try to
 # remove security_groups, subnets, gateways
-SHARED_VPC_TAG = "uaclent-integration"
+SHARED_VPC_TAG = "uaclient-integration"
 
 
 def parse_args():
@@ -71,15 +71,15 @@ def delete_resource_by_tag(resource, tag, time_prefix):
 
     :return: True if resource should be deleted
     """
+    tag_value = ""
     if isinstance(resource, dict):
         if "KeyName" in resource:
             tag_value = resource["KeyName"]
-    else:
+    elif resource.tags:
         for tag in resource.tags:
             if tag["Key"] != "Name":
                 continue
             tag_value = tag["Value"]
-
     if time_prefix:
         if tag_value >= time_prefix:  # Resource is newer
             return False
