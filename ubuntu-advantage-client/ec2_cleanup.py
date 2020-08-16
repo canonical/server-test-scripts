@@ -76,10 +76,10 @@ def delete_resource_by_tag(resource, tag, time_prefix):
         if "KeyName" in resource:
             tag_value = resource["KeyName"]
     elif resource.tags:
-        for tag in resource.tags:
-            if tag["Key"] != "Name":
+        for resource_tag in resource.tags:
+            if resource_tag["Key"] != "Name":
                 continue
-            tag_value = tag["Value"]
+            tag_value = resource_tag["Value"]
     if time_prefix:
         if tag_value >= time_prefix:  # Resource is newer
             return False
@@ -108,6 +108,7 @@ def clean_ec2(tag_prefix, before_date=None):
         for instance in vpc.instances.all():
             if not delete_resource_by_tag(instance, tag_prefix, time_prefix):
                 skipped_instances.append(instance)
+                continue
             print('terminating instance %s' % instance.id)
             instance.terminate()
             wait_instances.append(instance)
@@ -188,8 +189,6 @@ def clean_ec2(tag_prefix, before_date=None):
 
     print('# searching for snapshots matching tag {}'.format(tag_prefix))
     for snapshot in resource.snapshots.filter(OwnerIds=['self']).all():
-        if not delete_resource_by_tag(snapshot, tag_prefix, time_prefix):
-            continue
         print('removing custom snapshot %s' % snapshot.id)
         client.delete_snapshot(SnapshotId=snapshot.id)
 
