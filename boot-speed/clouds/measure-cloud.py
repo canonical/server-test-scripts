@@ -124,7 +124,7 @@ class EC2Instspec:
 
             print("Launching instance", ninstance + 1, "of", instances, "tag:", ec2.tag)
             instance = ec2.launch(
-                daily,
+                image_id=daily,
                 instance_type=self.inst_type,
                 SubnetId=self.subnetid,
                 SecurityGroupIds=self.sgid,
@@ -191,7 +191,11 @@ class LXDInstspec:
             name = "bootspeed-" + str(int(dt.datetime.utcnow().timestamp()))
 
             print("Launching instance", ninstance + 1, "of", instances)
-            instance = lxd.launch(name, image, inst_type=self.inst_type)
+            instance = lxd.launch(
+                image_id=image,
+                instance_type=self.inst_type,
+                name=name
+            )
             print("Instance launched (%s)" % name)
 
             try:
@@ -249,7 +253,11 @@ class KVMInstspec:
             name = "bootspeed-" + str(int(dt.datetime.utcnow().timestamp()))
 
             print("Launching instance", ninstance + 1, "of", instances)
-            instance = kvm.launch(name, image, inst_type=self.inst_type)
+            instance = kvm.launch(
+                image_id=image,
+                instance_type=self.inst_type,
+                name=name
+            )
             print("Instance launched (%s)" % name)
 
             try:
