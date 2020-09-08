@@ -1,0 +1,23 @@
+#!/bin/sh
+
+set -e
+
+# set up containers
+docker-compose up -d
+sleep 5
+
+# run tests
+failed=0
+for file in tests/*_test.sh; do
+  rc=0
+  echo "$file"
+  mispipe "sh $file" "sed -e 's/ASSERT:/FAILED:/; s/^/  /'" || rc=$?
+  if [ $rc -ne 0 ]; then
+    failed=1
+  fi
+done
+
+# stop containers
+docker-compose down
+
+exit $failed

@@ -1,0 +1,20 @@
+groups:
+- name: lma-integration-tests
+  rules:
+  - alert: HighLoad
+    expr: node_load1 > 0.001
+    labels:
+      severity: normal
+    annotations:
+      description: '{{ $labels.instance }} of job {{ $labels.job }} is under high load. This is a fake alert to be triggered during the tests, the threshold is too low, not realistic.'
+      summary: Instance {{ $labels.instance }} under high load.
+      value: '{{ $value }}'
+
+  - alert: InstanceDown
+    expr: up == 0
+    for: 5m
+    labels:
+      severity: major
+    annotations:
+      summary: "Instance {{ $labels.instance }} down"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes."
