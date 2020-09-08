@@ -1,0 +1,15 @@
+# Integration tests for the LMA stack
+
+How to run tests:
+
+$ apt-get install -y docker.io docker-compose shunit2 curl
+$ ./run-tests
+
+The tests will bind the services to the following ports:
+
+* Prometheus: 9090
+* Node-exporter: 9100
+* Telegraf: 9273
+* Alertmanager: 9093
+* Grafana: 3000
+* Cortex: 9009
