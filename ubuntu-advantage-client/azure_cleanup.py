@@ -19,14 +19,14 @@ CI_DEFAULT_TAG = "uaclient"
 def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-pt", "--prefix-tag", dest="tag", action="store",
+        "-pt", "--prefix-tag", dest="prefix_tag", action="store",
         default=CI_DEFAULT_TAG,
         help=(
             "Tag used as a prefix to search for resources to be deleted."
             "Default: {}".format(CI_DEFAULT_TAG))
     )
     parser.add_argument(
-        "-st", "--suffix-tag", dest="tag", action="store",
+        "-st", "--suffix-tag", dest="suffix_tag", action="store",
         help=("Tag used as a suffix to search for resources to be deleted.")
     )
     parser.add_argument(
@@ -59,17 +59,17 @@ def get_parser():
     return parser
 
 
-def check_tag(tag, prefix_tag, end_tag):
-    """Check for a match in the tag using both prefix_tag and end_tag"""
+def check_tag(tag, prefix_tag, suffix_tag):
+    """Check for a match in the tag using both prefix_tag and suffix_tag"""
     prefix_check = tag.startswith(prefix_tag)
 
-    if end_tag:
-        prefix_check &= tag.endswith(end_tag)
+    if suffix_tag:
+        prefix_check &= tag.endswith(suffix_tag)
 
     return prefix_check
 
 
-def clean_azure(prefix_tag, end_tag, client_id, client_secret, tenant_id, subscription_id):
+def clean_azure(prefix_tag, suffix_tag, client_id, client_secret, tenant_id, subscription_id):
     """Clean up all running Azure resources and resource groups"""
     config_dict = {
         "clientId": client_id,
@@ -88,7 +88,7 @@ def clean_azure(prefix_tag, end_tag, client_id, client_secret, tenant_id, subscr
 
         if tags:
             for tag_value in tags.values():
-                if check_tag(tag, prefix_tag, end_tag):
+                if check_tag(tag, prefix_tag, suffix_tag):
                     resource_group_name = resource_group.name
                     print('# deleted resource group: {} with tag {}'.format(
                         resource_group_name, tag))
@@ -140,7 +140,8 @@ if __name__ == '__main__':
         )
     else:
         clean_azure(
-            tag=args.tag,
+            prefix_tag=args.prefix_tag,
+            suffix_tag=args.suffix_tag,
             client_id=args.client_id,
             client_secret=args.client_secret,
             tenant_id=args.tenant_id,
