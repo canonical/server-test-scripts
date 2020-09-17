@@ -10,7 +10,7 @@ import datetime
 import re
 
 
-CI_DEFAULT_TAG = "uaclient-*"
+CI_DEFAULT_TAG = "uaclient-ci-*"
 
 # Our CI pycloudlib use reuses a single shared VPC across multiple
 # CI jobs because VPCs counts are limited to 5 per region.
@@ -189,6 +189,8 @@ def clean_ec2(tag_prefix, before_date=None):
 
     print('# searching for snapshots matching tag {}'.format(tag_prefix))
     for snapshot in resource.snapshots.filter(OwnerIds=['self']).all():
+        if not delete_resource_by_tag(snapshot, tag_prefix, time_prefix):
+            continue
         print('removing custom snapshot %s' % snapshot.id)
         client.delete_snapshot(SnapshotId=snapshot.id)
 
