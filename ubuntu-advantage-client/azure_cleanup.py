@@ -82,16 +82,16 @@ def clean_azure(prefix_tag, suffix_tag, client_id, client_secret, tenant_id, sub
         ResourceManagementClient, config_dict
     )
 
-    print('# searching for resource groups matching tag {}'.format(tag))
+    print('# searching for resource groups matching tag {}'.format(prefix_tag))
     for resource_group in resource_client.resource_groups.list():
         tags = resource_group.tags
 
         if tags:
             for tag_value in tags.values():
-                if check_tag(tag, prefix_tag, suffix_tag):
+                if check_tag(tag_value, prefix_tag, suffix_tag):
                     resource_group_name = resource_group.name
                     print('# deleted resource group: {} with tag {}'.format(
-                        resource_group_name, tag))
+                        resource_group_name, tag_value))
                     result = resource_client.resource_groups.delete(
                         resource_group_name=resource_group_name
                     )
