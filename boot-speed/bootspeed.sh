@@ -34,7 +34,7 @@ tee meminfo < /proc/meminfo
 
 if ! command -v cloud-init >/dev/null; then
     touch NO-CLOUD-INIT
-elif ! timeout 20m cloud-init status --wait; then
+elif ! timeout 20m cloud-init status --wait --long; then
     # Wait for `cloud-init status --wait` to exit (with a timeout)
     touch CLOUDINIT-DID-NOT-FINISH-IN-TIME
     exit 1
