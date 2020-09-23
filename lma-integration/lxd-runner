@@ -28,7 +28,8 @@ lxc launch images:ubuntu/focal $vm --vm --ephemeral
 
 echo "[WAITING FOR VM]"
 
-# FIXME: is there a better way?
+# `lxc exec` fails if lxd-agent is not already running. Let's wait for it by
+# polling on a command that should succeed. FIXME: is there a better way?
 until lxc exec $vm -- true 2>/dev/null; do
     printf .
     sleep 2
