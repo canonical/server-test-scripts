@@ -59,7 +59,7 @@ echo "[COPYING TESTSUITE TO VM]"
 c_home=$(lxc exec $vm -- sudo --user ubuntu --login pwd)
 c_scriptpath="$c_home/$scriptdir"
 lxc file push --recursive --create-dirs "$scriptpath" "$vm/$(dirname "$c_scriptpath")"
-lxc exec $vm -- chown ubuntu:ubuntu "$c_scriptpath"
+lxc exec $vm -- chown --recursive ubuntu:ubuntu "$c_scriptpath"
 
 echo "[RUNNING TESTS]"
 
