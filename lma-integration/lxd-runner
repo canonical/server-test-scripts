@@ -1,0 +1,71 @@
+#!/bin/bash
+
+set -euf -o pipefail
+
+# Initialize $https_proxy if unset, so we can safely run with `set -u`.
+: "${https_proxy:=}"
+
+scriptpath=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
+scriptdir=$(basename "$scriptpath")
+vm="lma-integration-test"
+testrun_rc=1
+
+function cleanup {
+    # Should be safe to run even if the container/vm does not exist.
+    if lxc info "$vm" &> /dev/null; then
+        echo "[CLEANIUG UP VM '$vm']"
+        lxc delete "$vm" --force
+    fi
+}
+
+trap cleanup EXIT
+
+cleanup
+
+echo "[STARTING LXD VM '$vm']"
+
+lxc launch images:ubuntu/focal $vm --vm --ephemeral
+
+echo "[WAITING FOR VM]"
+
+# FIXME: is there a better way?
+until lxc exec $vm -- true 2>/dev/null; do
+    printf .
+    sleep 2
+done
+echo
+
+lxc exec $vm -- systemctl is-system-running --wait
+
+echo "[CONFIGURING VM]"
+
+lxc exec $vm -- apt-get -qy update
+lxc exec $vm -- apt-get -qy install eatmydata
+lxc exec $vm --env DEBIAN_FRONTEND=noninteractive -- eatmydata apt-get -qy full-upgrade
+lxc exec $vm --env DEBIAN_FRONTEND=noninteractive -- eatmydata apt-get -qy install docker.io docker-compose moreutils shunit2 curl
+lxc exec $vm -- usermod -a -G docker ubuntu
+
+if [[ -n $https_proxy ]]; then
+    echo "[SETTING UP HTTP PROXY]"
+    lxc exec $vm -- mkdir /etc/systemd/system/docker.service.d
+    lxc exec $vm -- sh -c "printf '[Service]\nEnvironment="'"HTTPS_PROXY='"$https_proxy"'"'"\n' > /etc/systemd/system/docker.service.d/https-proxy.conf"
+    lxc exec $vm -- systemctl daemon-reload
+    lxc exec $vm -- systemctl restart docker
+fi
+
+echo "[COPYING TESTSUITE TO VM]"
+
+c_home=$(lxc exec $vm -- sudo --user ubuntu --login pwd)
+c_scriptpath="$c_home/$scriptdir"
+lxc file push --recursive --create-dirs "$scriptpath" "$vm/$(dirname "$c_scriptpath")"
+lxc exec $vm -- chown ubuntu:ubuntu "$c_scriptpath"
+
+echo "[RUNNING TESTS]"
+
+lxc exec $vm --cwd "$c_scriptpath" -- sudo --user ubuntu CLICOLOR=0 ./run-tests && testrun_rc=0
+
+cleanup
+
+((testrun_rc == 0)) && echo "[SUCCESS]" || echo "[FAILURE]"
+
+exit $testrun_rc
