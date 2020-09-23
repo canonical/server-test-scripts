@@ -39,10 +39,10 @@ lxc exec $vm -- systemctl is-system-running --wait
 
 echo "[CONFIGURING VM]"
 
-lxc exec $vm -- apt-get -qy update
-lxc exec $vm -- apt-get -qy install eatmydata
-lxc exec $vm --env DEBIAN_FRONTEND=noninteractive -- eatmydata apt-get -qy full-upgrade
-lxc exec $vm --env DEBIAN_FRONTEND=noninteractive -- eatmydata apt-get -qy install docker.io docker-compose moreutils shunit2 curl
+lxc exec $vm -- apt-get --quiet update
+lxc exec $vm --env DEBIAN_FRONTEND=noninteractive -- apt-get --quiet --yes install eatmydata
+lxc exec $vm --env DEBIAN_FRONTEND=noninteractive -- eatmydata apt-get --quiet --yes full-upgrade
+lxc exec $vm --env DEBIAN_FRONTEND=noninteractive -- eatmydata apt-get --quiet --yes install docker.io docker-compose moreutils shunit2 curl
 lxc exec $vm -- usermod -a -G docker ubuntu
 
 if [[ -n $https_proxy ]]; then
