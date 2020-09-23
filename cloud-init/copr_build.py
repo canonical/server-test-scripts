@@ -14,21 +14,20 @@ import time
 
 import copr
 
-ID_CLOUD_INIT = 13995
-ID_CLOUD_INIT_DEV = 14567
-TEST_CHROOTS = ['epel-8-x86_64']
 URL_COPR = "https://copr.fedorainfracloud.org/coprs/g/cloud-init"
+PROJECT_OWNER = "@cloud-init"
+DEFAULT_PROJECT = "cloud-init"
 
 DEFAULT_COPR_CONF = os.path.expanduser('~/.config/copr')
 
 
 def check_test_chroot(tasks):
     """Checks the status of specific chroots for testing."""
-    print('\nChecking stauts of test chroot(s):\n')
-    for chroot in TEST_CHROOTS:
+    print('\nChecking status of test chroot(s):\n')
+    for chroot in ARGS.test_chroots:
         if chroot not in tasks:
             raise Exception('chroot {} unexpectedly not in tasks ({})'.format(
-                chroot, tasks))
+                chroot, tasks.keys()))
         print('%24s: %s' % (chroot, tasks[chroot]))
         if tasks[chroot] != 'succeeded':
             print('Build failed!')
@@ -101,15 +100,24 @@ def mention_expiration_on_creds(conf_file):
         print(''.join(["  %s\n" % l for l in exp_lines]))
 
 
-def main(srpm, copr_conf=DEFAULT_COPR_CONF, dev=None):
+def main(srpm, copr_conf=DEFAULT_COPR_CONF, project_name=DEFAULT_PROJECT):
     """Query COPR info."""
     if not os.path.isfile(srpm):
         print("Error: The given SRPM is not a file:\n%s" % srpm)
         sys.exit(1)
 
-    project_id = ID_CLOUD_INIT_DEV if dev else ID_CLOUD_INIT
     client = copr.create_client2_from_file_config(copr_conf)
-    project = client.projects.get_one(project_id)
+
+    project = client.projects.get_list(
+        owner=PROJECT_OWNER,
+        name=project_name
+    )
+
+    if not project:
+        print("Project not found: %s/%s" % (PROJECT_OWNER, project_name))
+        sys.exit(1)
+
+    project = project[0]
 
     print(datetime.datetime.now())
     try:
@@ -134,14 +142,20 @@ def main(srpm, copr_conf=DEFAULT_COPR_CONF, dev=None):
 
 
 if __name__ == '__main__':
-    ARGPARSER = argparse.ArgumentParser(description='cloud-init copr script')
+    ARGPARSER = argparse.ArgumentParser(
+        description='cloud-init copr script',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     ARGPARSER.add_argument('-c', '--config', dest='copr_conf', action='store',
                            help='copr config file location',
                            default=DEFAULT_COPR_CONF)
-    ARGPARSER.add_argument('-d', '--dev', dest='dev', action='store_true',
-                           help='use cloud-init-dev instead of cloud-init')
     ARGPARSER.add_argument('-s', '--srpm', dest='srpm', action='store',
                            required=True, help='srpm file')
+    ARGPARSER.add_argument('-p', '--project', action='store',
+                           default=DEFAULT_PROJECT, help='copr project name')
+    ARGPARSER.add_argument('-t', '--test-chroot', action='append',
+                           dest="test_chroots", metavar="CHROOT", default=[],
+                           help="verify that the build succeeded in %(metavar)s.")
     ARGS = ARGPARSER.parse_args()
 
-    main(ARGS.srpm, ARGS.copr_conf, ARGS.dev)
+    main(ARGS.srpm, ARGS.copr_conf, ARGS.project)
