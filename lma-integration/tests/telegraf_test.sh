@@ -12,7 +12,7 @@ test_prometheus_output() {
 
 test_http_output() {
   # the http output is configured to send the data to localhost port 8080
-  response=$(nc -q 0 -w 20 -l -p 8080)
+  response=$(nc -w 20 -l -p 8080)
 
   echo $response | grep diskio > /dev/null
   assertTrue $?
