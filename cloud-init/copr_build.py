@@ -149,8 +149,8 @@ if __name__ == '__main__':
     ARGPARSER.add_argument('-c', '--config', dest='copr_conf', action='store',
                            help='copr config file location',
                            default=DEFAULT_COPR_CONF)
-    ARGPARSER.add_argument('-s', '--srpm', dest='srpm', action='store',
-                           required=True, help='srpm file')
+    ARGPARSER.add_argument('srpm', metavar='SRPM', action='store',
+                           help='srpm file')
     ARGPARSER.add_argument('-p', '--project', action='store',
                            default=DEFAULT_PROJECT, help='copr project name')
     ARGPARSER.add_argument('-t', '--test-chroot', action='append',
