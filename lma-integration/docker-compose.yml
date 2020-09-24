@@ -2,7 +2,7 @@ version: '2'
 
 services:
     prometheus:
-        image: kanashiro/prometheus:2.20.1-1
+        image: squeakywheel/prometheus:2.20.1-1
         network_mode: "host"
         ports:
             - 9090:9090
@@ -17,7 +17,7 @@ services:
             - 9100:9100
 
     telegraf:
-        image: kanashiro/telegraf:1.15.2
+        image: squeakywheel/telegraf:1.15.2-1
         network_mode: "host"
         ports:
             - 9273:9273
@@ -25,7 +25,7 @@ services:
             - ./config/telegraf.conf:/etc/telegraf/telegraf.conf
 
     alertmanager:
-        image: kanashiro/prometheus-alertmanager:0.21.0-1
+        image: squeakywheel/prometheus-alertmanager:0.21.0-1
         network_mode: "host"
         ports:
             - 9093:9093
@@ -41,7 +41,7 @@ services:
             - ./config/grafana/provisioning/:/etc/grafana/provisioning/
 
     cortex:
-        image: cortexproject/cortex:v1.2.0
+        image: squeakywheel/cortex:1.2.0-3
         network_mode: "host"
         ports:
             - 9009:9009
