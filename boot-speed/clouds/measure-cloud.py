@@ -8,19 +8,23 @@ Paride Legovini <paride.legovini@canonical.com>
 
 import argparse
 import datetime as dt
-import distro_info
 import glob
 import json
 import logging
-import paramiko
+import os
 import platform
+import shutil
+import sys
 import tarfile
 import tempfile
 import time
-import os
+
+from pathlib import Path
+from socket import timeout
+
+import distro_info
+import paramiko
 import pycloudlib
-import shutil
-import sys
 
 from botocore.exceptions import ClientError
 
@@ -30,8 +34,6 @@ from paramiko.ssh_exception import (
     NoValidConnectionsError,
 )
 
-from pathlib import Path
-from socket import timeout
 
 known_clouds = ["kvm", "lxd", "ec2", "gce"]
 distro_metanames = ("lts", "stable", "latest", "devel")
@@ -97,8 +99,9 @@ class EC2Instspec:
         ec2.use_key(self.ssh_pubkey_path, self.ssh_privkey_path, self.ssh_keypair_name)
 
         # Will also catch unknown inst types raising a meaningful exception
-        inst_specs = ec2.client.describe_instance_types(
-            InstanceTypes=[self.inst_type])['InstanceTypes'][0]
+        inst_specs = ec2.client.describe_instance_types(InstanceTypes=[self.inst_type])[
+            "InstanceTypes"
+        ][0]
 
         arch = "amd64"
         if "arm64" in inst_specs["ProcessorInfo"]["SupportedArchitectures"]:
@@ -192,9 +195,7 @@ class LXDInstspec:
 
             print("Launching instance", ninstance + 1, "of", instances)
             instance = lxd.launch(
-                image_id=image,
-                instance_type=self.inst_type,
-                name=name
+                image_id=image, instance_type=self.inst_type, name=name
             )
             print("Instance launched (%s)" % name)
 
@@ -254,9 +255,7 @@ class KVMInstspec:
 
             print("Launching instance", ninstance + 1, "of", instances)
             instance = kvm.launch(
-                image_id=image,
-                instance_type=self.inst_type,
-                name=name
+                image_id=image, instance_type=self.inst_type, name=name
             )
             print("Instance launched (%s)" % name)
 
@@ -285,28 +284,30 @@ def ssh_hammer(instance):
     # Hammer the instance via SSH to record the first SSH login time.
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    private_key = paramiko.RSAKey.from_private_key_file(instance.key_pair.private_key_path)
+    private_key = paramiko.RSAKey.from_private_key_file(
+        instance.key_pair.private_key_path
+    )
 
     timeout_start = time.time()
     # Let's be patient here: metal instances are slow to start.
     timeout_delta = 900
 
     while time.time() < timeout_start + timeout_delta:
-        ip = instance.ip
-        if not ip:
+        instip = instance.ip
+        if not instip:
             time.sleep(0.2)
             continue
 
         try:
             client.connect(
                 username="ubuntu",
-                hostname=ip,
+                hostname=instip,
                 pkey=private_key,
                 timeout=1,
                 banner_timeout=1,
                 auth_timeout=1,
             )
-            client.exec_command('true')
+            client.exec_command("true")
         except (
             timeout,
             AuthenticationException,
@@ -484,41 +485,41 @@ def main():
 
 
 def parse_args():
-    PARSER = argparse.ArgumentParser()
-    PARSER.add_argument(
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
         "-c", "--cloud", help="Cloud to measure", choices=known_clouds, required=True
     )
-    PARSER.add_argument("-t", "--inst-type", help="Instance type", default="t2.micro")
-    PARSER.add_argument(
+    parser.add_argument("-t", "--inst-type", help="Instance type", default="t2.micro")
+    parser.add_argument(
         "-r", "--release", help="Ubuntu release to measure", required=True
     )
-    PARSER.add_argument("--reboots", help="Number of reboots", default=1, type=int)
-    PARSER.add_argument("--instances", help="Number of instances", default=1, type=int)
-    PARSER.add_argument(
+    parser.add_argument("--reboots", help="Number of reboots", default=1, type=int)
+    parser.add_argument("--instances", help="Number of instances", default=1, type=int)
+    parser.add_argument(
         "--ssh-pubkey-path",
         help="Override pycloudlib's " "default for the SSH public key to use",
         default=None,
     )
-    PARSER.add_argument(
+    parser.add_argument(
         "--ssh-privkey-path",
         help="Override pycloudlib's " "default for the SSH private key to sue",
         default=None,
     )
-    PARSER.add_argument(
+    parser.add_argument(
         "--ssh-keypair-name",
         help="Override pycloudlib's " " default for the SSH keypair name",
         default=None,
     )
-    PARSER.add_argument("--ec2-subnetid", help="AWS EC2 SubnetId", default="")
-    PARSER.add_argument(
+    parser.add_argument("--ec2-subnetid", help="AWS EC2 SubnetId", default="")
+    parser.add_argument(
         "--ec2-availability-zone", help="AWS EC2 Availability Zone", default=""
     )
-    PARSER.add_argument(
+    parser.add_argument(
         "--ec2-sgid", help="AWS EC2 SecurityGroupId", action="append", default=[]
     )
-    PARSER.add_argument("--region", help="Cloud region")
-    ARGS = PARSER.parse_args()
-    return ARGS
+    parser.add_argument("--region", help="Cloud region")
+    args = parser.parse_args()
+    return args
 
 
 if __name__ == "__main__":
