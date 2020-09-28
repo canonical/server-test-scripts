@@ -73,7 +73,8 @@ systemd_version=$(systemd --version | grep -oP -m 1 'systemd \K[0-9]+')
 . /etc/os-release
 
 if [ "$NAME" != "Ubuntu Core" ]; then
-    sudo apt-get -y install pciutils usbutils
+    sudo apt-get -qy update
+    sudo apt-get -qy install pciutils usbutils
     dpkg-query --list > dpkg-query.out 2>&1 || true
     sudo lspci -vvv > lspci.out 2>&1 || true
     sudo lsusb -v > lsusb.out 2>&1 || true
