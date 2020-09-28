@@ -3,11 +3,21 @@
 set -ex
 set -o pipefail
 
+. /etc/os-release
+
 export LC_ALL="C.UTF-8"
 
 echo
 echo "### Running $0 on the provisioned system"
 echo
+
+# Do not refresh the snaps for the moment.
+# Regular Ubuntu Server images do not auto-reboot on snap refreshes as Core
+# does, but we want to keep the measurement scripts as similar as possible.
+if [[ "$NAME" == Ubuntu* ]]; then
+    echo "Holding snap auto-refresh"
+    sudo snap set system refresh.hold="$(date --date=tomorrow +%Y-%m-%dT%H:%M:%S%:z)"
+fi
 
 rm -rf artifacts
 mkdir -v artifacts
@@ -70,7 +80,6 @@ systemd_version=$(systemd --version | grep -oP -m 1 'systemd \K[0-9]+')
 # /etc/fstab not present in some cases, e.g. in the Groovy LXD images.
 [ -f /etc/fstab ] && cp -v /etc/fstab .
 
-. /etc/os-release
 
 if [ "$NAME" != "Ubuntu Core" ]; then
     sudo apt-get -qy update
