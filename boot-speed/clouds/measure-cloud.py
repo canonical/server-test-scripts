@@ -425,10 +425,6 @@ def measure_instance(instance, datadir, reboots=1):
         print("Pull the tarball")
         instance.pull_file(bootdir + ".tar.gz", bootdir + ".tar.gz")
 
-        if nboot == 0 and reboots:
-            print("Refresh snaps")
-            instance.execute("sudo snap refresh")
-
     for tarball in glob.glob("boot_*.tar.gz"):
         with tarfile.open(tarball, "r:gz") as tar:
             tar.extractall(path=datadir)
