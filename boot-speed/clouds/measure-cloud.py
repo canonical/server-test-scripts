@@ -99,7 +99,7 @@ class EC2Instspec:
             + " | [?starts_with(Name, 'debian-sid-')] | max_by([], &Name)",
         ]
 
-        daily_md = subprocess.check_output(cmd, text=True)
+        daily_md = subprocess.check_output(cmd, universal_newlines=True)
         daily_md = json.loads(daily_md)
         ami = daily_md["ImageId"]
         serial = re.search(
