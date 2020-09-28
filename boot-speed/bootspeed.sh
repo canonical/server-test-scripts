@@ -80,8 +80,12 @@ if [ "$NAME" != "Ubuntu Core" ]; then
     sudo lsusb -v > lsusb.out 2>&1 || true
 fi
 
-snap debug timings --ensure=seed > snap_debug_timings
-snap list > snap_list
+if [[ $NAME == Ubuntu* ]]; then
+    echo "Saving snap debug timings"
+    snap debug timings --ensure=seed > snap_debug_timings
+    snap list > snap_list
+fi
+
 ls -l > directory-listing
 
 touch measurement-successful
