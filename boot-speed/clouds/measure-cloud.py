@@ -13,7 +13,9 @@ import json
 import logging
 import os
 import platform
+import re
 import shutil
+import subprocess
 import sys
 import tarfile
 import tempfile
@@ -75,6 +77,37 @@ class EC2Instspec:
         if region:
             self.region = region
 
+    def debian_sid_daily_image(self, arch):
+        # https://noah.meyerhans.us/2020/03/04/daily-vm-image-builds-are-available-from-the-cloud-team/
+        if arch == "amd64":
+            arch = "x86_64"
+
+        cmd = [
+            "aws",
+            "ec2",
+            "describe-images",
+            "--owner",
+            "903794441882",
+            "--region",
+            self.region,
+            "--output",
+            "json",
+            "--query",
+            "Images[?Architecture=='"
+            + arch
+            + "']"
+            + " | [?starts_with(Name, 'debian-sid-')] | max_by([], &Name)",
+        ]
+
+        daily_md = subprocess.check_output(cmd, text=True)
+        daily_md = json.loads(daily_md)
+        ami = daily_md["ImageId"]
+        serial = re.search(
+            r"daily build ([0-9]+-[0-9]+)", daily_md["Description"]
+        ).group(1)
+
+        return ami, serial
+
     def measure(self, datadir, instances=1, reboots=1):
         """
         Measure Amazon AWS EC2.
@@ -107,12 +140,23 @@ class EC2Instspec:
         if "arm64" in inst_specs["ProcessorInfo"]["SupportedArchitectures"]:
             arch = "arm64"
 
-        daily = ec2.daily_image(release=release, arch=arch)
-        serial = ec2.image_serial(daily)
+        image_username = "ubuntu"
+
+        if release.startswith("debian-"):
+            image_username = "admin"
+            debrelease = re.search(r"debian-(.*)", release).group(1)
+            if debrelease == "sid":
+                daily, serial = self.debian_sid_daily_image(arch)
+            else:
+                raise NotImplementedError
+        else:
+            daily = ec2.daily_image(release=release, arch=arch)
+            serial = ec2.image_serial(daily)
 
         print("Instance architecture:", arch)
         print("Daily image for", release, "is", daily)
         print("Image serial:", serial)
+        print("Instance username:", image_username)
 
         for ninstance in range(instances):
             instance_data = Path(datadir, "instance_" + str(ninstance))
@@ -134,6 +178,7 @@ class EC2Instspec:
                 Placement={"AvailabilityZone": self.availability_zone},
                 wait=False,
             )
+            instance.username = image_username
 
             try:
                 measure_instance(instance, instance_data, reboots)
@@ -300,7 +345,7 @@ def ssh_hammer(instance):
 
         try:
             client.connect(
-                username="ubuntu",
+                username=instance.username,
                 hostname=instip,
                 pkey=private_key,
                 timeout=1,
@@ -335,14 +380,6 @@ def measure_instance(instance, datadir, reboots=1):
     if instance._type == "ec2":
         ssh_hammer(instance)
 
-    # Do not refresh the snaps for the moment.
-    # Regular Ubuntu Server images do not auto-reboot on snap refreshes as Core
-    # does, but we want to keep the measurement scripts as similar as possible.
-
-    instance.execute(
-        "sudo snap set system refresh.hold="
-        '"$(date --date=tomorrow +%Y-%m-%dT%H:%M:%S%:z)"'
-    )
     instance.execute(
         "wget https://raw.githubusercontent.com/canonical/"
         "server-test-scripts/master/boot-speed/bootspeed.sh"
@@ -363,7 +400,6 @@ def measure_instance(instance, datadir, reboots=1):
             else:
                 instance.restart(wait=True)
 
-        instance.execute("rm -rf artifacts")
         outstr = instance.execute("./bootspeed.sh 2>&1")
         print(outstr)
         outstr = instance.execute("find artifacts")
