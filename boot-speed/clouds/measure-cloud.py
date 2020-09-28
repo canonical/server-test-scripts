@@ -2,7 +2,7 @@
 """
 Measure the boot speed of cloud instances.
 
-Copyright 2019 Canonical Ltd.
+Copyright 2019-2020 Canonical Ltd.
 Paride Legovini <paride.legovini@canonical.com>
 """
 
