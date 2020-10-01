@@ -2,7 +2,7 @@ version: '2'
 
 services:
     prometheus:
-        image: squeakywheel/prometheus:2.20.1-1
+        image: squeakywheel/prometheus:edge
         network_mode: "host"
         ports:
             - 9090:9090
@@ -17,7 +17,7 @@ services:
             - 9100:9100
 
     telegraf:
-        image: squeakywheel/telegraf:1.15.2-1
+        image: squeakywheel/telegraf:edge
         network_mode: "host"
         ports:
             - 9273:9273
@@ -25,15 +25,15 @@ services:
             - ./config/telegraf.conf:/etc/telegraf/telegraf.conf
 
     alertmanager:
-        image: squeakywheel/prometheus-alertmanager:0.21.0-1
+        image: squeakywheel/prometheus-alertmanager:edge
         network_mode: "host"
         ports:
             - 9093:9093
         volumes:
-            - ./config/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+            - ./config/alertmanager.yml:/etc/prometheus/alertmanager.yml
 
     grafana:
-        image: grafana/grafana:7.1.3-ubuntu
+        image: squeakywheel/grafana:edge
         network_mode: "host"
         ports:
             - 3000:3000
@@ -41,7 +41,7 @@ services:
             - ./config/grafana/provisioning/:/etc/grafana/provisioning/
 
     cortex:
-        image: squeakywheel/cortex:1.2.0-3
+        image: squeakywheel/cortex:edge
         network_mode: "host"
         ports:
             - 9009:9009
