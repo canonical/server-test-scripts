@@ -1,2 +1,4 @@
 .vscode
 results.xml
+lma-integration/k8s/manifests/deployments.yaml
+lma-integration/k8s/data

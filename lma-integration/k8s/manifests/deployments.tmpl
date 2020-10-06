@@ -1,0 +1,144 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres
+        env:
+        - name: POSTGRES_PASSWORD
+          value: "secret"
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data/
+        ports:
+        - containerPort: 5432
+          name: postgres
+          protocol: TCP
+      - name: telegraf
+        image: telegraf
+        env:
+        - name: HOST_PROC
+          value: "/hostfs/proc"
+        - name: HOST_SYS
+          value: "/hostfs/sys"
+        volumeMounts:
+        - name: telegraf-config
+          mountPath: /etc/telegraf/telegraf.conf
+        - name: hostfs-proc
+          mountPath: /hostfs/proc
+          readOnly: true
+        - name: hostfs-sys
+          mountPath: /hostfs/sys
+          readOnly: true
+        ports:
+        - containerPort: 9273
+          name: telegraf
+          protocol: TCP
+      volumes:
+        - name: hostfs-proc
+          hostPath:
+            path: /proc
+            type: Directory
+        - name: hostfs-sys
+          hostPath:
+            path: /sys
+            type: Directory
+        - name: postgres-data
+          hostPath:
+            path: ${PWD}/data/postgres
+            type: DirectoryOrCreate
+        - name: telegraf-config
+          hostPath:
+            path: ${PWD}/config/telegraf/telegraf.conf
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus
+        volumeMounts:
+        - name: prometheus-config
+          mountPath: /etc/prometheus/prometheus.yml
+        - name: prometheus-alerts-config
+          mountPath: /etc/prometheus/alerts.yml
+        - name: prometheus-data
+          mountPath: /prometheus/
+        ports:
+        - containerPort: 9090
+          name: prometheus
+          protocol: TCP
+      - name: alertmanager
+        image: prom/alertmanager
+        volumeMounts:
+        - name: alertmanager-config
+          mountPath: /etc/prometheus/alertmanager.yml
+        ports:
+        - containerPort: 9093
+          name: alertmanager
+          protocol: TCP
+      volumes:
+        - name: prometheus-config
+          hostPath:
+            path: ${PWD}/config/prometheus/prometheus.yml
+        - name: prometheus-alerts-config
+          hostPath:
+            path: ${PWD}/config/prometheus/alerts.yml
+        - name: prometheus-data
+          hostPath:
+            path: ${PWD}/data/prometheus/
+            type: DirectoryOrCreate
+        - name: alertmanager-config
+          hostPath:
+            path: ${PWD}/config/prometheus-alertmanager/alertmanager.yml
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana
+        volumeMounts:
+        - name: grafana-provisioning
+          mountPath: /etc/grafana/provisioning/
+        ports:
+        - containerPort: 3000
+          name: grafana
+          protocol: TCP
+      volumes:
+        - name: grafana-provisioning
+          hostPath:
+            path: ${PWD}/config/grafana/provisioning/
