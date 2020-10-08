@@ -59,6 +59,37 @@ def get_parser():
     return parser
 
 
+@contextmanager
+def emit_dots_on_travis():
+    """
+    A context manager that emits a dot every 10 seconds if running on Travis.
+    Travis will kill jobs that don't emit output for a certain amount of time.
+    This context manager spins up a background process which will emit a dot to
+    stdout every 10 seconds to avoid being killed.
+    It should be wrapped selectively around operations that are known to take a
+    long time.
+
+    PS: This function was originally created for cloud-init integration tests.
+    It was added at PR #347.
+    """
+    if os.environ.get('TRAVIS') != "true":
+        # If we aren't on Travis, don't do anything.
+        yield
+        return
+
+    def emit_dots():
+        while True:
+            print(".")
+            time.sleep(10)
+
+    dot_process = multiprocessing.Process(target=emit_dots)
+    dot_process.start()
+    try:
+        yield
+    finally:
+        dot_process.terminate()
+
+
 def check_tag(tag, prefix_tag, suffix_tag):
     """Check for a match in the tag using both prefix_tag and suffix_tag"""
     prefix_check = tag.startswith(prefix_tag)
@@ -95,7 +126,10 @@ def clean_azure(prefix_tag, suffix_tag, client_id, client_secret, tenant_id, sub
                     result = resource_client.resource_groups.delete(
                         resource_group_name=resource_group_name
                     )
-                    result.wait()
+
+                    with emit_dots_on_travis():
+                        result.wait()
+
                     break
 
 
