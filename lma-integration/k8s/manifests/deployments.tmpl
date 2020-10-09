@@ -148,7 +148,10 @@ spec:
           mountPath: /etc/grafana/provisioning/datasources/datasource.yml
           subPath: datasource.yml
         - name: grafana-config-volume
-          mountPath: /etc/grafana/provisioning/system-stats-dashboard.json
+          mountPath: /etc/grafana/provisioning/dashboards/dashboard.yml
+          subPath: dashboard.yml
+        - name: grafana-config-volume
+          mountPath: /etc/grafana/provisioning/dashboards/system-stats-dashboard.json
           subPath: system-stats-dashboard.json
         ports:
         - containerPort: 3000
@@ -161,5 +164,7 @@ spec:
             items:
             - key: grafana-datasource
               path: datasource.yml
+            - key: grafana-dashboard-definition
+              path: dashboard.yml
             - key: grafana-dashboard
               path: system-stats-dashboard.json

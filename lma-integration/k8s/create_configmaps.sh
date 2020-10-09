@@ -16,4 +16,5 @@ microk8s kubectl create configmap prometheus-config \
 # Grafana config
 microk8s kubectl create configmap grafana-config \
 	--from-file=grafana-datasource=k8s/config/grafana/provisioning/datasources/datasource.yml \
-	--from-file=grafana-dashboard=k8s/config/grafana/provisioning/system-stats-dashboard.json
+	--from-file=grafana-dashboard-definition=k8s/config/grafana/provisioning/dashboards/dashboard.yml \
+	--from-file=grafana-dashboard=k8s/config/grafana/provisioning/dashboards/system-stats-dashboard.json
