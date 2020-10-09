@@ -56,11 +56,12 @@ spec:
             type: Directory
         - name: postgres-data
           hostPath:
-            path: ${PWD}/data/postgres
+            path: ${PWD}/k8s/data/postgres
             type: DirectoryOrCreate
         - name: telegraf-config
           hostPath:
-            path: ${PWD}/config/telegraf/telegraf.conf
+            path: ${PWD}/k8s/config/telegraf/telegraf.conf
+            type: File
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -102,17 +103,20 @@ spec:
       volumes:
         - name: prometheus-config
           hostPath:
-            path: ${PWD}/config/prometheus/prometheus.yml
+            path: ${PWD}/k8s/config/prometheus/prometheus.yml
+            type: File
         - name: prometheus-alerts-config
           hostPath:
-            path: ${PWD}/config/prometheus/alerts.yml
+            path: ${PWD}/k8s/config/prometheus/alerts.yml
+            type: File
         - name: prometheus-data
           hostPath:
-            path: ${PWD}/data/prometheus/
+            path: ${PWD}/k8s/data/prometheus/
             type: DirectoryOrCreate
         - name: alertmanager-config
           hostPath:
-            path: ${PWD}/config/prometheus-alertmanager/alertmanager.yml
+            path: ${PWD}/k8s/config/prometheus-alertmanager/alertmanager.yml
+            type: File
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -141,4 +145,5 @@ spec:
       volumes:
         - name: grafana-provisioning
           hostPath:
-            path: ${PWD}/config/grafana/provisioning/
+            path: ${PWD}/k8s/config/grafana/provisioning/
+            type: Directory
