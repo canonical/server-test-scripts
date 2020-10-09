@@ -1,3 +1,27 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgresql-volume-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: microk8s-hostpath
+  resources:
+    requests:
+      storage: 500M
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-volume-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: microk8s-hostpath
+  resources:
+    requests:
+      storage: 500M
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,6 +42,9 @@ spec:
         env:
         - name: POSTGRES_PASSWORD
           value: "secret"
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data/
         ports:
         - containerPort: 5432
           name: postgres
@@ -58,6 +85,9 @@ spec:
             items:
             - key: telegraf
               path: telegraf.conf
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: postgresql-volume-claim
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -83,6 +113,8 @@ spec:
         - name: prometheus-config-volume
           mountPath: /etc/prometheus/alerts.yml
           subPath: alerts.yml
+        - name: prometheus-data
+          mountPath: /prometheus
         ports:
         - containerPort: 9090
           name: prometheus
@@ -106,6 +138,9 @@ spec:
               path: prometheus.yml
             - key: prometheus-alerts
               path: alerts.yml
+        - name: prometheus-data
+          persistentVolumeClaim:
+            claimName: prometheus-volume-claim
         - name: alertmanager-config-volume
           configMap:
             name: alertmanager-config

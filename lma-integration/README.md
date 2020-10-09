@@ -18,7 +18,7 @@ The tests will bind the services to the following ports:
 
 ## microk8s
 
-First of all, a microk8s instance needs to be running with the dns addon enabled.
+First of all, a microk8s instance needs to be running with the dns and storage addons enabled.
 
 Currently, the defined cluster contains the following pods:
 
