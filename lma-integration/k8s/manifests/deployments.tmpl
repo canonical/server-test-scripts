@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: postgres
-        image: postgres
+        image: squeakywheel/postgres:edge
         env:
         - name: POSTGRES_PASSWORD
           value: "secret"
@@ -26,7 +26,7 @@ spec:
           name: postgres
           protocol: TCP
       - name: telegraf
-        image: telegraf
+        image: squeakywheel/telegraf:edge
         env:
         - name: HOST_PROC
           value: "/hostfs/proc"
@@ -78,7 +78,7 @@ spec:
     spec:
       containers:
       - name: prometheus
-        image: prom/prometheus
+        image: squeakywheel/prometheus:edge
         volumeMounts:
         - name: prometheus-config
           mountPath: /etc/prometheus/prometheus.yml
@@ -91,7 +91,7 @@ spec:
           name: prometheus
           protocol: TCP
       - name: alertmanager
-        image: prom/alertmanager
+        image: squeakywheel/prometheus-alertmanager:edge
         volumeMounts:
         - name: alertmanager-config
           mountPath: /etc/prometheus/alertmanager.yml
@@ -130,7 +130,7 @@ spec:
     spec:
       containers:
       - name: grafana
-        image: grafana/grafana
+        image: squeakywheel/grafana:edge
         volumeMounts:
         - name: grafana-provisioning
           mountPath: /etc/grafana/provisioning/
