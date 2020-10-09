@@ -33,8 +33,9 @@ spec:
         - name: HOST_SYS
           value: "/hostfs/sys"
         volumeMounts:
-        - name: telegraf-config
+        - name: telegraf-config-volume
           mountPath: /etc/telegraf/telegraf.conf
+          subPath: telegraf.conf
         - name: hostfs-proc
           mountPath: /hostfs/proc
           readOnly: true
@@ -58,10 +59,12 @@ spec:
           hostPath:
             path: ${PWD}/k8s/data/postgres
             type: DirectoryOrCreate
-        - name: telegraf-config
-          hostPath:
-            path: ${PWD}/k8s/config/telegraf/telegraf.conf
-            type: File
+        - name: telegraf-config-volume
+          configMap:
+            name: telegraf-config
+            items:
+            - key: telegraf
+              path: telegraf.conf
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -81,10 +84,12 @@ spec:
       - name: prometheus
         image: squeakywheel/prometheus:edge
         volumeMounts:
-        - name: prometheus-config
+        - name: prometheus-config-volume
           mountPath: /etc/prometheus/prometheus.yml
-        - name: prometheus-alerts-config
+          subPath: prometheus.yml
+        - name: prometheus-config-volume
           mountPath: /etc/prometheus/alerts.yml
+          subPath: alerts.yml
         - name: prometheus-data
           mountPath: /prometheus/
         ports:
@@ -94,29 +99,32 @@ spec:
       - name: alertmanager
         image: squeakywheel/prometheus-alertmanager:edge
         volumeMounts:
-        - name: alertmanager-config
-          mountPath: /etc/prometheus/alertmanager.yml
+        - name: alertmanager-config-volume
+          mountPath: /etc/alertmanager/alertmanager.yml
+          subPath: alertmanager.yml
         ports:
         - containerPort: 9093
           name: alertmanager
           protocol: TCP
       volumes:
-        - name: prometheus-config
-          hostPath:
-            path: ${PWD}/k8s/config/prometheus/prometheus.yml
-            type: File
-        - name: prometheus-alerts-config
-          hostPath:
-            path: ${PWD}/k8s/config/prometheus/alerts.yml
-            type: File
+        - name: prometheus-config-volume
+          configMap:
+            name: prometheus-config
+            items:
+            - key: prometheus
+              path: prometheus.yml
+            - key: prometheus-alerts
+              path: alerts.yml
         - name: prometheus-data
           hostPath:
             path: ${PWD}/k8s/data/prometheus/
             type: DirectoryOrCreate
-        - name: alertmanager-config
-          hostPath:
-            path: ${PWD}/k8s/config/prometheus-alertmanager/alertmanager.yml
-            type: File
+        - name: alertmanager-config-volume
+          configMap:
+            name: alertmanager-config
+            items:
+            - key: alertmanager
+              path: alertmanager.yml
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -136,14 +144,22 @@ spec:
       - name: grafana
         image: squeakywheel/grafana:edge
         volumeMounts:
-        - name: grafana-provisioning
-          mountPath: /etc/grafana/provisioning/
+        - name: grafana-config-volume
+          mountPath: /etc/grafana/provisioning/datasources/datasource.yml
+          subPath: datasource.yml
+        - name: grafana-config-volume
+          mountPath: /etc/grafana/provisioning/system-stats-dashboard.json
+          subPath: system-stats-dashboard.json
         ports:
         - containerPort: 3000
           name: grafana
           protocol: TCP
       volumes:
-        - name: grafana-provisioning
-          hostPath:
-            path: ${PWD}/k8s/config/grafana/provisioning/
-            type: Directory
+        - name: grafana-config-volume
+          configMap:
+            name: grafana-config
+            items:
+            - key: grafana-datasource
+              path: datasource.yml
+            - key: grafana-dashboard
+              path: system-stats-dashboard.json

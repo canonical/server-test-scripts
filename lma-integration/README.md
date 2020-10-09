@@ -26,6 +26,10 @@ Currently, the defined cluster contains the following pods:
 * prometheus-deployment: It contains one prometheus and one alertmanager container.
 * postgres-deployment: It contains one grafana container.
 
+Creating the configMaps needed:
+
+$ k8s/create_configmaps.sh
+
 k8s does not support relative paths to point to volumes to be mount, so we need
 to generate the deployments manifest based on the template:
 
