@@ -18,9 +18,6 @@ spec:
         env:
         - name: POSTGRES_PASSWORD
           value: "secret"
-        volumeMounts:
-        - name: postgres-data
-          mountPath: /var/lib/postgresql/data/
         ports:
         - containerPort: 5432
           name: postgres
@@ -55,10 +52,6 @@ spec:
           hostPath:
             path: /sys
             type: Directory
-        - name: postgres-data
-          hostPath:
-            path: ${PWD}/k8s/data/postgres
-            type: DirectoryOrCreate
         - name: telegraf-config-volume
           configMap:
             name: telegraf-config
@@ -90,8 +83,6 @@ spec:
         - name: prometheus-config-volume
           mountPath: /etc/prometheus/alerts.yml
           subPath: alerts.yml
-        - name: prometheus-data
-          mountPath: /prometheus/
         ports:
         - containerPort: 9090
           name: prometheus
@@ -115,10 +106,6 @@ spec:
               path: prometheus.yml
             - key: prometheus-alerts
               path: alerts.yml
-        - name: prometheus-data
-          hostPath:
-            path: ${PWD}/k8s/data/prometheus/
-            type: DirectoryOrCreate
         - name: alertmanager-config-volume
           configMap:
             name: alertmanager-config

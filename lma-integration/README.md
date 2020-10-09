@@ -30,22 +30,6 @@ Creating the configMaps needed:
 
 $ k8s/create_configmaps.sh
 
-k8s does not support relative paths to point to volumes to be mount, so we need
-to generate the deployments manifest based on the template:
-
-$ PWD=$(pwd) envsubst < k8s/manifests/deployments.tmpl > k8s/manifests/deployments.yaml
-
-Let's create the directories to store the persistent data:
-
-$ mkdir -p k8s/data/prometheus
-$ mkdir -p k8s/data/postgres
-
-There is a known permission issue to bindmount a prometheus directory with its
-data (https://github.com/prometheus/prometheus/issues/5976). In order to
-workaround that you can run:
-
-$ chown -R 65534:65534 k8s/data/prometheus
-
 With all that in place, apply the manifests:
 
 $ microk8s kubectl apply -f k8s/manifests/deployments.yaml
