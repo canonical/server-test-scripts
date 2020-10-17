@@ -3,6 +3,7 @@
 
 # Copyright 2020 Canonical Ltd.
 # Lucas Moura <lucas.moura@canonical.com>
+from contextlib import contextmanager
 import os
 import json
 import sys
