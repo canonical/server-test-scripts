@@ -4,9 +4,11 @@
 # Copyright 2020 Canonical Ltd.
 # Lucas Moura <lucas.moura@canonical.com>
 from contextlib import contextmanager
+import multiprocessing
 import os
 import json
 import sys
+import time
 
 from pycloudlib.azure.util import get_client
 from azure.mgmt.resource import ResourceManagementClient
@@ -101,7 +103,10 @@ def check_tag(tag, prefix_tag, suffix_tag):
     return prefix_check
 
 
-def clean_azure(prefix_tag, suffix_tag, client_id, client_secret, tenant_id, subscription_id):
+def clean_azure(
+    prefix_tag, suffix_tag, client_id, client_secret, tenant_id,
+    subscription_id
+):
     """Clean up all running Azure resources and resource groups"""
     config_dict = {
         "clientId": client_id,
