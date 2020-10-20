@@ -14,8 +14,6 @@ test_services_status() {
   assertTrue $?
   echo $response | grep -A1 store | grep Running > /dev/null
   assertTrue $?
-  echo $response | grep -A1 runtime-config | grep Running > /dev/null
-  assertTrue $?
   echo $response | grep -A1 table-manager | grep Running > /dev/null
   assertTrue $?
   echo $response | grep -A1 query-frontend | grep Running > /dev/null
