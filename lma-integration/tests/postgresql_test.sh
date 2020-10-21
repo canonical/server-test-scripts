@@ -76,6 +76,7 @@ test_default_database_name() {
 }
 
 test_persistent_volume_keeps_changes() {
+    debug "Creating persistent volume"
     volume=$(docker volume create)
     assertNotNull "Failed to create a volume" "${volume}"
     debug "Launching container"
@@ -91,9 +92,9 @@ test_persistent_volume_keeps_changes() {
     ready_log="database system is ready to accept connections"
     wait_container_ready "${container}" "${ready_log}"
 
-    debug "Creating test database with data"
     # Create test database
     test_db="test_db_${id}"
+    debug "Creating test database ${test_db}"
     psql postgresql://postgres:${password}@127.0.0.1/postgres -q -c \
         "CREATE DATABASE ${test_db};"
     out=$(psql postgresql://postgres:${password}@127.0.0.1 -q -l -A -t -F % | grep "^${test_db}" | cut -d % -f 1)
@@ -101,6 +102,7 @@ test_persistent_volume_keeps_changes() {
 
     # create test table
     test_table="test_data_${id}"
+    debug "Creating test table ${test_table} with data"
     psql postgresql://postgres:${password}@127.0.0.1/${test_db} -q <<EOF
 CREATE TABLE ${test_table} (id INT, description TEXT);
 INSERT INTO ${test_table} (id,description) VALUES (${id}, 'hello');
