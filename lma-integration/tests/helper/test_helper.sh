@@ -9,6 +9,17 @@ load_shunit2() {
   fi
 }
 
+debug() {
+    if [ -n "${DEBUG_TESTS}" ]; then
+        if [ "${1}" = "-n" ]; then
+            shift
+            echo -n "$@"
+        else
+            echo "$@"
+        fi
+    fi
+}
+
 stop_container_sync() {
     local id=${1}
     local timeout=10
@@ -32,10 +43,10 @@ wait_container_ready() {
     local logs
 
 	max=${timeout}
-    echo -n "Waiting for container to be ready "
+    debug -n "Waiting for container to be ready "
     logs=$(docker logs ${id} 2>&1 | tail -n 1)
     while ! echo "${logs}" | grep -q "${msg}"; do
-        echo -n "."
+        debug -n "."
         sleep 1
 		timeout=$(($timeout-1))
         if [ "${timeout}" -le 0 ]; then
@@ -43,7 +54,7 @@ wait_container_ready() {
         fi
         logs=$(docker logs ${id} 2>&1 | tail -n 1)
     done
-    echo
+    debug
 }
 
 

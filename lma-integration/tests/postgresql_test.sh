@@ -23,7 +23,7 @@ tearDown() {
 test_persistent_volume_keeps_changes() {
     volume=$(docker volume create)
     assertNotNull "Failed to create a volume" "${volume}"
-    echo "Launching container"
+    debug "Launching container"
     container=$(docker run --rm -d \
         -e POSTGRES_PASSWORD=${password} \
         -p 5432:5432 \
@@ -36,7 +36,7 @@ test_persistent_volume_keeps_changes() {
     ready_log="database system is ready to accept connections"
     wait_container_ready "${container}" "${ready_log}"
 
-    echo "Creating test database with data"
+    debug "Creating test database with data"
     # Create test database
     test_db="test_db_${id}"
     psql postgresql://postgres:${password}@127.0.0.1/postgres -q -c \
@@ -60,7 +60,7 @@ EOF
     # must still be there
     # By using the same --name also makes sure the previous container is really
     # gone, otherwise the new one wouldn't start
-    echo "Launching new container with same volume"
+    debug "Launching new container with same volume"
     container=$(docker run --rm -d \
         -p 5432:5432 \
         --mount source=${volume},target=/var/lib/postgresql/data \
@@ -70,7 +70,7 @@ EOF
     ready_log="database system is ready to accept connections"
     wait_container_ready "${container}" "${ready_log}"
     # data we created previously should still be there
-    echo "Verifying database ${test_db} and table ${test_table} are there with our data"
+    debug "Verifying database ${test_db} and table ${test_table} are there with our data"
     out=$(psql -F % -A -t postgresql://postgres:${password}@127.0.0.1/${test_db} -q -c \
         "SELECT * FROM ${test_table};")
     assertEquals "Failed to verify test table" "${id}%hello" "${out}"
