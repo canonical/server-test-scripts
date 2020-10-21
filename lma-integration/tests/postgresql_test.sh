@@ -8,14 +8,6 @@
 #  setUp() - run before each test
 #  tearDown() - run after each test
 
-oneTimeSetUp() {
-    docker volume prune --force &>/dev/null
-}
-
-oneTimeTearDown() {
-    docker volume prune --force &>/dev/null
-}
-
 setUp() {
     password=$(dd if=/dev/urandom bs=1 count=16 2>/dev/null | md5sum | head -c 16)
     id=$$
