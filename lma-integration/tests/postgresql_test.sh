@@ -17,17 +17,19 @@ oneTimeTearDown() {
 }
 
 setUp() {
-    volume=$(docker volume create)
     password=$(dd if=/dev/urandom bs=1 count=16 2>/dev/null | md5sum | head -c 16)
     id=$$
 }
 
 tearDown() {
     stop_container_sync "${container}"
-    docker volume rm "${volume}" &>/dev/null
+    if [ -n "${volume}" ]; then
+        docker volume rm "${volume}" &>/dev/null
+    fi
 }
 
 test_persistent_volume() {
+    volume=$(docker volume create)
     assertNotNull "Failed to create a volume" "${volume}"
     echo "Launching container"
     container=$(docker run --rm -d \
