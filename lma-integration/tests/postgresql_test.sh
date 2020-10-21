@@ -78,6 +78,7 @@ EOF
     ready_log="database system is ready to accept connections"
     wait_container_ready "${container}" "${ready_log}"
     # data we created previously should still be there
+    echo "Verifying database ${test_db} and table ${test_table} are there with our data"
     out=$(psql -F % -A -t postgresql://postgres:${password}@127.0.0.1/${test_db} -q -c \
         "SELECT * FROM ${test_table};")
     assertEquals "Failed to verify test table" "${id}%hello" "${out}"
