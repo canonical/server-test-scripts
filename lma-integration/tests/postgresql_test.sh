@@ -20,6 +20,39 @@ tearDown() {
     fi
 }
 
+test_set_admin_user() {
+# POSTGRES_USER
+# This optional environment variable is used in conjunction with
+# POSTGRES_PASSWORD to set a user and its password. This variable will create
+# the specified user with superuser power and a database with the same name. If
+# it is not specified, then the default user of postgres will be used.
+    admin_user="user${id}"
+    debug "Creating container with POSTGRES_USER=${admin_user}"
+    container=$(docker run --rm -d \
+        -e POSTGRES_USER=${admin_user} \
+        -e POSTGRES_PASSWORD=${password} \
+        -p 5432:5432 \
+        --name postgresql_test_${id} \
+        squeakywheel/postgres:edge \
+    )
+    assertNotNull "${container}"
+    ready_log="database system is ready to accept connections"
+    wait_container_ready "${container}" "${ready_log}"
+    debug "Testing connection as ${admin_user}, looking for \"postgres\" DB"
+    # default db is still "postgres"
+    out=$(psql postgresql://${admin_user}:${password}@127.0.0.1 -q -l -A -t -F % | grep "^postgres" | cut -d % -f 1)
+    assertEquals "DB listing did not include \"postgres\"" postgres "${out}"
+    # Verify we can create a new DB, since we are an admin
+    test_db="test_db${id}"
+    debug "Trying to create a new DB called ${test_db} as user ${admin_user}"
+    psql postgresql://${admin_user}:${password}@127.0.0.1 -q -c \
+        "CREATE DATABASE ${test_db};"
+    # list DB
+    debug "Verifying DB ${test_db} was created"
+    out=$(psql postgresql://${admin_user}:${password}@127.0.0.1 -q -l -A -t -F % | grep "^${test_db}" | cut -d % -f 1)
+    assertEquals "DB listing did not include \"postgres\"" "${test_db}" "${out}"
+}
+
 test_default_database_name() {
 # POSTGRES_DB
 # This optional environment variable can be used to define a different name for
