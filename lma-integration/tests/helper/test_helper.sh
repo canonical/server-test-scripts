@@ -14,7 +14,7 @@ stop_container_sync() {
     local timeout=10
     max=$timeout
     docker container stop ${id} &>/dev/null
-    while docker container ls | grep -q "${id}"; do
+    while docker container ls --no-trunc | grep -q "${id}"; do
         sleep 1
         timeout=$(($timeout-1))
         if [ "$timeout" -le 0 ]; then
