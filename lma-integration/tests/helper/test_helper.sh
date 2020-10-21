@@ -18,8 +18,7 @@ stop_container_sync() {
         sleep 1
         timeout=$(($timeout-1))
         if [ "$timeout" -le 0 ]; then
-            echo "ERROR, failed to stop container ${id} in ${max} seconds"
-            return 1
+            fail "ERROR, failed to stop container ${id} in ${max} seconds"
         fi
     done
 }
@@ -40,8 +39,7 @@ wait_container_ready() {
         sleep 1
 		timeout=$(($timeout-1))
         if [ "${timeout}" -le 0 ]; then
-            echo "ERROR, failed to start container ${id} in ${max} seconds"
-            return 1
+            fail "ERROR, failed to start container ${id} in ${max} seconds"
         fi
         logs=$(docker logs ${id} 2>&1 | tail -n 1)
     done
