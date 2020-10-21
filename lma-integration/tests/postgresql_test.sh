@@ -20,7 +20,7 @@ tearDown() {
     fi
 }
 
-test_persistent_volume() {
+test_persistent_volume_keeps_changes() {
     volume=$(docker volume create)
     assertNotNull "Failed to create a volume" "${volume}"
     echo "Launching container"
