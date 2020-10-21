@@ -23,10 +23,7 @@ setUp() {
 }
 
 tearDown() {
-    docker container stop "${container}" &>/dev/null
-    while docker container ls | grep -q "${container}"; do
-        sleep 1
-    done
+    stop_container_sync "${container}"
     docker volume rm "${volume}" &>/dev/null
 }
 
@@ -42,15 +39,8 @@ test_persistent_volume() {
     )
     assertNotNull "${container}"
     # wait for it to be ready
-    echo -n "Waiting for container to be ready "
-    logs=$(docker logs ${container} 2>&1 | tail -n 1)
-    ready="database system is ready to accept connections"
-    while ! echo "${logs}" | grep -q "${ready}"; do
-        echo -n "."
-        sleep 1
-        logs=$(docker logs ${container} 2>&1 | tail -n 1)
-    done
-    echo
+    ready_log="database system is ready to accept connections"
+    wait_container_ready "${container}" "${ready_log}"
 
     echo "Creating test database with data"
     # Create test database
@@ -71,10 +61,7 @@ EOF
     assertEquals "Failed to verify test table" "${id}%hello" "${out}"
 
     # stop container, which deletes it because it was launched with --rm
-    docker container stop ${container} &>/dev/null
-    while docker container ls | grep -q "${container}"; do
-        sleep 1
-    done
+    stop_container_sync ${container}
     # launch another one with the same volume, and the data we created above
     # must still be there
     # By using the same --name also makes sure the previous container is really
@@ -86,15 +73,9 @@ EOF
         --name postgresql_test_${id} \
         squeakywheel/postgres:edge \
     )
-    echo -n "Waiting for container to be ready "
-    logs=$(docker logs ${container} 2>&1 | tail -n 1)
-    ready="database system is ready to accept connections"
-    while ! echo "${logs}" | grep -q "${ready}"; do
-        echo -n "."
-        sleep 1
-        logs=$(docker logs ${container} 2>&1 | tail -n 1)
-    done
-    echo
+    ready_log="database system is ready to accept connections"
+    wait_container_ready "${container}" "${ready_log}"
+    # data we created previously should still be there
     out=$(psql -F % -A -t postgresql://postgres:${password}@127.0.0.1/${test_db} -q -c \
         "SELECT * FROM ${test_table};")
     assertEquals "Failed to verify test table" "${id}%hello" "${out}"
