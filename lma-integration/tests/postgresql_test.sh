@@ -16,7 +16,7 @@ setUp() {
 tearDown() {
     stop_container_sync "${container}"
     if [ -n "${volume}" ]; then
-        docker volume rm "${volume}" &>/dev/null
+        docker volume rm "${volume}" > /dev/null 2>&1
     fi
 }
 
