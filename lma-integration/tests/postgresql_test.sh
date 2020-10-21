@@ -20,6 +20,28 @@ tearDown() {
     fi
 }
 
+test_default_database_name() {
+# POSTGRES_DB
+# This optional environment variable can be used to define a different name for
+# the default database that is created when the image is first started. If it
+# is not specified, then the value of POSTGRES_USER will be used.
+    test_db="database${id}"
+    debug "Creating container with POSTGRES_DB=${test_db}"
+    container=$(docker run --rm -d \
+        -e POSTGRES_DB=${test_db} \
+        -e POSTGRES_PASSWORD=${password} \
+        -p 5432:5432 \
+        --name postgresql_test_${id} \
+        squeakywheel/postgres:edge \
+    )
+    assertNotNull "${container}"
+    ready_log="database system is ready to accept connections"
+    wait_container_ready "${container}" "${ready_log}"
+    debug "Checking if database ${test_db} was created"
+    out=$(psql postgresql://postgres:${password}@127.0.0.1 -q -l -A -t -F % | grep "^${test_db}" | cut -d % -f 1)
+    assertEquals "Failed to create test database" "${test_db}" "${out}"
+}
+
 test_persistent_volume_keeps_changes() {
     volume=$(docker volume create)
     assertNotNull "Failed to create a volume" "${volume}"
