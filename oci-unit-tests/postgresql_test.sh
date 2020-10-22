@@ -23,6 +23,12 @@ tearDown() {
     fi
 }
 
+wait_postgres_container_ready() {
+    local container="${1}"
+    local log="\[1\] LOG:\s*database system is ready to accept connections"
+    wait_container_ready "${container}" "${log}"
+}
+
 test_set_admin_user() {
 # POSTGRES_USER
 # This optional environment variable is used in conjunction with
@@ -39,8 +45,7 @@ test_set_admin_user() {
         ${image} \
     )
     assertNotNull "Failed to start the container" "${container}" || return 1
-    ready_log="database system is ready to accept connections"
-    wait_container_ready "${container}" "${ready_log}"
+    wait_postgres_container_ready "${container}" || return 1
     debug "Testing connection as ${admin_user}, looking for \"postgres\" DB"
     # default db is still "postgres"
     out=$(psql postgresql://${admin_user}:${password}@127.0.0.1 -q -l -A -t -F % | grep "^postgres" | cut -d % -f 1)
@@ -71,8 +76,7 @@ test_default_database_name() {
         ${image} \
     )
     assertNotNull "Failed to start the container" "${container}" || return 1
-    ready_log="database system is ready to accept connections"
-    wait_container_ready "${container}" "${ready_log}"
+    wait_postgres_container_ready "${container}" || return 1
     debug "Checking if database ${test_db} was created"
     out=$(psql postgresql://postgres:${password}@127.0.0.1 -q -l -A -t -F % | grep "^${test_db}" | cut -d % -f 1)
     assertEquals "Failed to create test database" "${test_db}" "${out}" || return 1
@@ -92,8 +96,7 @@ test_persistent_volume_keeps_changes() {
     )
     assertNotNull "Failed to start the container" "${container}" || return 1
     # wait for it to be ready
-    ready_log="database system is ready to accept connections"
-    wait_container_ready "${container}" "${ready_log}"
+    wait_postgres_container_ready "${container}" || return 1
 
     # Create test database
     test_db="test_db_${id}"
