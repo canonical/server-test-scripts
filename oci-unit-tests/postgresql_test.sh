@@ -11,6 +11,7 @@
 setUp() {
     password=$(dd if=/dev/urandom bs=1 count=16 2>/dev/null | md5sum | head -c 16)
     id=$$
+    image="squeakywheel/postgres:edge"
 }
 
 tearDown() {
@@ -35,7 +36,7 @@ test_set_admin_user() {
         -e POSTGRES_PASSWORD=${password} \
         -p 5432:5432 \
         --name postgresql_test_${id} \
-        squeakywheel/postgres:edge \
+        ${image} \
     )
     assertNotNull "Failed to start the container" "${container}" || return 1
     ready_log="database system is ready to accept connections"
@@ -67,7 +68,7 @@ test_default_database_name() {
         -e POSTGRES_PASSWORD=${password} \
         -p 5432:5432 \
         --name postgresql_test_${id} \
-        squeakywheel/postgres:edge \
+        ${image} \
     )
     assertNotNull "${container}" || return 1
     ready_log="database system is ready to accept connections"
@@ -87,7 +88,7 @@ test_persistent_volume_keeps_changes() {
         -p 5432:5432 \
         --mount source=${volume},target=/var/lib/postgresql/data \
         --name postgresql_test_${id} \
-        squeakywheel/postgres:edge \
+        ${image} \
     )
     assertNotNull "${container}" || return 1
     # wait for it to be ready
@@ -124,7 +125,7 @@ EOF
         -p 5432:5432 \
         --mount source=${volume},target=/var/lib/postgresql/data \
         --name postgresql_test_${id} \
-        squeakywheel/postgres:edge \
+        ${image} \
     )
     ready_log="database system is ready to accept connections"
     wait_container_ready "${container}" "${ready_log}"
