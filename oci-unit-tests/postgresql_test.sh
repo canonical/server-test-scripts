@@ -37,13 +37,13 @@ test_set_admin_user() {
         --name postgresql_test_${id} \
         squeakywheel/postgres:edge \
     )
-    assertNotNull "${container}"
+    assertNotNull "Failed to start the container" "${container}" || return 1
     ready_log="database system is ready to accept connections"
     wait_container_ready "${container}" "${ready_log}"
     debug "Testing connection as ${admin_user}, looking for \"postgres\" DB"
     # default db is still "postgres"
     out=$(psql postgresql://${admin_user}:${password}@127.0.0.1 -q -l -A -t -F % | grep "^postgres" | cut -d % -f 1)
-    assertEquals "DB listing did not include \"postgres\"" postgres "${out}"
+    assertEquals "DB listing did not include \"postgres\"" postgres "${out}" || return 1
     # Verify we can create a new DB, since we are an admin
     test_db="test_db${id}"
     debug "Trying to create a new DB called ${test_db} as user ${admin_user}"
@@ -52,7 +52,7 @@ test_set_admin_user() {
     # list DB
     debug "Verifying DB ${test_db} was created"
     out=$(psql postgresql://${admin_user}:${password}@127.0.0.1 -q -l -A -t -F % | grep "^${test_db}" | cut -d % -f 1)
-    assertEquals "DB listing did not include \"postgres\"" "${test_db}" "${out}"
+    assertEquals "DB listing did not include \"postgres\"" "${test_db}" "${out}" || return 1
 }
 
 test_default_database_name() {
@@ -69,18 +69,18 @@ test_default_database_name() {
         --name postgresql_test_${id} \
         squeakywheel/postgres:edge \
     )
-    assertNotNull "${container}"
+    assertNotNull "${container}" || return 1
     ready_log="database system is ready to accept connections"
     wait_container_ready "${container}" "${ready_log}"
     debug "Checking if database ${test_db} was created"
     out=$(psql postgresql://postgres:${password}@127.0.0.1 -q -l -A -t -F % | grep "^${test_db}" | cut -d % -f 1)
-    assertEquals "Failed to create test database" "${test_db}" "${out}"
+    assertEquals "Failed to create test database" "${test_db}" "${out}" || return 1
 }
 
 test_persistent_volume_keeps_changes() {
     debug "Creating persistent volume"
     volume=$(docker volume create)
-    assertNotNull "Failed to create a volume" "${volume}"
+    assertNotNull "Failed to create a volume" "${volume}" || return 1
     debug "Launching container"
     container=$(docker run --rm -d \
         -e POSTGRES_PASSWORD=${password} \
@@ -89,7 +89,7 @@ test_persistent_volume_keeps_changes() {
         --name postgresql_test_${id} \
         squeakywheel/postgres:edge \
     )
-    assertNotNull "${container}"
+    assertNotNull "${container}" || return 1
     # wait for it to be ready
     ready_log="database system is ready to accept connections"
     wait_container_ready "${container}" "${ready_log}"
@@ -100,7 +100,7 @@ test_persistent_volume_keeps_changes() {
     psql postgresql://postgres:${password}@127.0.0.1/postgres -q -c \
         "CREATE DATABASE ${test_db};"
     out=$(psql postgresql://postgres:${password}@127.0.0.1 -q -l -A -t -F % | grep "^${test_db}" | cut -d % -f 1)
-    assertEquals "Failed to create test database" "${test_db}" "${out}"
+    assertEquals "Failed to create test database" "${test_db}" "${out}" || return 1
 
     # create test table
     test_table="test_data_${id}"
@@ -111,7 +111,7 @@ INSERT INTO ${test_table} (id,description) VALUES (${id}, 'hello');
 EOF
     out=$(psql -F % -A -t postgresql://postgres:${password}@127.0.0.1/${test_db} -q -c \
         "SELECT * FROM ${test_table};")
-    assertEquals "Failed to verify test table" "${id}%hello" "${out}"
+    assertEquals "Failed to verify test table" "${id}%hello" "${out}" || return 1
 
     # stop container, which deletes it because it was launched with --rm
     stop_container_sync ${container}
@@ -132,7 +132,7 @@ EOF
     debug "Verifying database ${test_db} and table ${test_table} are there with our data"
     out=$(psql -F % -A -t postgresql://postgres:${password}@127.0.0.1/${test_db} -q -c \
         "SELECT * FROM ${test_table};")
-    assertEquals "Failed to verify test table" "${id}%hello" "${out}"
+    assertEquals "Failed to verify test table" "${id}%hello" "${out}" || return 1
 }
 
 load_shunit2
