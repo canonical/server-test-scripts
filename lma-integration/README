@@ -1,9 +1,13 @@
 # Integration tests for the LMA stack
 
-How to run tests:
+How to run tests locally:
 
-$ apt-get install -y docker.io docker-compose shunit2 curl
+$ apt-get install -y docker.io docker-compose
 $ ./run-tests
+
+You can also run the tests inside a VM by doing:
+
+$ ./lxd-runner
 
 The tests will bind the services to the following ports:
 
