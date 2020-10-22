@@ -5,7 +5,7 @@ datasources:
     type: prometheus
     access: proxy
     orgId: 1
-    url: http://127.0.0.1:9009/api/prom
+    url: http://cortex:9009/api/prom
     basicAuth: false
     isDefault: true
     editable: true
