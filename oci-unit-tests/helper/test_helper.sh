@@ -42,7 +42,7 @@ wait_container_ready() {
 	local timeout=10
     local logs
 
-	max=${timeout}
+    max=${timeout}
     debug -n "Waiting for container to be ready "
     logs=$(docker logs ${id} 2>&1 | tail -n 1)
     while ! echo "${logs}" | grep -q "${msg}"; do
