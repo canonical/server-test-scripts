@@ -83,6 +83,8 @@ test_default_database_name() {
 }
 
 test_persistent_volume_keeps_changes() {
+# Verify that a container launched with a volume that already has a DB in it
+# won't re-initialize it, thus preserving the data.
     debug "Creating persistent volume"
     volume=$(docker volume create)
     assertNotNull "Failed to create a volume" "${volume}" || return 1
