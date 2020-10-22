@@ -40,7 +40,7 @@ stop_container_sync() {
 wait_container_ready() {
     local id="${1}"
     local msg="${2}"
-	local timeout=10
+    local timeout=10
     local logs
 
     max=${timeout}
