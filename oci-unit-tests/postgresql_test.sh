@@ -70,7 +70,7 @@ test_default_database_name() {
         --name postgresql_test_${id} \
         ${image} \
     )
-    assertNotNull "${container}" || return 1
+    assertNotNull "Failed to start the container" "${container}" || return 1
     ready_log="database system is ready to accept connections"
     wait_container_ready "${container}" "${ready_log}"
     debug "Checking if database ${test_db} was created"
@@ -90,7 +90,7 @@ test_persistent_volume_keeps_changes() {
         --name postgresql_test_${id} \
         ${image} \
     )
-    assertNotNull "${container}" || return 1
+    assertNotNull "Failed to start the container" "${container}" || return 1
     # wait for it to be ready
     ready_log="database system is ready to accept connections"
     wait_container_ready "${container}" "${ready_log}"
