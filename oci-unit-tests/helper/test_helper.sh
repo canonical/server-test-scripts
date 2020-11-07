@@ -20,10 +20,13 @@ debug() {
     fi
 }
 
+# $1: container id
+# $2: timeout (optional).  If not specified, defaults to 10 seconds
 stop_container_sync() {
     local id=${1}
-    local timeout=10
-    max=$timeout
+    local timeout="${2:-10}"
+    local max=$timeout
+
     docker container stop ${id} > /dev/null 2>&1
     while docker container ls --no-trunc 2>&1 | grep -q "${id}"; do
         sleep 1
@@ -37,15 +40,16 @@ stop_container_sync() {
 
 # $1: container id
 # $2: last message to look for in logs
+# $3: timeout (optional).  If not specified, defaults to 5 seconds
 wait_container_ready() {
     local id="${1}"
     local msg="${2}"
-    local timeout=10
+    local timeout="${3:-5}"
     local logs
+    local max=${timeout}
 
-    max=${timeout}
     debug -n "Waiting for container to be ready "
-    logs=$(docker logs ${id} 2>&1 | tail -n 1)
+    logs=$(docker logs ${id} --tail 1 2>&1)
     while ! echo "${logs}" | grep -qE "${msg}"; do
         debug -n "."
         sleep 1
@@ -54,7 +58,7 @@ wait_container_ready() {
             fail "ERROR, failed to start container ${id} in ${max} seconds"
             return 1
         fi
-        logs=$(docker logs ${id} 2>&1 | tail -n 1)
+        logs=$(docker logs ${id} --tail 1 2>&1)
     done
     debug
 }
