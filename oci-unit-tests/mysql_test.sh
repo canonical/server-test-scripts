@@ -76,7 +76,7 @@ wait_mysql_container_ready() {
     local container="${1}"
     local log="\[System\] \[MY-[0-9]+\] \[Server\] /usr/sbin/mysqld: ready for connections\."
     # mysqld takes a long time to start.
-    local timeout=60
+    local timeout=300
 
     wait_container_ready "${container}" "${log}" "${timeout}"
 }
