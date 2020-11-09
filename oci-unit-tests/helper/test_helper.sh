@@ -40,11 +40,11 @@ stop_container_sync() {
 
 # $1: container id
 # $2: last message to look for in logs
-# $3: timeout (optional).  If not specified, defaults to 5 seconds
+# $3: timeout (optional).  If not specified, defaults to 30 seconds
 wait_container_ready() {
     local id="${1}"
     local msg="${2}"
-    local timeout="${3:-5}"
+    local timeout="${3:-30}"
     local logs
     local max=${timeout}
 
