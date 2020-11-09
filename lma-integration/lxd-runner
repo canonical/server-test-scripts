@@ -36,7 +36,9 @@ until lxc exec $vm -- true 2>/dev/null; do
 done
 echo
 
-lxc exec $vm -- systemctl is-system-running --wait
+# Ignore the is-system-running exit status, currently nonzero because of
+# https://bugs.launchpad.net/ubuntu/+source/linux-kvm/+bug/1866149
+lxc exec $vm -- systemctl is-system-running --wait || true
 
 echo "[CONFIGURING VM]"
 
