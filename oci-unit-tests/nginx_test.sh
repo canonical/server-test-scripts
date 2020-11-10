@@ -1,5 +1,6 @@
 # shellcheck shell=dash
 
+# shellcheck disable=SC1090
 . "$(dirname "$0")/helper/test_helper.sh"
 
 # cheat sheet:
@@ -12,33 +13,37 @@
 
 # The name of the temporary docker network we will create for the
 # tests.
-readonly DOCKER_NETWORK=nginx_test
+readonly DOCKER_PREFIX=oci_nginx_test
+readonly DOCKER_NETWORK="${DOCKER_PREFIX}_network"
 readonly DOCKER_IMAGE="squeakywheel/nginx:edge"
 
 oneTimeSetUp() {
+    # Cleanup stale resources
+    tearDown
+    oneTimeTearDown
+
+    # Setup network
     docker network create $DOCKER_NETWORK > /dev/null 2>&1
 }
 
-setUp() {
-    id=$$
-}
-
 oneTimeTearDown() {
-    docker network rm $DOCKER_NETWORK > /dev/null 2>&1
+        docker network rm $DOCKER_NETWORK > /dev/null 2>&1
 }
 
 tearDown() {
-    if [ -n "${container}" ]; then
+    for container in $(docker ps --filter "name=$DOCKER_PREFIX" --format "{{.Names}}"); do
+        debug "Removing container ${container}"
         stop_container_sync "${container}"
-    fi
+    done
 }
 
 docker_run_server() {
+    suffix=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 8 | head -n 1)
     docker run \
        --network $DOCKER_NETWORK \
        --rm \
        -d \
-       --name nginx_test_${id} \
+       --name "${DOCKER_PREFIX}_${suffix}" \
        "$@" \
        $DOCKER_IMAGE
 }
@@ -102,7 +107,7 @@ test_static_files_read_only_mode() {
 
 test_custom_config() {
     debug "Creating container with custom config"
-    custom_config="$PWD/nginx_test_data/nginx.conf"
+    custom_config="$PWD/nginx_test_data/nginx_simple.conf"
     test_data_wwwroot="$PWD/nginx_test_data/html"
     container=$(docker_run_server -p 48080:80 -v "$custom_config:/etc/nginx/nginx.conf:ro" -v "$test_data_wwwroot:/srv/www/html:ro")
 
@@ -114,5 +119,25 @@ test_custom_config() {
 
     assertEquals "${orig_checksum}" "${retrieved_checksum}"
 }
+
+test_reverse_proxy() {
+    debug "Creating nginx container serving known data"
+    # Override the random --name from docker_run_server()
+    container=$(docker_run_server --name "${DOCKER_PREFIX}_backend" -p 48080:80 -v "$test_data_wwwroot:/var/www/html:ro")
+    assertNotNull "Failed to start the container" "${container}" || return 1
+    wait_nginx_container_ready "${container}" || return 1
+    orig_checksum=$(md5sum "$test_data_wwwroot/test.txt" | awk '{ print $1 }')
+    retrieved_checksum=$(curl -sS http://127.0.0.1:48080/test.txt | md5sum | awk '{ print $1 }')
+    assertEquals "${orig_checksum}" "${retrieved_checksum}"
+
+    debug "Creating reverse proxy nginx container"
+    rp_config="$PWD/nginx_test_data/nginx_reverse_proxy.conf"
+    rp_container=$(docker_run_server -p 48070:48070 -v "$rp_config:/etc/nginx/nginx.conf:ro")
+    assertNotNull "Failed to start the container" "${rp_container}" || return 1
+    wait_nginx_container_ready "${rp_container}" || return 1
+    retrieved_checksum=$(curl -sS http://127.0.0.1:48070/test.txt | md5sum | awk '{ print $1 }')
+    assertEquals "${orig_checksum}" "${retrieved_checksum}"
+}
+
 
 load_shunit2
