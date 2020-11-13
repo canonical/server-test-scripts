@@ -82,7 +82,7 @@ def emit_dots_on_travis():
 
     def emit_dots():
         while True:
-            print(".")
+            print(".", end="", flush=True)
             time.sleep(10)
 
     dot_process = multiprocessing.Process(target=emit_dots)
