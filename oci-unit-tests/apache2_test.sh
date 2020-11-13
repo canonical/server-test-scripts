@@ -18,6 +18,9 @@ readonly DOCKER_IMAGE="squeakywheel/apache2:edge"
 readonly LOCAL_PORT=59080
 
 oneTimeSetUp() {
+    # Make sure we're using the latest OCI image.
+    docker pull --quiet "$DOCKER_IMAGE" > /dev/null
+
     # Cleanup stale resources
     tearDown
 }

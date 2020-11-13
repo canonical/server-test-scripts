@@ -23,6 +23,9 @@ readonly ALERTMANAGER_PORT=50001
 readonly PUSHGATEWAY_PORT=50002
 
 oneTimeSetUp() {
+    # Make sure we're using the latest OCI image.
+    docker pull --quiet "$DOCKER_IMAGE" > /dev/null
+
     # Cleanup stale resources
     tearDown
     oneTimeTearDown

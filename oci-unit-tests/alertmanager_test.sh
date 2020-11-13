@@ -18,6 +18,9 @@ readonly DOCKER_IMAGE="squeakywheel/prometheus-alertmanager:edge"
 readonly ALERTMANAGER_PORT=60001
 
 oneTimeSetUp() {
+    # Make sure we're using the latest OCI image.
+    docker pull --quiet "$DOCKER_IMAGE" > /dev/null
+
     # Cleanup stale resources
     tearDown
 }

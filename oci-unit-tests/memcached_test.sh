@@ -18,6 +18,9 @@ readonly DOCKER_NETWORK="${DOCKER_PREFIX}_network"
 readonly DOCKER_IMAGE="squeakywheel/memcached:edge"
 
 oneTimeSetUp() {
+    # Make sure we're using the latest OCI image.
+    docker pull --quiet "$DOCKER_IMAGE" > /dev/null
+
     # Cleanup stale resources
     tearDown
     oneTimeTearDown

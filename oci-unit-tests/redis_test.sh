@@ -14,6 +14,9 @@ readonly DOCKER_NETWORK=redis_test
 readonly DOCKER_IMAGE="squeakywheel/redis:edge"
 
 oneTimeSetUp() {
+    # Make sure we're using the latest OCI image.
+    docker pull --quiet "$DOCKER_IMAGE" > /dev/null
+
     docker network create $DOCKER_NETWORK > /dev/null 2>&1
 }
 
