@@ -32,7 +32,7 @@ EOF
 
 test_web_hook_call() {
   # the webhook is configured to send a request to localhost port 5001
-  response=$(nc -l -p 5001)
+  response=$(timeout 20s nc -l 0.0.0.0 5001)
 
   echo $response | grep User-Agent | grep Alertmanager > /dev/null
   assertTrue $?

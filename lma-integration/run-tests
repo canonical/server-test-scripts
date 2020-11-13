@@ -1,23 +1,36 @@
-#!/bin/sh
+#!/bin/bash
 
-set -e
+# We want the main docker-compose process to exit with the same code
+# as the "tests" container.  For this reason, we use
+# '--exit-code-from', which implies that we cannot detach from the
+# containers.
+#
+# To avoid polluting the terminal with a bunch of logs from the
+# containers, we redirect stdout to /dev/null and put
+# docker-compose in the background.
+docker-compose up --abort-on-container-exit --exit-code-from tests > /dev/null &
 
-# set up containers
-docker-compose up -d
-sleep 5
+# We will need the process' PID to check for the exit status later.
+docker_compose_pid=$!
 
-# run tests
-failed=0
-for file in tests/*_test.sh; do
-  rc=0
-  echo "$file"
-  mispipe "sh $file" "sed -e 's/ASSERT:/FAILED:/; s/^/  /'" || rc=$?
-  if [ $rc -ne 0 ]; then
-    failed=1
-  fi
+echo "Waiting until the test container becomes available..."
+
+# This is a trick needed to "wait" until the "tests" container is
+# ready to be attached to.
+while [ "$(docker-compose ps -q tests 2> /dev/null)" = "" ]; do
+    sleep 0.5
 done
 
-# stop containers
+# Attach to the "tests" container and print its logs.  These are the
+# actual test results.
+docker-compose logs -f tests
+
+# Time to wait until the first docker-compose process finishes, so we
+# can grab its exit code.
+wait $docker_compose_pid
+exit_code=$?
+
+# Clean up after ourselves.
 docker-compose down
 
-exit $failed
+exit $exit_code
