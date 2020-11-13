@@ -16,6 +16,9 @@ readonly DOCKER_IMAGE="squeakywheel/telegraf:edge"
 readonly TELEGRAF_PORT=9273
 
 oneTimeSetUp() {
+    # Make sure we're using the latest OCI image.
+    docker pull --quiet "$DOCKER_IMAGE" > /dev/null
+
     # Cleanup stale resources
     tearDown
 }
