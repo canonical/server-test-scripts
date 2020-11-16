@@ -53,15 +53,20 @@ wait_telegraf_container_ready() {
 # Verify that telegraf is up and running.
 test_telegraf_up() {
     debug "Creating telegraf container"
-    container=$(docker_run_telegraf)
+
+    # We have to start the container using the host's network,
+    # otherwise we won't be able to connect to it.  This is because
+    # the default configuration makes telegraf bind to
+    # "localhost:9273", and we don't want to specify any custom
+    # configuration file here.
+    container=$(docker_run_telegraf --network host)
     wait_telegraf_container_ready "${container}" || return 1
 
     debug "Verifying that we can access the web endpoint"
     local metrics
-    metrics=$(curl --silent "http://localhost:${TELEGRAF_PORT}/metrics")
-    assertTrue echo "${metrics}" | grep -q diskio || return 1
-    assertTrue echo "${metrics}" | grep -q inodes || return 1
-    assertTrue echo "${metrics}" | grep -q cpu || return 1
+    metrics="$(curl --silent "http://localhost:${TELEGRAF_PORT}/metrics")"
+    assertTrue "Check if the go_info metric is present" "echo \"${metrics}\" | grep -qF go_info"
+    assertTrue "Check if the cpu metric is present" "echo \"${metrics}\" | grep -qF cpu"
 }
 
 # Verify that using a custom configuration file works, and that
@@ -84,10 +89,10 @@ test_telegraf_custom_config_http_endpoint() {
     local data
     # We have to use "timeout" here because otherwise "nc" will keep
     # listening to the port.
-    data="$(timeout 5s nc -q 0 -w 20 -l -p 8080)"
-    assertTrue echo "${data}" | grep -q diskio || return 1
-    assertTrue echo "${data}" | grep -q inodes || return 1
-    assertTrue echo "${data}" | grep -q cpu || return 1
+    data="$(timeout 20s nc -q 0 -w 20 -l -s 127.0.0.1 -p 8080)"
+    assertTrue "Check if the diskio metric is present" "echo \"${data}\" | grep -qF diskio"
+    assertTrue "Check if the inodes metric is present" "echo \"${data}\" | grep -qF inodes"
+    assertTrue "Check if the cpu metric is present" "echo \"${data}\" | grep -qF cpu"
 }
 
 load_shunit2
