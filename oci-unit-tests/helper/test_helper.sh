@@ -50,20 +50,17 @@ wait_container_ready() {
     local id="${1}"
     local msg="${2}"
     local timeout="${3:-30}"
-    local logs
-    local max=${timeout}
+    local max=$timeout
 
     debug -n "Waiting for container to be ready "
-    logs=$(docker logs "${id}" --tail 1 2>&1)
-    while ! echo "${logs}" | grep -qE "${msg}"; do
-        debug -n "."
-        sleep 1
-		timeout=$((timeout-1))
-        if [ "${timeout}" -le 0 ]; then
-            fail "ERROR, failed to start container ${id} in ${max} seconds"
-            return 1
-        fi
-        logs=$(docker logs "${id}" --tail 1 2>&1)
+    while ! docker logs "${id}" 2>&1 | grep -qE "${msg}"; do
+	sleep 1
+	timeout=$((timeout - 1))
+	if [ $timeout -le 0 ]; then
+	    fail " ERROR, failed to start container ${id} in ${max} seconds"
+	    return 1
+	fi
+	debug -n "."
     done
-    debug
+    debug "done"
 }
