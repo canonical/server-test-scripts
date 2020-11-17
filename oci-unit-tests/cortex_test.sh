@@ -38,17 +38,12 @@ tearDown() {
 
 # Helper function to execute cortex.
 docker_run_cortex() {
-    # The volume and the --config.file extra argument should not be needed but
-    # the default config is not good enough to start a container without those
-    # options at the moment. More info see LP #1903860.
     docker run \
 	   --rm \
 	   -d \
 	   --publish ${CORTEX_PORT}:9009 \
 	   --name "${DOCKER_PREFIX}_${suffix}" \
-	   --volume "$PWD/cortex_test_data/cortex.yaml:/etc/cortex/cortex.yaml" \
-	   $DOCKER_IMAGE \
-           "--config.file=/etc/cortex/cortex.yaml"
+	   $DOCKER_IMAGE
 }
 
 wait_cortex_container_ready() {
@@ -63,16 +58,17 @@ test_services_status() {
     wait_cortex_container_ready "${container}" || return 1
 
     debug "Check if all the expected services are running"
+    local response
     response=$(curl --silent "http://localhost:${CORTEX_PORT}/services")
-    assertTrue echo "${response}" | grep -A1 "memberlist-kv"  | grep Running > /dev/null
-    assertTrue echo "${response}" | grep -A1 "server"         | grep Running > /dev/null
-    assertTrue echo "${response}" | grep -A1 "store"          | grep Running > /dev/null
-    assertTrue echo "${response}" | grep -A1 "table-manager"  | grep Running > /dev/null
-    assertTrue echo "${response}" | grep -A1 "query-frontend" | grep Running > /dev/null
-    assertTrue echo "${response}" | grep -A1 "distributor"    | grep Running > /dev/null
-    assertTrue echo "${response}" | grep -A1 "ingester"       | grep Running > /dev/null
-    assertTrue echo "${response}" | grep -A1 "ring"           | grep Running > /dev/null
-    assertTrue echo "${response}" | grep -A1 "querier"        | grep Running > /dev/null
+    assertTrue "Check if memberlist-kv is in the server response"  "echo \"${response}\" | grep -A1 memberlist-kv  | grep -q Running"
+    assertTrue "Check if server is in the server response"         "echo \"${response}\" | grep -A1 server         | grep -q Running"
+    assertTrue "Check if store is in the server response"          "echo \"${response}\" | grep -A1 store          | grep -q Running"
+    assertTrue "Check if table-manager is in the server response"  "echo \"${response}\" | grep -A1 table-manager  | grep -q Running"
+    assertTrue "Check if query-frontend is in the server response" "echo \"${response}\" | grep -A1 query-frontend | grep -q Running"
+    assertTrue "Check if distributor is in the server response"    "echo \"${response}\" | grep -A1 distributor    | grep -q Running"
+    assertTrue "Check if ingester is in the server response"       "echo \"${response}\" | grep -A1 ingester       | grep -q Running"
+    assertTrue "Check if ring is in the server response"           "echo \"${response}\" | grep -A1 ring           | grep -q Running"
+    assertTrue "Check if querier is in the server response"        "echo \"${response}\" | grep -A1 querier        | grep -q Running"
 }
 
 load_shunit2
