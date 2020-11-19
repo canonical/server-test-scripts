@@ -14,7 +14,8 @@ echo
 # Do not refresh the snaps for the moment.
 # Regular Ubuntu Server images do not auto-reboot on snap refreshes as Core
 # does, but we want to keep the measurement scripts as similar as possible.
-if [[ "$NAME" == Ubuntu* ]]; then
+hash snap 2> /dev/null && has_snap=true || has_snap=false
+if $has_snap; then
     echo "Holding snap auto-refresh"
     sudo snap set system refresh.hold="$(date --date=tomorrow +%Y-%m-%dT%H:%M:%S%:z)"
 fi
@@ -89,7 +90,7 @@ if [ "$NAME" != "Ubuntu Core" ]; then
     sudo lsusb -v > lsusb.out 2>&1 || true
 fi
 
-if [[ $NAME == Ubuntu* ]]; then
+if $has_snap; then
     echo "Saving snap debug timings"
     snap debug timings --ensure=seed > snap_debug_timings
     snap list > snap_list
