@@ -207,10 +207,13 @@ class EC2Instspec:
 
 class LXDInstspec:
     cloud = "lxd"
+    is_vm = False
 
-    def __init__(self, *, release, inst_type):
+    def __init__(self, *, release, inst_type, ssh_pubkey_path, ssh_privkey_path):
         self.inst_type = inst_type
         self.release = release
+        self.ssh_pubkey_path = ssh_pubkey_path
+        self.ssh_privkey_path = ssh_privkey_path
 
     def measure(self, datadir, instances=1, reboots=1):
         """
@@ -225,7 +228,14 @@ class LXDInstspec:
         else:
             release = self.release
 
-        lxd = pycloudlib.LXD(tag="bootspeed")
+        if self.is_vm:
+            lxd = pycloudlib.LXDVirtualMachine(tag="bootspeed")
+        else:
+            lxd = pycloudlib.LXDContainer(tag="bootspeed")
+
+        lxd.key_pair = pycloudlib.key.KeyPair(
+            self.ssh_pubkey_path, self.ssh_privkey_path
+        )
         image = lxd.daily_image(release=release)
         serial = lxd.image_serial(image)
 
@@ -265,68 +275,14 @@ class LXDInstspec:
         return metadata
 
 
-class KVMInstspec:
+class KVMInstspec(LXDInstspec):
     cloud = "kvm"
-
-    def __init__(self, *, release, inst_type):
-        self.inst_type = inst_type
-        self.release = release
-
-    def measure(self, datadir, instances=1, reboots=1):
-        """
-        Measure KVM instances.
-        Returns the measurement metadata as a dictionary
-        """
-        print("Perforforming measurement on KVM")
-
-        if self.release in distro_metanames:
-            release = metaname2release(self.release)
-            print("Resolved %s to %s" % (self.release, release))
-        else:
-            release = self.release
-
-        kvm = pycloudlib.KVM(tag="bootspeed")
-        image = kvm.daily_image(release=release)
-        serial = kvm.image_serial(image)
-
-        print("Daily image for", release, "is", image)
-        print("Image serial:", serial)
-
-        for ninstance in range(instances):
-            instance_data = Path(datadir, "instance_" + str(ninstance))
-            instance_data.mkdir()
-
-            name = "bootspeed-" + str(int(dt.datetime.utcnow().timestamp()))
-
-            print("Launching instance", ninstance + 1, "of", instances)
-            instance = kvm.launch(
-                image_id=image, instance_type=self.inst_type, name=name
-            )
-            print("Instance launched (%s)" % name)
-
-            try:
-                measure_instance(instance, instance_data, reboots)
-            finally:
-                print("Deleting the instance.")
-                instance.delete()
-
-        # On KVM we can consider the machine the measurement is run on as the
-        # 'region'; platform.node() returns its hostname.
-        region = platform.node()
-        metadata = gen_metadata(
-            cloud=self.cloud,
-            region=region,
-            inst_type=self.inst_type,
-            release=self.release,
-            cloudid=image,
-            serial=serial,
-        )
-
-        return metadata
+    is_vm = True
 
 
 def ssh_hammer(instance):
     # Hammer the instance via SSH to record the first SSH login time.
+    print("SSH-hammering instance")
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     private_key = paramiko.RSAKey.from_private_key_file(
@@ -376,9 +332,7 @@ def measure_instance(instance, datadir, reboots=1):
     # Use the same command (and hence format) used when measuring devices
     os.system("date --utc --rfc-3339=ns > " + str(Path(datadir, "job-start-timestamp")))
 
-    # Hammer the instance SSH daemon to log the first login time.
-    if instance._type == "ec2":
-        ssh_hammer(instance)
+    ssh_hammer(instance)
 
     instance.execute(
         "wget https://raw.githubusercontent.com/canonical/"
@@ -495,9 +449,19 @@ def main():
             ssh_keypair_name=args.ssh_keypair_name,
         )
     elif args.cloud == "lxd":
-        instspec = LXDInstspec(release=args.release, inst_type=args.inst_type)
+        instspec = LXDInstspec(
+            release=args.release,
+            inst_type=args.inst_type,
+            ssh_pubkey_path=args.ssh_pubkey_path,
+            ssh_privkey_path=args.ssh_privkey_path,
+        )
     elif args.cloud == "kvm":
-        instspec = KVMInstspec(release=args.release, inst_type=args.inst_type)
+        instspec = KVMInstspec(
+            release=args.release,
+            inst_type=args.inst_type,
+            ssh_pubkey_path=args.ssh_pubkey_path,
+            ssh_privkey_path=args.ssh_privkey_path,
+        )
     else:
         raise NotImplementedError
 
