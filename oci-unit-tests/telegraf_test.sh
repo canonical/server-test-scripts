@@ -89,7 +89,7 @@ test_telegraf_custom_config_http_endpoint() {
     local data
     # We have to use "timeout" here because otherwise "nc" will keep
     # listening to the port.
-    data="$(timeout 20s nc -q 0 -w 20 -l -s 127.0.0.1 -p 8080)"
+    data="$(timeout 20s nc -l 127.0.0.1 8080)"
     assertTrue "Check if the diskio metric is present" "echo \"${data}\" | grep -qF diskio"
     assertTrue "Check if the inodes metric is present" "echo \"${data}\" | grep -qF inodes"
     assertTrue "Check if the cpu metric is present" "echo \"${data}\" | grep -qF cpu"
