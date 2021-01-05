@@ -5,7 +5,7 @@
 import argparse
 import datetime
 import json
-from subprocess import run
+from subprocess import run, PIPE
 
 DEFAULT_NAME_PREFIX = "ubuntu-behave-test"
 
@@ -35,7 +35,7 @@ if __name__ == '__main__':
         )
     else:
         before_date = datetime.datetime.today() - datetime.timedelta(days=1)
-    result = run(["lxc", "ls", "--format=json"], capture_output=True)
+    result = run(["lxc", "ls", "--format=json"], stdout=PIPE)
     if result.stdout:
         for instance in json.loads(result.stdout):
             if instance["name"].startswith(args.prefix):
