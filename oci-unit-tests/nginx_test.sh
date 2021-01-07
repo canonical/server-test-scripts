@@ -55,6 +55,7 @@ wait_nginx_container_ready() {
     local container="${1}"
     local log="Configuration complete"
     wait_container_ready "${container}" "${log}"
+    sleep 10
 }
 
 test_default_config() {
