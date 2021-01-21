@@ -8,6 +8,7 @@ import argparse
 import boto3
 import datetime
 import re
+import traceback
 
 
 CI_DEFAULT_TAG = "uaclient-ci-*"
@@ -110,8 +111,14 @@ def clean_ec2(tag_prefix, before_date=None):
                 skipped_instances.append(instance)
                 continue
             print('terminating instance %s' % instance.id)
-            instance.terminate()
-            wait_instances.append(instance)
+            try:
+                instance.terminate()
+                wait_instances.append(instance)
+            except Exception:
+                print("Failure on terminating instance: {}".format(
+                    instance.id))
+                print("Exception: \n{}".format(traceback.print_exc()))
+
 
         for inst in skipped_instances:
             print(
@@ -137,14 +144,24 @@ def clean_ec2(tag_prefix, before_date=None):
                 skipped_resources = True
                 continue
             print('terminating security group %s' % security_group.id)
-            security_group.delete()
+            try:
+                security_group.delete()
+            except Exception:
+                print("Failure on terminating security group: {}".format(
+                    security_group.id))
+                print("Exception: \n{}".format(traceback.print_exc()))
 
         for subnet in vpc.subnets.filter(Filters=vpc_filter):
             if not delete_resource_by_tag(subnet, SHARED_VPC_TAG, time_prefix):
                 skipped_resources = True
                 continue
             print('terminating subnet %s' % subnet.id)
-            subnet.delete()
+            try:
+                subnet.delete()
+            except Exception:
+                print("Failure on terminating subnet: {}".format(
+                    subnet.id))
+                print("Exception: \n{}".format(traceback.print_exc()))
 
         for route_table in vpc.route_tables.filter(Filters=vpc_filter):
             if not delete_resource_by_tag(
@@ -153,7 +170,12 @@ def clean_ec2(tag_prefix, before_date=None):
                 skipped_resources = True
                 continue
             print('terminating route table %s' % route_table.id)
-            route_table.delete()
+            try:
+                route_table.delete()
+            except Exception:
+                print("Failure on terminating route table: {}".format(
+                    route_table.id))
+                print("Exception: \n{}".format(traceback.print_exc()))
 
         for internet_gateway in vpc.internet_gateways.filter(
             Filters=vpc_filter
@@ -164,11 +186,23 @@ def clean_ec2(tag_prefix, before_date=None):
                 skipped_resources = True
                 continue
             print('terminating internet gateway %s' % internet_gateway.id)
-            internet_gateway.detach_from_vpc(VpcId=vpc.id)
-            internet_gateway.delete()
+            try:
+                internet_gateway.detach_from_vpc(VpcId=vpc.id)
+                internet_gateway.delete()
+            except Exception:
+                print("Failure on terminating internet gateway: {}".format(
+                    internet_gateway.id))
+                print("Exception: \n{}".format(traceback.print_exc()))
+
         if not skipped_resources:
             print('terminating vpc %s' % vpc.id)
-            vpc.delete()
+            try:
+                vpc.delete()
+            except Exception:
+                print("Failure on terminating vpc: {}".format(
+                    vpc.id))
+                print("Exception: \n{}".format(traceback.print_exc()))
+
 
     print('# searching for ssh keys matching tag {}'.format(tag_prefix))
     key_name = {'Name': 'key-name', 'Values': [tag_prefix]}
@@ -176,7 +210,13 @@ def clean_ec2(tag_prefix, before_date=None):
         if not delete_resource_by_tag(key, tag_prefix, time_prefix):
             continue
         print('deleting ssh key %s' % key['KeyName'])
-        client.delete_key_pair(KeyName=key['KeyName'])
+        try:
+            client.delete_key_pair(KeyName=key['KeyName'])
+        except Exception:
+            print("Failure on terminating ssh key: {}".format(
+                key['KeyName']))
+            print("Exception: \n{}".format(traceback.print_exc()))
+
 
     print('# searching for amis matching tag {}'.format(tag_prefix))
     for image in resource.images.filter(
@@ -185,14 +225,24 @@ def clean_ec2(tag_prefix, before_date=None):
         if not delete_resource_by_tag(image, tag_prefix, time_prefix):
             continue
         print('removing custom ami %s' % image.id)
-        client.deregister_image(ImageId=image.id)
+        try:
+            client.deregister_image(ImageId=image.id)
+        except Exception:
+            print("Failure on removing custom ami: {}".format(
+                image.id))
+            print("Exception: \n{}".format(traceback.print_exc()))
 
     print('# searching for snapshots matching tag {}'.format(tag_prefix))
     for snapshot in resource.snapshots.filter(OwnerIds=['self']).all():
         if not delete_resource_by_tag(snapshot, tag_prefix, time_prefix):
             continue
         print('removing custom snapshot %s' % snapshot.id)
-        client.delete_snapshot(SnapshotId=snapshot.id)
+        try:
+            client.delete_snapshot(SnapshotId=snapshot.id)
+        except:
+            print("Failure on removing custom snapshot: {}".format(
+                snapshot.id))
+            print("Exception: \n{}".format(traceback.print_exc()))
 
 
 if __name__ == '__main__':
