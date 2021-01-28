@@ -45,11 +45,11 @@ stop_container_sync() {
 
 # $1: container id
 # $2: last message to look for in logs
-# $3: timeout (optional).  If not specified, defaults to 30 seconds
+# $3: timeout (optional).  If not specified, defaults to 60 seconds
 wait_container_ready() {
     local id="${1}"
     local msg="${2}"
-    local timeout="${3:-30}"
+    local timeout="${3:-60}"
     local max=$timeout
 
     debug -n "Waiting for container to be ready "
@@ -57,7 +57,9 @@ wait_container_ready() {
 	sleep 1
 	timeout=$((timeout - 1))
 	if [ $timeout -le 0 ]; then
-	    fail " ERROR, failed to start container ${id} in ${max} seconds"
+	    fail "ERROR, failed to start container ${id} in ${max} seconds"
+	    echo "Current container list (docker ps):"
+	    docker ps
 	    return 1
 	fi
 	debug -n "."
