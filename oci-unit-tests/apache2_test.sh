@@ -14,12 +14,12 @@
 # The name of the temporary docker network we will create for the
 # tests.
 readonly DOCKER_PREFIX=oci_apache2_test
-readonly DOCKER_IMAGE="squeakywheel/apache2:edge"
+readonly DOCKER_IMAGE="${DOCKER_IMAGE:-squeakywheel/apache2:edge}"
 readonly LOCAL_PORT=59080
 
 oneTimeSetUp() {
     # Make sure we're using the latest OCI image.
-    docker pull --quiet "$DOCKER_IMAGE" > /dev/null
+    docker pull --quiet "${DOCKER_IMAGE}" > /dev/null
 
     # Cleanup stale resources
     tearDown
@@ -39,7 +39,7 @@ docker_run_server() {
        -d \
        --name "${DOCKER_PREFIX}_${suffix}" \
        "$@" \
-       $DOCKER_IMAGE
+       "${DOCKER_IMAGE}"
 }
 
 wait_apache2_container_ready() {

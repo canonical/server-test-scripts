@@ -15,16 +15,20 @@
 # tests.
 readonly DOCKER_PREFIX=oci_prometheus_test
 readonly DOCKER_NETWORK="${DOCKER_PREFIX}_network"
-readonly DOCKER_IMAGE="squeakywheel/prometheus:edge"
-readonly DOCKER_ALERTMANAGER_IMAGE="squeakywheel/prometheus-alertmanager:edge"
+readonly DOCKER_IMAGE="${DOCKER_IMAGE:-squeakywheel/prometheus:edge}"
 readonly DOCKER_PUSHGATEWAY_IMAGE="prom/pushgateway"
 readonly PROM_PORT=50000
 readonly ALERTMANAGER_PORT=50001
 readonly PUSHGATEWAY_PORT=50002
 
+if [ -z "${DOCKER_ALERTMANAGER_IMAGE" ]; then
+    # If undefined, guess by deriving from $DOCKER_IMAGE's name
+    DOCKER_ALERTMANAGER_IMAGE="${DOCKER_IMAGE/\/prometheus:/\/prometheus-alertmanager:}"
+fi
+
 oneTimeSetUp() {
     # Make sure we're using the latest OCI image.
-    docker pull --quiet "$DOCKER_IMAGE" > /dev/null
+    docker pull --quiet "${DOCKER_IMAGE}" > /dev/null
 
     # Cleanup stale resources
     tearDown
@@ -62,7 +66,7 @@ docker_run_prom() {
 	   --publish ${PROM_PORT}:9090 \
 	   --name "${DOCKER_PREFIX}_${suffix}" \
 	   "$@" \
-	   $DOCKER_IMAGE
+	   "${DOCKER_IMAGE}"
 }
 
 # Helper function to execute alertmanager.

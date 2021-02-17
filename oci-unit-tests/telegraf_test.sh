@@ -12,12 +12,12 @@
 #  tearDown() - run after each test
 
 readonly DOCKER_PREFIX=oci_telegraf_test
-readonly DOCKER_IMAGE="squeakywheel/telegraf:edge"
+readonly DOCKER_IMAGE="${DOCKER_IMAGE:-squeakywheel/telegraf:edge}"
 readonly TELEGRAF_PORT=9273
 
 oneTimeSetUp() {
     # Make sure we're using the latest OCI image.
-    docker pull --quiet "$DOCKER_IMAGE" > /dev/null
+    docker pull --quiet "${DOCKER_IMAGE}" > /dev/null
 
     # Cleanup stale resources
     tearDown
@@ -41,7 +41,7 @@ docker_run_telegraf() {
 	   -d \
 	   --name "${DOCKER_PREFIX}_${suffix}" \
 	   "$@" \
-	   $DOCKER_IMAGE
+	   "${DOCKER_IMAGE}"
 }
 
 wait_telegraf_container_ready() {

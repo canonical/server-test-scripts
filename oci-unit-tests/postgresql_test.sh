@@ -8,11 +8,12 @@
 #  setUp() - run before each test
 #  tearDown() - run after each test
 
-DOCKER_NETWORK_NAME=postgresql_test
+readonly DOCKER_NETWORK_NAME="postgresql_test"
+readonly DOCKER_IMAGE="${DOCKER_IMAGE:-squeakywheel/postgresql:edge}"
 
 oneTimeSetUp() {
     # Make sure we're using the latest OCI image.
-    docker pull --quiet "$DOCKER_IMAGE" > /dev/null
+    docker pull --quiet "${DOCKER_IMAGE}" > /dev/null
 
     docker network create $DOCKER_NETWORK_NAME > /dev/null 2>&1
 }
@@ -20,7 +21,7 @@ oneTimeSetUp() {
 setUp() {
     password=$(dd if=/dev/urandom bs=1 count=16 2>/dev/null | md5sum | head -c 16)
     id=$$
-    image="squeakywheel/postgres:edge"
+    image="${DOCKER_IMAGE}"
 }
 
 oneTimeTearDown() {
