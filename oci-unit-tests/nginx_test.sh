@@ -15,11 +15,11 @@
 # tests.
 readonly DOCKER_PREFIX=oci_nginx_test
 readonly DOCKER_NETWORK="${DOCKER_PREFIX}_network"
-readonly DOCKER_IMAGE="squeakywheel/nginx:edge"
+readonly DOCKER_IMAGE="${DOCKER_IMAGE:-squeakywheel/nginx:edge}"
 
 oneTimeSetUp() {
     # Make sure we're using the latest OCI image.
-    docker pull --quiet "$DOCKER_IMAGE" > /dev/null
+    docker pull --quiet "${DOCKER_IMAGE}" > /dev/null
 
     # Cleanup stale resources
     tearDown
@@ -48,7 +48,7 @@ docker_run_server() {
        -d \
        --name "${DOCKER_PREFIX}_${suffix}" \
        "$@" \
-       $DOCKER_IMAGE
+       "${DOCKER_IMAGE}"
 }
 
 wait_nginx_container_ready() {

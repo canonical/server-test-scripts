@@ -11,11 +11,11 @@
 # The name of the temporary docker network we will create for the
 # tests.
 readonly DOCKER_NETWORK=mysql_test
-readonly DOCKER_IMAGE="squeakywheel/mysql:edge"
+readonly DOCKER_IMAGE="${DOCKER_IMAGE:-squeakywheel/mysql:edge}"
 
 oneTimeSetUp() {
     # Make sure we're using the latest OCI image.
-    docker pull --quiet "$DOCKER_IMAGE" > /dev/null
+    docker pull --quiet "${DOCKER_IMAGE}" > /dev/null
 
     docker network create $DOCKER_NETWORK > /dev/null 2>&1
 }
@@ -47,7 +47,7 @@ docker_run_server() {
 	   -d \
 	   --name mysql_test_${id} \
 	   "$@" \
-	   $DOCKER_IMAGE
+	   "${DOCKER_IMAGE}"
 }
 
 # Helper function to invoke the mysql client.
@@ -71,7 +71,7 @@ docker_run_cli() {
 	   --network $DOCKER_NETWORK \
 	   --rm \
 	   -i \
-	   $DOCKER_IMAGE \
+	   "${DOCKER_IMAGE}" \
 	   mysql -h mysql_test_${id} -u ${user} -p${password} -s "$@" 2>&1 | grep -vxF "mysql: [Warning] Using a password on the command line interface can be insecure."
 }
 

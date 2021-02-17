@@ -11,11 +11,11 @@
 # The name of the temporary docker network we will create for the
 # tests.
 readonly DOCKER_NETWORK=redis_test
-readonly DOCKER_IMAGE="squeakywheel/redis:edge"
+readonly DOCKER_IMAGE="${DOCKER_IMAGE:-squeakywheel/redis:edge}"
 
 oneTimeSetUp() {
     # Make sure we're using the latest OCI image.
-    docker pull --quiet "$DOCKER_IMAGE" > /dev/null
+    docker pull --quiet "${DOCKER_IMAGE}" > /dev/null
 
     docker network create $DOCKER_NETWORK > /dev/null 2>&1
 }
@@ -47,7 +47,7 @@ docker_run_server() {
 	   -d \
 	   --name redis_test_${id} \
 	   "$@" \
-	   $DOCKER_IMAGE
+	   "${DOCKER_IMAGE}"
 }
 
 # Helper function to execute redis-cli with some common arguments.  It
@@ -59,7 +59,7 @@ docker_run_cli() {
 	   --network $DOCKER_NETWORK \
 	   --rm \
 	   -i \
-	   $DOCKER_IMAGE \
+	   "${DOCKER_IMAGE}" \
 	   redis-cli -h redis_test_${id} "$@"
 }
 
