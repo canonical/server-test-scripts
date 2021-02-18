@@ -5,7 +5,7 @@
 
 # cheat sheet:
 #  assertTrue $?
-#  assertEquals 1 2
+#  assertEquals ["explanation"] 1 2
 #  oneTimeSetUp()
 #  oneTimeTearDown()
 #  setUp() - run before each test
@@ -79,7 +79,7 @@ test_static_content() {
     orig_checksum=$(md5sum "$test_data_wwwroot/test.txt" | awk '{ print $1 }')
     retrieved_checksum=$(curl -sS http://127.0.0.1:$LOCAL_PORT/test.txt | md5sum | awk '{ print $1 }')
 
-    assertEquals "${orig_checksum}" "${retrieved_checksum}"
+    assertEquals "Checksum mismatch in retrieved test.txt" "${orig_checksum}" "${retrieved_checksum}"
 }
 
 test_custom_config() {
@@ -94,7 +94,7 @@ test_custom_config() {
     orig_checksum=$(md5sum "$test_data_wwwroot/index.html" | awk '{ print $1 }')
     retrieved_checksum=$(curl -sS "http://127.0.0.1:$LOCAL_PORT" | md5sum | awk '{ print $1 }')
 
-    assertEquals "${orig_checksum}" "${retrieved_checksum}"
+    assertEquals "Checksum mismatch in retrieved index.hml" "${orig_checksum}" "${retrieved_checksum}"
 }
 
 
