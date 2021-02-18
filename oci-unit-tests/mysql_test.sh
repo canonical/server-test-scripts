@@ -77,7 +77,7 @@ docker_run_cli() {
 
 wait_mysql_container_ready() {
     local container="${1}"
-    local log="\[System\] \[MY-[0-9]+\] \[Server\] /usr/sbin/mysqld: ready for connections\."
+    local log="\[System\] \[MY-[0-9]+\] \[Server\] /usr/sbin/mysqld: ready for connections\..*port: 3306"
     # mysqld takes a long time to start.
     local timeout=300
 
