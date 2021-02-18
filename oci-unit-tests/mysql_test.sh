@@ -72,7 +72,16 @@ docker_run_mysql() {
 	   --rm \
 	   -i \
 	   "${DOCKER_IMAGE}" \
-	   mysql -h mysql_test_${id} -u ${user} -p${password} -s "$@" 2>&1 | grep -vxF "mysql: [Warning] Using a password on the command line interface can be insecure."
+	   mysql -h mysql_test_${id} -u ${user} -p${password} -s "$@" 2>&1 \
+	| grep -vxF "mysql: [Warning] Using a password on the command line interface can be insecure."
+}
+
+# Helper function to send a SQL statement to the mysql client.
+docker_mysql_execute() {
+    local sql="${1}"
+    cat <<EOF | docker_run_mysql ${TEST_MYSQL_USER:-root} ${TEST_MYSQL_DB}
+${sql};
+EOF
 }
 
 wait_mysql_container_ready() {
@@ -91,23 +100,15 @@ test_list_and_create_databases() {
     wait_mysql_container_ready "${container}" || return 1
     debug "Testing connection as root, looking for \"mysql\" DB"
     # default db is still "mysql"
-    out=$(cat <<EOF | docker_run_mysql | grep "^mysql"
-SHOW DATABASES;
-EOF
-	  )
+    out=$(docker_mysql_execute "SHOW DATABASES" | grep "^mysql")
     assertEquals "DB listing did not include \"mysql\"" "mysql" "${out}" || return 1
     # Verify we can create a new DB, since we are root
     test_db="test_db${id}"
     debug "Trying to create a new DB called ${test_db} as user root"
-    cat <<EOF | docker_run_mysql
-CREATE DATABASE ${test_db};
-EOF
+    docker_mysql_execute "CREATE DATABASE ${test_db}"
     # list DB
     debug "Verifying DB ${test_db} was created"
-    out=$(cat <<EOF | docker_run_mysql | grep "^${test_db}"
-SHOW DATABASES;
-EOF
-	  )
+    out=$(docker_mysql_execute "SHOW DATABASES" | grep "^${test_db}")
     assertEquals "DB listing did not include \"${test_db}\"" "${test_db}" "${out}" || return 1
 }
 
@@ -126,10 +127,7 @@ test_create_user_and_database() {
 
     # list DB
     debug "Verifying DB ${test_db} was created"
-    out=$(cat <<EOF | docker_run_mysql ${admin_user} | grep "^${test_db}"
-SHOW DATABASES;
-EOF
-	  )
+    out=$(TEST_MYSQL_USER="${admin_user}" docker_mysql_execute "SHOW DATABASES" | grep "^${test_db}")
     assertEquals "DB listing did not include \"${test_db}\"" "${test_db}" "${out}" || return 1
 }
 
@@ -142,10 +140,7 @@ test_default_database_name() {
     assertNotNull "Failed to start the container" "${container}" || return 1
     wait_mysql_container_ready "${container}" || return 1
     debug "Checking if database ${test_db} was created"
-    out=$(cat <<EOF | docker_run_mysql | grep "^${test_db}"
-SHOW DATABASES;
-EOF
-	  )
+    out=$(docker_mysql_execute "SHOW DATABASES" | grep "^${test_db}")
     assertEquals "Failed to create test database" "${test_db}" "${out}" || return 1
 }
 
@@ -167,28 +162,20 @@ test_persistent_volume_keeps_changes() {
     # Create test database
     test_db="test_db_${id}"
     debug "Creating test database ${test_db}"
-    cat <<EOF | docker_run_mysql
-CREATE DATABASE ${test_db};
-EOF
-    out=$(cat <<EOF | docker_run_mysql | grep "^${test_db}"
-SHOW DATABASES;
-EOF
-	  )
+    docker_mysql_execute "CREATE DATABASE ${test_db}"
+    out=$(docker_mysql_execute "SHOW DATABASES" | grep "^${test_db}")
     assertEquals "Failed to create test database" "${test_db}" "${out}" || return 1
 
     # create test table
     test_table="test_data_${id}"
     debug "Creating test table ${test_table} with data"
-    cat <<EOF | docker_run_mysql root "${test_db}"
-CREATE TABLE ${test_table} (id INT, description TEXT);
-INSERT INTO ${test_table} (id,description) VALUES (${id}, 'hello');
-EOF
+    sql="CREATE TABLE ${test_table} (id INT, description TEXT);
+         INSERT INTO ${test_table} (id,description) VALUES (${id}, 'hello');"
+    TEST_MYSQL_DB="${test_db}" docker_mysql_execute "${sql}"
     # There's no easy way to specify the field delimiter to mysql, so
     # we have to resort to tr.
-    out=$(cat <<EOF | docker_run_mysql root "${test_db}" | tr '\t' '%'
-SELECT * FROM ${test_table};
-EOF
-	  )
+    sql="SELECT * FROM ${test_table}"
+    out=$(TEST_MYSQL_DB="${test_db}" docker_mysql_execute "${sql}" | tr '\t' '%')
     assertEquals "Failed to verify test table" "${id}%hello" "${out}" || return 1
 
     # stop container, which deletes it because it was launched with --rm
@@ -205,10 +192,8 @@ EOF
     wait_mysql_container_ready "${container}" || return 1
     # data we created previously should still be there
     debug "Verifying database ${test_db} and table ${test_table} are there with our data"
-    out=$(cat <<EOF | docker_run_mysql root "${test_db}" | tr '\t' '%'
-SELECT * FROM ${test_table};
-EOF
-	  )
+    sql="SELECT * FROM ${test_table}"
+    out=$(TEST_MYSQL_DB="${test_db}" docker_mysql_execute "${sql}" | tr '\t' '%')
     assertEquals "Failed to verify test table" "${id}%hello" "${out}" || return 1
 }
 
