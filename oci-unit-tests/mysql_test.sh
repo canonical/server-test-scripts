@@ -56,7 +56,7 @@ docker_run_server() {
 # that will connect to the server.
 #
 # The rest of the arguments are passed directly to "mysql".
-docker_run_cli() {
+docker_run_mysql() {
     local user=root
 
     if [ -n "$1" ]; then
@@ -91,7 +91,7 @@ test_list_and_create_databases() {
     wait_mysql_container_ready "${container}" || return 1
     debug "Testing connection as root, looking for \"mysql\" DB"
     # default db is still "mysql"
-    out=$(cat <<EOF | docker_run_cli | grep "^mysql"
+    out=$(cat <<EOF | docker_run_mysql | grep "^mysql"
 SHOW DATABASES;
 EOF
 	  )
@@ -99,12 +99,12 @@ EOF
     # Verify we can create a new DB, since we are root
     test_db="test_db${id}"
     debug "Trying to create a new DB called ${test_db} as user root"
-    cat <<EOF | docker_run_cli
+    cat <<EOF | docker_run_mysql
 CREATE DATABASE ${test_db};
 EOF
     # list DB
     debug "Verifying DB ${test_db} was created"
-    out=$(cat <<EOF | docker_run_cli | grep "^${test_db}"
+    out=$(cat <<EOF | docker_run_mysql | grep "^${test_db}"
 SHOW DATABASES;
 EOF
 	  )
@@ -126,7 +126,7 @@ test_create_user_and_database() {
 
     # list DB
     debug "Verifying DB ${test_db} was created"
-    out=$(cat <<EOF | docker_run_cli ${admin_user} | grep "^${test_db}"
+    out=$(cat <<EOF | docker_run_mysql ${admin_user} | grep "^${test_db}"
 SHOW DATABASES;
 EOF
 	  )
@@ -142,7 +142,7 @@ test_default_database_name() {
     assertNotNull "Failed to start the container" "${container}" || return 1
     wait_mysql_container_ready "${container}" || return 1
     debug "Checking if database ${test_db} was created"
-    out=$(cat <<EOF | docker_run_cli | grep "^${test_db}"
+    out=$(cat <<EOF | docker_run_mysql | grep "^${test_db}"
 SHOW DATABASES;
 EOF
 	  )
@@ -167,10 +167,10 @@ test_persistent_volume_keeps_changes() {
     # Create test database
     test_db="test_db_${id}"
     debug "Creating test database ${test_db}"
-    cat <<EOF | docker_run_cli
+    cat <<EOF | docker_run_mysql
 CREATE DATABASE ${test_db};
 EOF
-    out=$(cat <<EOF | docker_run_cli | grep "^${test_db}"
+    out=$(cat <<EOF | docker_run_mysql | grep "^${test_db}"
 SHOW DATABASES;
 EOF
 	  )
@@ -179,13 +179,13 @@ EOF
     # create test table
     test_table="test_data_${id}"
     debug "Creating test table ${test_table} with data"
-    cat <<EOF | docker_run_cli root "${test_db}"
+    cat <<EOF | docker_run_mysql root "${test_db}"
 CREATE TABLE ${test_table} (id INT, description TEXT);
 INSERT INTO ${test_table} (id,description) VALUES (${id}, 'hello');
 EOF
     # There's no easy way to specify the field delimiter to mysql, so
     # we have to resort to tr.
-    out=$(cat <<EOF | docker_run_cli root "${test_db}" | tr '\t' '%'
+    out=$(cat <<EOF | docker_run_mysql root "${test_db}" | tr '\t' '%'
 SELECT * FROM ${test_table};
 EOF
 	  )
@@ -205,7 +205,7 @@ EOF
     wait_mysql_container_ready "${container}" || return 1
     # data we created previously should still be there
     debug "Verifying database ${test_db} and table ${test_table} are there with our data"
-    out=$(cat <<EOF | docker_run_cli root "${test_db}" | tr '\t' '%'
+    out=$(cat <<EOF | docker_run_mysql root "${test_db}" | tr '\t' '%'
 SELECT * FROM ${test_table};
 EOF
 	  )
