@@ -1,8 +1,8 @@
 . $(dirname $0)/helper/test_helper.sh
 
 # cheat sheet:
-#  assertTrue() $?
-#  assertEquals() "explanation" 1 2
+#  assertTrue $?
+#  assertEquals ["explanation"] 1 2
 #  oneTimeSetUp()
 #  oneTimeTearDown()
 #  setUp() - run before each test

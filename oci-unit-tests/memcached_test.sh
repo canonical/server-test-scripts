@@ -5,7 +5,7 @@
 
 # cheat sheet:
 #  assertTrue $?
-#  assertEquals 1 2
+#  assertEquals ["explanation"] 1 2
 #  oneTimeSetUp()
 #  oneTimeTearDown()
 #  setUp() - run before each test
@@ -136,7 +136,7 @@ test_data_storage_and_retrieval() {
     docker exec "$container_client" sh -c "echo '$data' > /tmp/test_data"
     docker exec "$container_client" memccp --servers="${DOCKER_PREFIX}_server" /tmp/test_data
     retr_data=$(docker exec "$container_client" memccat --servers="${DOCKER_PREFIX}_server" test_data)
-    assertEquals "$data" "$retr_data"
+    assertEquals "Store/retrieve data" "$data" "$retr_data"
 }
 
 load_shunit2

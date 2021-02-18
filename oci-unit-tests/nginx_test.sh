@@ -5,7 +5,7 @@
 
 # cheat sheet:
 #  assertTrue $?
-#  assertEquals 1 2
+#  assertEquals ["explanation"] 1 2
 #  oneTimeSetUp()
 #  oneTimeTearDown()
 #  setUp() - run before each test
@@ -89,7 +89,7 @@ test_static_files() {
     orig_checksum=$(md5sum "$test_data_wwwroot/test.txt" | awk '{ print $1 }')
     retrieved_checksum=$(curl -sS http://127.0.0.1:48080/test.txt | md5sum | awk '{ print $1 }')
 
-    assertEquals "${orig_checksum}" "${retrieved_checksum}"
+    assertEquals "Checksum mismatch from retrieved test.txt" "${orig_checksum}" "${retrieved_checksum}"
 }
 
 test_static_files_read_only_mode() {
@@ -104,7 +104,7 @@ test_static_files_read_only_mode() {
     orig_checksum=$(md5sum "$test_data_wwwroot/test.txt" | awk '{ print $1 }')
     retrieved_checksum=$(curl -sS http://127.0.0.1:48080/test.txt | md5sum | awk '{ print $1 }')
 
-    assertEquals "${orig_checksum}" "${retrieved_checksum}"
+    assertEquals "Checksum mismatch from retrieved test.txt" "${orig_checksum}" "${retrieved_checksum}"
 
     rm -rf "$nginx_scratch"
 }
@@ -121,7 +121,7 @@ test_custom_config() {
     orig_checksum=$(md5sum "$test_data_wwwroot/index.html" | awk '{ print $1 }')
     retrieved_checksum=$(curl -sS http://127.0.0.1:48080/ | md5sum | awk '{ print $1 }')
 
-    assertEquals "${orig_checksum}" "${retrieved_checksum}"
+    assertEquals "Checksum mismatch from retrieved index.html" "${orig_checksum}" "${retrieved_checksum}"
 }
 
 test_reverse_proxy() {
@@ -140,7 +140,7 @@ test_reverse_proxy() {
     assertNotNull "Failed to start the container" "${rp_container}" || return 1
     wait_nginx_container_ready "${rp_container}" || return 1
     retrieved_checksum=$(curl -sS http://127.0.0.1:48070/test.txt | md5sum | awk '{ print $1 }')
-    assertEquals "${orig_checksum}" "${retrieved_checksum}"
+    assertEquals "Checksum mismatch from retrieved test.txt" "${orig_checksum}" "${retrieved_checksum}"
 }
 
 
