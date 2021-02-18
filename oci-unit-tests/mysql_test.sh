@@ -52,7 +52,7 @@ docker_run_server() {
 
 # Helper function to invoke the mysql client.
 #
-# The first argument (optiona) is always considered to be the user
+# The first argument (optional) is always considered to be the user
 # that will connect to the server.
 #
 # The rest of the arguments are passed directly to "mysql".
@@ -104,9 +104,10 @@ CREATE DATABASE ${test_db};
 EOF
     # list DB
     debug "Verifying DB ${test_db} was created"
-    out=$(cat <<EOF | docker_run_cli | grep "^${test_db}")
+    out=$(cat <<EOF | docker_run_cli | grep "^${test_db}"
 SHOW DATABASES;
 EOF
+	  )
     assertEquals "DB listing did not include \"mysql\"" "${test_db}" "${out}" || return 1
 }
 
@@ -125,9 +126,10 @@ test_create_user_and_database() {
 
     # list DB
     debug "Verifying DB ${test_db} was created"
-    out=$(cat <<EOF | docker_run_cli ${admin_user} | grep "^${test_db}")
+    out=$(cat <<EOF | docker_run_cli ${admin_user} | grep "^${test_db}"
 SHOW DATABASES;
 EOF
+	  )
     assertEquals "DB listing did not include \"mysql\"" "${test_db}" "${out}" || return 1
 }
 
@@ -168,9 +170,10 @@ test_persistent_volume_keeps_changes() {
     cat <<EOF | docker_run_cli
 CREATE DATABASE ${test_db};
 EOF
-    out=$(cat <<EOF | docker_run_cli | grep "^${test_db}")
+    out=$(cat <<EOF | docker_run_cli | grep "^${test_db}"
 SHOW DATABASES;
 EOF
+	  )
     assertEquals "Failed to create test database" "${test_db}" "${out}" || return 1
 
     # create test table
