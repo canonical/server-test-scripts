@@ -1,8 +1,8 @@
 . $(dirname $0)/helper/test_helper.sh
 
 # cheat sheet:
-#  assertTrue $?
-#  assertEquals 1 2
+#  assertTrue() $?
+#  assertEquals() "explanation" 1 2
 #  oneTimeSetUp()
 #  oneTimeTearDown()
 #  setUp() - run before each test
@@ -95,7 +95,7 @@ test_list_and_create_databases() {
 SHOW DATABASES;
 EOF
 	  )
-    assertEquals "DB listing did not include \"mysql\"" mysql "${out}" || return 1
+    assertEquals "DB listing did not include \"mysql\"" "mysql" "${out}" || return 1
     # Verify we can create a new DB, since we are root
     test_db="test_db${id}"
     debug "Trying to create a new DB called ${test_db} as user root"
@@ -108,7 +108,7 @@ EOF
 SHOW DATABASES;
 EOF
 	  )
-    assertEquals "DB listing did not include \"mysql\"" "${test_db}" "${out}" || return 1
+    assertEquals "DB listing did not include \"${test_db}\"" "${test_db}" "${out}" || return 1
 }
 
 test_create_user_and_database() {
@@ -130,7 +130,7 @@ test_create_user_and_database() {
 SHOW DATABASES;
 EOF
 	  )
-    assertEquals "DB listing did not include \"mysql\"" "${test_db}" "${out}" || return 1
+    assertEquals "DB listing did not include \"${test_db}\"" "${test_db}" "${out}" || return 1
 }
 
 test_default_database_name() {
