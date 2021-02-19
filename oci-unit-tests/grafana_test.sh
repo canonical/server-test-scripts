@@ -14,7 +14,7 @@
 # The name of the temporary docker network we will create for the
 # tests.
 readonly DOCKER_PREFIX=oci_grafana_test
-readonly DOCKER_IMAGE="${DOCKER_IMAGE:-squeakywheel/grafana:edge}"
+readonly DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu/grafana:edge}"
 readonly LOCAL_PORT=63180
 
 oneTimeSetUp() {

@@ -9,7 +9,7 @@
 #  tearDown() - run after each test
 
 readonly DOCKER_NETWORK_NAME="postgresql_test"
-readonly DOCKER_IMAGE="${DOCKER_IMAGE:-squeakywheel/postgresql:edge}"
+readonly DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu/postgresql:edge}"
 
 oneTimeSetUp() {
     # Make sure we're using the latest OCI image.

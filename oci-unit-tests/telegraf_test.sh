@@ -12,7 +12,7 @@
 #  tearDown() - run after each test
 
 readonly DOCKER_PREFIX=oci_telegraf_test
-readonly DOCKER_IMAGE="${DOCKER_IMAGE:-squeakywheel/telegraf:edge}"
+readonly DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu/telegraf:edge}"
 readonly TELEGRAF_PORT=9273
 
 oneTimeSetUp() {
