@@ -15,7 +15,7 @@
 # tests.
 readonly DOCKER_PREFIX=oci_nginx_test
 readonly DOCKER_NETWORK="${DOCKER_PREFIX}_network"
-readonly DOCKER_IMAGE="${DOCKER_IMAGE:-squeakywheel/nginx:edge}"
+readonly DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu/nginx:edge}"
 
 oneTimeSetUp() {
     # Make sure we're using the latest OCI image.

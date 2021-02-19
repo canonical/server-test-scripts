@@ -14,7 +14,7 @@
 # The name of the temporary docker network we will create for the
 # tests.
 readonly DOCKER_PREFIX=oci_apache2_test
-readonly DOCKER_IMAGE="${DOCKER_IMAGE:-squeakywheel/apache2:edge}"
+readonly DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu/apache2:edge}"
 readonly LOCAL_PORT=59080
 
 oneTimeSetUp() {

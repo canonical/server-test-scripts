@@ -14,7 +14,7 @@
 # The name of the temporary docker network we will create for the
 # tests.
 readonly DOCKER_PREFIX=oci_cortex_test
-readonly DOCKER_IMAGE="${DOCKER_IMAGE:-squeakywheel/cortex:edge}"
+readonly DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu/cortex:edge}"
 readonly CORTEX_PORT=60009
 
 oneTimeSetUp() {

@@ -15,7 +15,7 @@
 # tests.
 readonly DOCKER_PREFIX=oci_prometheus_test
 readonly DOCKER_NETWORK="${DOCKER_PREFIX}_network"
-readonly DOCKER_IMAGE="${DOCKER_IMAGE:-squeakywheel/prometheus:edge}"
+readonly DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu/prometheus:edge}"
 readonly DOCKER_PUSHGATEWAY_IMAGE="prom/pushgateway"
 readonly PROM_PORT=50000
 readonly ALERTMANAGER_PORT=50001
@@ -112,7 +112,7 @@ wait_pushgateway_container_ready() {
 test_cli() {
     debug "Check prometheus help via CLI"
     temp_dir=$(mktemp -d)
-    docker run --rm --name "${DOCKER_PREFIX}_${suffix}" squeakywheel/prometheus:edge --help 2>"${temp_dir}/prom_help"
+    docker run --rm --name "${DOCKER_PREFIX}_${suffix}" ubuntu/prometheus:edge --help 2>"${temp_dir}/prom_help"
     out=$(cat "${temp_dir}/prom_help") && ret=1
     if echo "${out}" | grep "The Prometheus monitoring server" >/dev/null; then
         ret=0

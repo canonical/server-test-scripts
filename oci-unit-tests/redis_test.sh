@@ -11,7 +11,7 @@
 # The name of the temporary docker network we will create for the
 # tests.
 readonly DOCKER_NETWORK=redis_test
-readonly DOCKER_IMAGE="${DOCKER_IMAGE:-squeakywheel/redis:edge}"
+readonly DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu/redis:edge}"
 
 oneTimeSetUp() {
     # Make sure we're using the latest OCI image.
