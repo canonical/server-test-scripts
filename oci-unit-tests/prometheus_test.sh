@@ -23,7 +23,7 @@ readonly PUSHGATEWAY_PORT=50002
 
 if [ -z "${DOCKER_ALERTMANAGER_IMAGE}" ]; then
     # If undefined, guess by deriving from $DOCKER_IMAGE's name
-    DOCKER_ALERTMANAGER_IMAGE="${DOCKER_IMAGE/\/prometheus:/\/prometheus-alertmanager:}"
+    DOCKER_ALERTMANAGER_IMAGE=$(echo "$DOCKER_IMAGE" | sed 's/prometheus:/prometheus-alertmanager:/')
 fi
 
 oneTimeSetUp() {
