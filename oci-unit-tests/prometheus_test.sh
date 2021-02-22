@@ -77,7 +77,7 @@ docker_run_alertmanager() {
 	   -d \
 	   --publish ${ALERTMANAGER_PORT}:9093 \
 	   --name "${DOCKER_PREFIX}_alertmanager_${suffix}" \
-	   $DOCKER_ALERTMANAGER_IMAGE
+	   "$DOCKER_ALERTMANAGER_IMAGE"
 }
 
 # Helper function to execute pushgateway.
