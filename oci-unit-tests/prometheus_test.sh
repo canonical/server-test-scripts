@@ -21,9 +21,9 @@ readonly PROM_PORT=50000
 readonly ALERTMANAGER_PORT=50001
 readonly PUSHGATEWAY_PORT=50002
 
-if [ -z "${DOCKER_ALERTMANAGER_IMAGE" ]; then
+if [ -z "${DOCKER_ALERTMANAGER_IMAGE}" ]; then
     # If undefined, guess by deriving from $DOCKER_IMAGE's name
-    DOCKER_ALERTMANAGER_IMAGE="${DOCKER_IMAGE/\/prometheus:/\/prometheus-alertmanager:}"
+    DOCKER_ALERTMANAGER_IMAGE=$(echo "$DOCKER_IMAGE" | sed 's/prometheus:/prometheus-alertmanager:/')
 fi
 
 oneTimeSetUp() {
@@ -77,7 +77,7 @@ docker_run_alertmanager() {
 	   -d \
 	   --publish ${ALERTMANAGER_PORT}:9093 \
 	   --name "${DOCKER_PREFIX}_alertmanager_${suffix}" \
-	   $DOCKER_ALERTMANAGER_IMAGE
+	   "$DOCKER_ALERTMANAGER_IMAGE"
 }
 
 # Helper function to execute pushgateway.
