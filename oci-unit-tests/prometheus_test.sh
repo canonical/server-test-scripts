@@ -15,7 +15,11 @@
 # tests.
 readonly DOCKER_PREFIX=oci_prometheus_test
 readonly DOCKER_NETWORK="${DOCKER_PREFIX}_network"
-readonly DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu/prometheus:edge}"
+readonly DOCKER_REGISTRY="${DOCKER_REGISTRY:-docker.io}"
+readonly DOCKER_NAMESPACE="${DOCKER_NAMESPACE:-ubuntu}"
+readonly DOCKER_PACKAGE="${DOCKER_PACKAGE:-prometheus}"
+readonly DOCKER_TAG="${DOCKER_TAG:-edge}"
+readonly DOCKER_IMAGE="$DOCKER_REGISTRY/$DOCKER_NAMESPACE/$DOCKER_PACKAGE:$DOCKER_TAG"
 readonly DOCKER_PUSHGATEWAY_IMAGE="prom/pushgateway"
 readonly PROM_PORT=50000
 readonly ALERTMANAGER_PORT=50001

@@ -12,7 +12,11 @@
 #  tearDown() - run after each test
 
 readonly DOCKER_PREFIX=oci_telegraf_test
-readonly DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu/telegraf:edge}"
+readonly DOCKER_REGISTRY="${DOCKER_REGISTRY:-docker.io}"
+readonly DOCKER_NAMESPACE="${DOCKER_NAMESPACE:-ubuntu}"
+readonly DOCKER_PACKAGE="${DOCKER_PACKAGE:-telegraf}"
+readonly DOCKER_TAG="${DOCKER_TAG:-edge}"
+readonly DOCKER_IMAGE="$DOCKER_REGISTRY/$DOCKER_NAMESPACE/$DOCKER_PACKAGE:$DOCKER_TAG"
 readonly TELEGRAF_PORT=9273
 
 oneTimeSetUp() {

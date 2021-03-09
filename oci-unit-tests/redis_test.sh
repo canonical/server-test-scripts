@@ -11,7 +11,11 @@
 # The name of the temporary docker network we will create for the
 # tests.
 readonly DOCKER_NETWORK=redis_test
-readonly DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu/redis:edge}"
+readonly DOCKER_REGISTRY="${DOCKER_REGISTRY:-docker.io}"
+readonly DOCKER_NAMESPACE="${DOCKER_NAMESPACE:-ubuntu}"
+readonly DOCKER_PACKAGE="${DOCKER_PACKAGE:-redis}"
+readonly DOCKER_TAG="${DOCKER_TAG:-edge}"
+readonly DOCKER_IMAGE="$DOCKER_REGISTRY/$DOCKER_NAMESPACE/$DOCKER_PACKAGE:$DOCKER_TAG"
 
 oneTimeSetUp() {
     # Make sure we're using the latest OCI image.
