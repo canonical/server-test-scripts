@@ -1,3 +1,6 @@
+# shellcheck shell=dash
+
+# shellcheck disable=SC1090
 . $(dirname $0)/helper/test_helper.sh
 
 # cheat sheet:
