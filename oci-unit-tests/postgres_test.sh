@@ -1,7 +1,7 @@
 # shellcheck shell=dash
 
 # shellcheck disable=SC1090
-. $(dirname $0)/helper/test_helper.sh
+. "$(dirname "$0")/helper/test_helper.sh"
 
 # cheat sheet:
 #  assertTrue $?
@@ -62,10 +62,10 @@ test_set_admin_user() {
         --network $DOCKER_NETWORK_NAME \
         --rm -d \
         -e POSTGRES_USER=${admin_user} \
-        -e POSTGRES_PASSWORD=${password} \
+        -e POSTGRES_PASSWORD="${password}" \
         -p 5432:5432 \
         --name postgres_test_${id} \
-        ${image} \
+        "${image}" \
     )
     assertNotNull "Failed to start the container" "${container}" || return 1
     wait_postgres_container_ready "${container}" || return 1
@@ -74,8 +74,8 @@ test_set_admin_user() {
     out=$(docker run \
               --network $DOCKER_NETWORK_NAME \
               --rm \
-              ${image} \
-              psql postgresql://${admin_user}:${password}@postgres_test_${id} -q -l -A -t -F % | grep "^postgres" | cut -d % -f 1)
+              "${image}" \
+              psql "postgresql://${admin_user}:${password}@postgres_test_${id}" -q -l -A -t -F % | grep "^postgres" | cut -d % -f 1)
     assertEquals "DB listing did not include \"postgres\"" postgres "${out}" || return 1
     # Verify we can create a new DB, since we are an admin
     test_db="test_db${id}"
@@ -83,16 +83,16 @@ test_set_admin_user() {
     docker run \
         --network $DOCKER_NETWORK_NAME \
         --rm \
-        ${image} \
-        psql postgresql://${admin_user}:${password}@postgres_test_${id} -q -c \
+        "${image}" \
+        psql "postgresql://${admin_user}:${password}@postgres_test_${id}" -q -c \
         "CREATE DATABASE ${test_db};"
     # list DB
     debug "Verifying DB ${test_db} was created"
     out=$(docker run \
               --network $DOCKER_NETWORK_NAME \
               --rm \
-              ${image} \
-              psql postgresql://${admin_user}:${password}@postgres_test_${id} -q -l -A -t -F % | grep "^${test_db}" | cut -d % -f 1)
+              "${image}" \
+              psql "postgresql://${admin_user}:${password}@postgres_test_${id}" -q -l -A -t -F % | grep "^${test_db}" | cut -d % -f 1)
     assertEquals "DB listing did not include \"postgres\"" "${test_db}" "${out}" || return 1
 }
 
@@ -107,10 +107,10 @@ test_default_database_name() {
         --network $DOCKER_NETWORK_NAME \
         --rm -d \
         -e POSTGRES_DB=${test_db} \
-        -e POSTGRES_PASSWORD=${password} \
+        -e POSTGRES_PASSWORD="${password}" \
         -p 5432:5432 \
         --name postgres_test_${id} \
-        ${image} \
+        "${image}" \
     )
     assertNotNull "Failed to start the container" "${container}" || return 1
     wait_postgres_container_ready "${container}" || return 1
@@ -118,8 +118,8 @@ test_default_database_name() {
     out=$(docker run \
               --network $DOCKER_NETWORK_NAME \
               --rm \
-              ${image} \
-              psql postgresql://postgres:${password}@postgres_test_${id} -q -l -A -t -F % | grep "^${test_db}" | cut -d % -f 1)
+              "${image}" \
+              psql "postgresql://postgres:${password}@postgres_test_${id}" -q -l -A -t -F % | grep "^${test_db}" | cut -d % -f 1)
     assertEquals "Failed to create test database" "${test_db}" "${out}" || return 1
 }
 
@@ -133,11 +133,11 @@ test_persistent_volume_keeps_changes() {
     container=$(docker run \
         --network $DOCKER_NETWORK_NAME \
         --rm -d \
-        -e POSTGRES_PASSWORD=${password} \
+        -e POSTGRES_PASSWORD="${password}" \
         -p 5432:5432 \
-        --mount source=${volume},target=/var/lib/postgresql/data \
+        --mount source="${volume}",target=/var/lib/postgresql/data \
         --name postgres_test_${id} \
-        ${image} \
+        "${image}" \
     )
     assertNotNull "Failed to start the container" "${container}" || return 1
     # wait for it to be ready
@@ -149,14 +149,14 @@ test_persistent_volume_keeps_changes() {
     docker run \
         --network $DOCKER_NETWORK_NAME \
         --rm \
-        ${image} \
-        psql postgresql://postgres:${password}@postgres_test_${id}/postgres -q -c \
+        "${image}" \
+        psql "postgresql://postgres:${password}@postgres_test_${id}/postgres" -q -c \
         "CREATE DATABASE ${test_db};"
     out=$(docker run \
               --network $DOCKER_NETWORK_NAME \
               --rm \
-              ${image} \
-              psql postgresql://postgres:${password}@postgres_test_${id} -q -l -A -t -F % | grep "^${test_db}" | cut -d % -f 1)
+              "${image}" \
+              psql "postgresql://postgres:${password}@postgres_test_${id}" -q -l -A -t -F % | grep "^${test_db}" | cut -d % -f 1)
     assertEquals "Failed to create test database" "${test_db}" "${out}" || return 1
 
     # create test table
@@ -165,19 +165,19 @@ test_persistent_volume_keeps_changes() {
     docker run \
         --network $DOCKER_NETWORK_NAME \
         --rm \
-        ${image} \
-        psql postgresql://postgres:${password}@postgres_test_${id}/${test_db} -q -c \
+        "${image}" \
+        psql "postgresql://postgres:${password}@postgres_test_${id}/${test_db}" -q -c \
         "CREATE TABLE ${test_table} (id INT, description TEXT); INSERT INTO ${test_table} (id,description) VALUES (${id}, 'hello');"
     out=$(docker run \
               --network $DOCKER_NETWORK_NAME \
               --rm \
-              ${image} \
-              psql -F % -A -t postgresql://postgres:${password}@postgres_test_${id}/${test_db} -q -c \
+              "${image}" \
+              psql -F % -A -t "postgresql://postgres:${password}@postgres_test_${id}/${test_db}" -q -c \
               "SELECT * FROM ${test_table};")
     assertEquals "Failed to verify test table" "${id}%hello" "${out}" || return 1
 
     # stop container, which deletes it because it was launched with --rm
-    stop_container_sync ${container}
+    stop_container_sync "${container}"
     # launch another one with the same volume, and the data we created above
     # must still be there
     # By using the same --name also makes sure the previous container is really
@@ -187,9 +187,9 @@ test_persistent_volume_keeps_changes() {
         --network $DOCKER_NETWORK_NAME \
         --rm -d \
         -p 5432:5432 \
-        --mount source=${volume},target=/var/lib/postgresql/data \
+        --mount source="${volume}",target=/var/lib/postgresql/data \
         --name postgres_test_${id} \
-        ${image} \
+        "${image}" \
     )
     ready_log="database system is ready to accept connections"
     wait_container_ready "${container}" "${ready_log}"
@@ -198,8 +198,8 @@ test_persistent_volume_keeps_changes() {
     out=$(docker run \
               --network $DOCKER_NETWORK_NAME \
               --rm \
-              ${image} \
-              psql -F % -A -t postgresql://postgres:${password}@postgres_test_${id}/${test_db} -q -c \
+              "${image}" \
+              psql -F % -A -t "postgresql://postgres:${password}@postgres_test_${id}/${test_db}" -q -c \
               "SELECT * FROM ${test_table};")
     assertEquals "Failed to verify test table" "${id}%hello" "${out}" || return 1
 }

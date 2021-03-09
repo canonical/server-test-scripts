@@ -1,7 +1,7 @@
 # shellcheck shell=dash
 
 # shellcheck disable=SC1090
-. $(dirname $0)/helper/test_helper.sh
+. "$(dirname "$0")/helper/test_helper.sh"
 
 # cheat sheet:
 #  assertTrue $?
@@ -152,7 +152,7 @@ test_persistent_volume_keeps_changes() {
     debug "Launching container (with volume)"
     container=$(docker_run_server \
 		    -e REDIS_PASSWORD="${password}" \
-		    --mount source=${volume},target=/var/lib/redis)
+		    --mount source="${volume}",target=/var/lib/redis)
     assertNotNull "Failed to start the container (with volume)" "${container}" || return 1
     # wait for it to be ready
     wait_redis_container_ready "${container}" || return 1
@@ -178,7 +178,7 @@ EOF
 
     # stop container, which deletes it because it was launched with --rm
     debug "Stopping (i.e., deleting) the container (with volume)"
-    stop_container_sync ${container}
+    stop_container_sync "${container}"
     # launch another one with the same volume, and the data we created above
     # must still be there
     # By using the same --name also makes sure the previous container is really
@@ -186,7 +186,7 @@ EOF
     debug "Launching second container (with volume)"
     container=$(docker_run_server \
 		    -e REDIS_PASSWORD="${password}" \
-		    --mount source=${volume},target=/var/lib/redis)
+		    --mount source="${volume}",target=/var/lib/redis)
     assertNotNull "Failed to start the second container (with volume)" "${container}" || return 1
     # wait for it to be ready
     wait_redis_container_ready "${container}" || return 1
