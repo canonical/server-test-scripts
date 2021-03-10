@@ -2,6 +2,7 @@
 
 # shellcheck disable=SC1090
 . "$(dirname "$0")/helper/test_helper.sh"
+. "$(dirname "$0")/helper/common_vars.sh"
 
 # cheat sheet:
 #  assertTrue $?
@@ -11,14 +12,6 @@
 #  setUp() - run before each test
 #  tearDown() - run after each test
 
-# The name of the temporary docker network we will create for the
-# tests.
-readonly DOCKER_PREFIX=oci_alertmanager_test
-readonly DOCKER_REGISTRY="${DOCKER_REGISTRY:-docker.io}"
-readonly DOCKER_NAMESPACE="${DOCKER_NAMESPACE:-ubuntu}"
-readonly DOCKER_PACKAGE="${DOCKER_PACKAGE:-prometheus-alertmanager}"
-readonly DOCKER_TAG="${DOCKER_TAG:-edge}"
-readonly DOCKER_IMAGE="$DOCKER_REGISTRY/$DOCKER_NAMESPACE/$DOCKER_PACKAGE:$DOCKER_TAG"
 readonly ALERTMANAGER_PORT=60001
 
 oneTimeSetUp() {

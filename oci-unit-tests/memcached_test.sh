@@ -2,6 +2,7 @@
 
 # shellcheck disable=SC1090
 . "$(dirname "$0")/helper/test_helper.sh"
+. "$(dirname "$0")/helper/common_vars.sh"
 
 # cheat sheet:
 #  assertTrue $?
@@ -10,16 +11,6 @@
 #  oneTimeTearDown()
 #  setUp() - run before each test
 #  tearDown() - run after each test
-
-# The name of the temporary docker network we will create for the
-# tests.
-readonly DOCKER_PREFIX=oci_memcached_test
-readonly DOCKER_NETWORK="${DOCKER_PREFIX}_network"
-readonly DOCKER_REGISTRY="${DOCKER_REGISTRY:-docker.io}"
-readonly DOCKER_NAMESPACE="${DOCKER_NAMESPACE:-ubuntu}"
-readonly DOCKER_PACKAGE="${DOCKER_PACKAGE:-memcached}"
-readonly DOCKER_TAG="${DOCKER_TAG:-edge}"
-readonly DOCKER_IMAGE="$DOCKER_REGISTRY/$DOCKER_NAMESPACE/$DOCKER_PACKAGE:$DOCKER_TAG"
 
 oneTimeSetUp() {
     # Make sure we're using the latest OCI image.
@@ -30,11 +21,11 @@ oneTimeSetUp() {
     oneTimeTearDown
 
     # Setup network
-    docker network create $DOCKER_NETWORK > /dev/null 2>&1
+    docker network create "$DOCKER_NETWORK" > /dev/null 2>&1
 }
 
 oneTimeTearDown() {
-        docker network rm $DOCKER_NETWORK > /dev/null 2>&1
+        docker network rm "$DOCKER_NETWORK" > /dev/null 2>&1
 }
 
 tearDown() {

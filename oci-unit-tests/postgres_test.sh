@@ -2,6 +2,7 @@
 
 # shellcheck disable=SC1090
 . "$(dirname "$0")/helper/test_helper.sh"
+. "$(dirname "$0")/helper/common_vars.sh"
 
 # cheat sheet:
 #  assertTrue $?
@@ -11,18 +12,11 @@
 #  setUp() - run before each test
 #  tearDown() - run after each test
 
-readonly DOCKER_NETWORK_NAME="postgres_test"
-readonly DOCKER_REGISTRY="${DOCKER_REGISTRY:-docker.io}"
-readonly DOCKER_NAMESPACE="${DOCKER_NAMESPACE:-ubuntu}"
-readonly DOCKER_PACKAGE="${DOCKER_PACKAGE:-postgres}"
-readonly DOCKER_TAG="${DOCKER_TAG:-edge}"
-readonly DOCKER_IMAGE="$DOCKER_REGISTRY/$DOCKER_NAMESPACE/$DOCKER_PACKAGE:$DOCKER_TAG"
-
 oneTimeSetUp() {
     # Make sure we're using the latest OCI image.
     docker pull --quiet "${DOCKER_IMAGE}" > /dev/null
 
-    docker network create $DOCKER_NETWORK_NAME > /dev/null 2>&1
+    docker network create "$DOCKER_NETWORK" > /dev/null 2>&1
 }
 
 setUp() {
@@ -32,7 +26,7 @@ setUp() {
 }
 
 oneTimeTearDown() {
-    docker network rm $DOCKER_NETWORK_NAME > /dev/null 2>&1
+    docker network rm "$DOCKER_NETWORK" > /dev/null 2>&1
 }
 
 tearDown() {
@@ -59,7 +53,7 @@ test_set_admin_user() {
     admin_user="user${id}"
     debug "Creating container with POSTGRES_USER=${admin_user}"
     container=$(docker run \
-        --network $DOCKER_NETWORK_NAME \
+        --network "$DOCKER_NETWORK" \
         --rm -d \
         -e POSTGRES_USER=${admin_user} \
         -e POSTGRES_PASSWORD="${password}" \
@@ -72,7 +66,7 @@ test_set_admin_user() {
     debug "Testing connection as ${admin_user}, looking for \"postgres\" DB"
     # default db is still "postgres"
     out=$(docker run \
-              --network $DOCKER_NETWORK_NAME \
+              --network "$DOCKER_NETWORK" \
               --rm \
               "${image}" \
               psql "postgresql://${admin_user}:${password}@postgres_test_${id}" -q -l -A -t -F % | grep "^postgres" | cut -d % -f 1)
@@ -81,7 +75,7 @@ test_set_admin_user() {
     test_db="test_db${id}"
     debug "Trying to create a new DB called ${test_db} as user ${admin_user}"
     docker run \
-        --network $DOCKER_NETWORK_NAME \
+        --network "$DOCKER_NETWORK" \
         --rm \
         "${image}" \
         psql "postgresql://${admin_user}:${password}@postgres_test_${id}" -q -c \
@@ -89,7 +83,7 @@ test_set_admin_user() {
     # list DB
     debug "Verifying DB ${test_db} was created"
     out=$(docker run \
-              --network $DOCKER_NETWORK_NAME \
+              --network "$DOCKER_NETWORK" \
               --rm \
               "${image}" \
               psql "postgresql://${admin_user}:${password}@postgres_test_${id}" -q -l -A -t -F % | grep "^${test_db}" | cut -d % -f 1)
@@ -104,7 +98,7 @@ test_default_database_name() {
     test_db="database${id}"
     debug "Creating container with POSTGRES_DB=${test_db}"
     container=$(docker run \
-        --network $DOCKER_NETWORK_NAME \
+        --network "$DOCKER_NETWORK" \
         --rm -d \
         -e POSTGRES_DB=${test_db} \
         -e POSTGRES_PASSWORD="${password}" \
@@ -116,7 +110,7 @@ test_default_database_name() {
     wait_postgres_container_ready "${container}" || return 1
     debug "Checking if database ${test_db} was created"
     out=$(docker run \
-              --network $DOCKER_NETWORK_NAME \
+              --network "$DOCKER_NETWORK" \
               --rm \
               "${image}" \
               psql "postgresql://postgres:${password}@postgres_test_${id}" -q -l -A -t -F % | grep "^${test_db}" | cut -d % -f 1)
@@ -131,7 +125,7 @@ test_persistent_volume_keeps_changes() {
     assertNotNull "Failed to create a volume" "${volume}" || return 1
     debug "Launching container"
     container=$(docker run \
-        --network $DOCKER_NETWORK_NAME \
+        --network "$DOCKER_NETWORK" \
         --rm -d \
         -e POSTGRES_PASSWORD="${password}" \
         -p 5432:5432 \
@@ -147,13 +141,13 @@ test_persistent_volume_keeps_changes() {
     test_db="test_db_${id}"
     debug "Creating test database ${test_db}"
     docker run \
-        --network $DOCKER_NETWORK_NAME \
+        --network "$DOCKER_NETWORK" \
         --rm \
         "${image}" \
         psql "postgresql://postgres:${password}@postgres_test_${id}/postgres" -q -c \
         "CREATE DATABASE ${test_db};"
     out=$(docker run \
-              --network $DOCKER_NETWORK_NAME \
+              --network "$DOCKER_NETWORK" \
               --rm \
               "${image}" \
               psql "postgresql://postgres:${password}@postgres_test_${id}" -q -l -A -t -F % | grep "^${test_db}" | cut -d % -f 1)
@@ -163,13 +157,13 @@ test_persistent_volume_keeps_changes() {
     test_table="test_data_${id}"
     debug "Creating test table ${test_table} with data"
     docker run \
-        --network $DOCKER_NETWORK_NAME \
+        --network "$DOCKER_NETWORK" \
         --rm \
         "${image}" \
         psql "postgresql://postgres:${password}@postgres_test_${id}/${test_db}" -q -c \
         "CREATE TABLE ${test_table} (id INT, description TEXT); INSERT INTO ${test_table} (id,description) VALUES (${id}, 'hello');"
     out=$(docker run \
-              --network $DOCKER_NETWORK_NAME \
+              --network "$DOCKER_NETWORK" \
               --rm \
               "${image}" \
               psql -F % -A -t "postgresql://postgres:${password}@postgres_test_${id}/${test_db}" -q -c \
@@ -184,7 +178,7 @@ test_persistent_volume_keeps_changes() {
     # gone, otherwise the new one wouldn't start
     debug "Launching new container with same volume"
     container=$(docker run \
-        --network $DOCKER_NETWORK_NAME \
+        --network "$DOCKER_NETWORK" \
         --rm -d \
         -p 5432:5432 \
         --mount source="${volume}",target=/var/lib/postgresql/data \
@@ -196,7 +190,7 @@ test_persistent_volume_keeps_changes() {
     # data we created previously should still be there
     debug "Verifying database ${test_db} and table ${test_table} are there with our data"
     out=$(docker run \
-              --network $DOCKER_NETWORK_NAME \
+              --network "$DOCKER_NETWORK" \
               --rm \
               "${image}" \
               psql -F % -A -t "postgresql://postgres:${password}@postgres_test_${id}/${test_db}" -q -c \

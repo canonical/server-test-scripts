@@ -2,6 +2,7 @@
 
 # shellcheck disable=SC1090
 . "$(dirname "$0")/helper/test_helper.sh"
+. "$(dirname "$0")/helper/common_vars.sh"
 
 # cheat sheet:
 #  assertTrue $?
@@ -11,20 +12,11 @@
 #  setUp() - run before each test
 #  tearDown() - run after each test
 
-# The name of the temporary docker network we will create for the
-# tests.
-readonly DOCKER_NETWORK=mysql_test
-readonly DOCKER_REGISTRY="${DOCKER_REGISTRY:-docker.io}"
-readonly DOCKER_NAMESPACE="${DOCKER_NAMESPACE:-ubuntu}"
-readonly DOCKER_PACKAGE="${DOCKER_PACKAGE:-mysql}"
-readonly DOCKER_TAG="${DOCKER_TAG:-edge}"
-readonly DOCKER_IMAGE="$DOCKER_REGISTRY/$DOCKER_NAMESPACE/$DOCKER_PACKAGE:$DOCKER_TAG"
-
 oneTimeSetUp() {
     # Make sure we're using the latest OCI image.
     docker pull --quiet "${DOCKER_IMAGE}" > /dev/null
 
-    docker network create $DOCKER_NETWORK > /dev/null 2>&1
+    docker network create "$DOCKER_NETWORK" > /dev/null 2>&1
 }
 
 setUp() {
@@ -33,7 +25,7 @@ setUp() {
 }
 
 oneTimeTearDown() {
-    docker network rm $DOCKER_NETWORK > /dev/null 2>&1
+    docker network rm "$DOCKER_NETWORK" > /dev/null 2>&1
 }
 
 tearDown() {
@@ -49,7 +41,7 @@ tearDown() {
 # It accepts extra arguments that are then passed to the server.
 docker_run_server() {
     docker run \
-           --network $DOCKER_NETWORK \
+           --network "$DOCKER_NETWORK" \
            --rm \
 	   -d \
 	   --name mysql_test_${id} \
@@ -75,7 +67,7 @@ docker_run_mysql() {
     # warning saying that this is insecure.  That's why we filter out
     # these lines in the end.
     docker run \
-	   --network $DOCKER_NETWORK \
+	   --network "$DOCKER_NETWORK" \
 	   --rm \
 	   -i \
 	   "${DOCKER_IMAGE}" \

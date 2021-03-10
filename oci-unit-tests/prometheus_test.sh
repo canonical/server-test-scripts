@@ -2,6 +2,7 @@
 
 # shellcheck disable=SC1090
 . "$(dirname "$0")/helper/test_helper.sh"
+. "$(dirname "$0")/helper/common_vars.sh"
 
 # cheat sheet:
 #  assertTrue $?
@@ -11,15 +12,6 @@
 #  setUp() - run before each test
 #  tearDown() - run after each test
 
-# The name of the temporary docker network we will create for the
-# tests.
-readonly DOCKER_PREFIX=oci_prometheus_test
-readonly DOCKER_NETWORK="${DOCKER_PREFIX}_network"
-readonly DOCKER_REGISTRY="${DOCKER_REGISTRY:-docker.io}"
-readonly DOCKER_NAMESPACE="${DOCKER_NAMESPACE:-ubuntu}"
-readonly DOCKER_PACKAGE="${DOCKER_PACKAGE:-prometheus}"
-readonly DOCKER_TAG="${DOCKER_TAG:-edge}"
-readonly DOCKER_IMAGE="$DOCKER_REGISTRY/$DOCKER_NAMESPACE/$DOCKER_PACKAGE:$DOCKER_TAG"
 readonly DOCKER_PUSHGATEWAY_IMAGE="prom/pushgateway"
 readonly PROM_PORT=50000
 readonly ALERTMANAGER_PORT=50001
@@ -39,7 +31,7 @@ oneTimeSetUp() {
     oneTimeTearDown
 
     # Setup network
-    docker network create $DOCKER_NETWORK > /dev/null 2>&1
+    docker network create "$DOCKER_NETWORK" > /dev/null 2>&1
 }
 
 setUp() {
@@ -47,7 +39,7 @@ setUp() {
 }
 
 oneTimeTearDown() {
-    docker network rm $DOCKER_NETWORK > /dev/null 2>&1
+    docker network rm "$DOCKER_NETWORK" > /dev/null 2>&1
 }
 
 tearDown() {
@@ -64,7 +56,7 @@ tearDown() {
 # It accepts extra arguments.
 docker_run_prom() {
     docker run \
-	   --network $DOCKER_NETWORK \
+	   --network "$DOCKER_NETWORK" \
 	   --rm \
 	   -d \
 	   --publish ${PROM_PORT}:9090 \
@@ -76,7 +68,7 @@ docker_run_prom() {
 # Helper function to execute alertmanager.
 docker_run_alertmanager() {
     docker run \
-	   --network $DOCKER_NETWORK \
+	   --network "$DOCKER_NETWORK" \
 	   --rm \
 	   -d \
 	   --publish ${ALERTMANAGER_PORT}:9093 \
@@ -87,7 +79,7 @@ docker_run_alertmanager() {
 # Helper function to execute pushgateway.
 docker_run_pushgateway() {
     docker run \
-	   --network $DOCKER_NETWORK \
+	   --network "$DOCKER_NETWORK" \
 	   --rm \
 	   -d \
 	   --publish ${PUSHGATEWAY_PORT}:9091 \
