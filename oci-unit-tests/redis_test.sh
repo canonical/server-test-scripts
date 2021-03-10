@@ -1,4 +1,8 @@
-. $(dirname $0)/helper/test_helper.sh
+# shellcheck shell=dash
+
+# shellcheck disable=SC1090
+. "$(dirname "$0")/helper/test_helper.sh"
+. "$(dirname "$0")/helper/common_vars.sh"
 
 # cheat sheet:
 #  assertTrue $?
@@ -8,16 +12,11 @@
 #  setUp() - run before each test
 #  tearDown() - run after each test
 
-# The name of the temporary docker network we will create for the
-# tests.
-readonly DOCKER_NETWORK=redis_test
-readonly DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu/redis:edge}"
-
 oneTimeSetUp() {
     # Make sure we're using the latest OCI image.
     docker pull --quiet "${DOCKER_IMAGE}" > /dev/null
 
-    docker network create $DOCKER_NETWORK > /dev/null 2>&1
+    docker network create "$DOCKER_NETWORK" > /dev/null 2>&1
 }
 
 setUp() {
@@ -26,7 +25,7 @@ setUp() {
 }
 
 oneTimeTearDown() {
-    docker network rm $DOCKER_NETWORK > /dev/null 2>&1
+    docker network rm "$DOCKER_NETWORK" > /dev/null 2>&1
 }
 
 tearDown() {
@@ -42,7 +41,7 @@ tearDown() {
 # It accepts extra arguments that are then passed to redis-server.
 docker_run_server() {
     docker run \
-	   --network $DOCKER_NETWORK \
+	   --network "$DOCKER_NETWORK" \
 	   --rm \
 	   -d \
 	   --name redis_test_${id} \
@@ -56,7 +55,7 @@ docker_run_server() {
 # to redis-cli.
 docker_run_cli() {
     docker run \
-	   --network $DOCKER_NETWORK \
+	   --network "$DOCKER_NETWORK" \
 	   --rm \
 	   -i \
 	   "${DOCKER_IMAGE}" \
@@ -145,7 +144,7 @@ test_persistent_volume_keeps_changes() {
     debug "Launching container (with volume)"
     container=$(docker_run_server \
 		    -e REDIS_PASSWORD="${password}" \
-		    --mount source=${volume},target=/var/lib/redis)
+		    --mount source="${volume}",target=/var/lib/redis)
     assertNotNull "Failed to start the container (with volume)" "${container}" || return 1
     # wait for it to be ready
     wait_redis_container_ready "${container}" || return 1
@@ -171,7 +170,7 @@ EOF
 
     # stop container, which deletes it because it was launched with --rm
     debug "Stopping (i.e., deleting) the container (with volume)"
-    stop_container_sync ${container}
+    stop_container_sync "${container}"
     # launch another one with the same volume, and the data we created above
     # must still be there
     # By using the same --name also makes sure the previous container is really
@@ -179,7 +178,7 @@ EOF
     debug "Launching second container (with volume)"
     container=$(docker_run_server \
 		    -e REDIS_PASSWORD="${password}" \
-		    --mount source=${volume},target=/var/lib/redis)
+		    --mount source="${volume}",target=/var/lib/redis)
     assertNotNull "Failed to start the second container (with volume)" "${container}" || return 1
     # wait for it to be ready
     wait_redis_container_ready "${container}" || return 1

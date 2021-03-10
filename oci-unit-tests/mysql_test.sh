@@ -1,4 +1,8 @@
-. $(dirname $0)/helper/test_helper.sh
+# shellcheck shell=dash
+
+# shellcheck disable=SC1090
+. "$(dirname "$0")/helper/test_helper.sh"
+. "$(dirname "$0")/helper/common_vars.sh"
 
 # cheat sheet:
 #  assertTrue $?
@@ -8,16 +12,11 @@
 #  setUp() - run before each test
 #  tearDown() - run after each test
 
-# The name of the temporary docker network we will create for the
-# tests.
-readonly DOCKER_NETWORK=mysql_test
-readonly DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu/mysql:edge}"
-
 oneTimeSetUp() {
     # Make sure we're using the latest OCI image.
     docker pull --quiet "${DOCKER_IMAGE}" > /dev/null
 
-    docker network create $DOCKER_NETWORK > /dev/null 2>&1
+    docker network create "$DOCKER_NETWORK" > /dev/null 2>&1
 }
 
 setUp() {
@@ -26,7 +25,7 @@ setUp() {
 }
 
 oneTimeTearDown() {
-    docker network rm $DOCKER_NETWORK > /dev/null 2>&1
+    docker network rm "$DOCKER_NETWORK" > /dev/null 2>&1
 }
 
 tearDown() {
@@ -42,7 +41,7 @@ tearDown() {
 # It accepts extra arguments that are then passed to the server.
 docker_run_server() {
     docker run \
-           --network $DOCKER_NETWORK \
+           --network "$DOCKER_NETWORK" \
            --rm \
 	   -d \
 	   --name mysql_test_${id} \
@@ -68,18 +67,18 @@ docker_run_mysql() {
     # warning saying that this is insecure.  That's why we filter out
     # these lines in the end.
     docker run \
-	   --network $DOCKER_NETWORK \
+	   --network "$DOCKER_NETWORK" \
 	   --rm \
 	   -i \
 	   "${DOCKER_IMAGE}" \
-	   mysql -h mysql_test_${id} -u ${user} -p${password} -s "$@" 2>&1 \
+	   mysql -h mysql_test_${id} -u "${user}" -p"${password}" -s "$@" 2>&1 \
 	| grep -vxF "mysql: [Warning] Using a password on the command line interface can be insecure."
 }
 
 # Helper function to send a SQL statement to the mysql client.
 docker_mysql_execute() {
     local sql="${1}"
-    cat <<EOF | docker_run_mysql ${TEST_MYSQL_USER:-root} ${TEST_MYSQL_DB}
+    cat <<EOF | docker_run_mysql "${TEST_MYSQL_USER:-root}" "${TEST_MYSQL_DB}"
 ${sql};
 EOF
 }
@@ -95,7 +94,7 @@ wait_mysql_container_ready() {
 
 test_list_and_create_databases() {
     debug "Creating mysql container (user root)"
-    container=$(docker_run_server -e MYSQL_ROOT_PASSWORD=${password})
+    container=$(docker_run_server -e MYSQL_ROOT_PASSWORD="${password}")
     assertNotNull "Failed to start the container" "${container}" || return 1
     wait_mysql_container_ready "${container}" || return 1
     debug "Testing connection as root, looking for \"mysql\" DB"
@@ -119,9 +118,9 @@ test_create_user_and_database() {
     debug "Creating container with MYSQL_USER=${admin_user} and MYSQL_DATABASE=${test_db}"
     container=$(docker_run_server \
         -e MYSQL_USER=${admin_user} \
-        -e MYSQL_PASSWORD=${password} \
+        -e MYSQL_PASSWORD="${password}" \
 	-e MYSQL_DATABASE=${test_db} \
-	-e MYSQL_ROOT_PASSWORD=${password})
+	-e MYSQL_ROOT_PASSWORD="${password}")
     assertNotNull "Failed to start the container" "${container}" || return 1
     wait_mysql_container_ready "${container}" || return 1
 
@@ -136,7 +135,7 @@ test_default_database_name() {
     debug "Creating container with MYSQL_DATABASE=${test_db}"
     container=$(docker_run_server \
         -e MYSQL_DATABASE=${test_db} \
-        -e MYSQL_ROOT_PASSWORD=${password})
+        -e MYSQL_ROOT_PASSWORD="${password}")
     assertNotNull "Failed to start the container" "${container}" || return 1
     wait_mysql_container_ready "${container}" || return 1
     debug "Checking if database ${test_db} was created"
@@ -152,8 +151,8 @@ test_persistent_volume_keeps_changes() {
     assertNotNull "Failed to create a volume" "${volume}" || return 1
     debug "Launching container"
     container=$(docker_run_server \
-        -e MYSQL_ROOT_PASSWORD=${password} \
-        --mount source=${volume},target=/var/lib/mysql)
+        -e MYSQL_ROOT_PASSWORD="${password}" \
+        --mount source="${volume}",target=/var/lib/mysql)
 
     assertNotNull "Failed to start the container" "${container}" || return 1
     # wait for it to be ready
@@ -179,15 +178,15 @@ test_persistent_volume_keeps_changes() {
     assertEquals "Failed to verify test table" "${id}%hello" "${out}" || return 1
 
     # stop container, which deletes it because it was launched with --rm
-    stop_container_sync ${container}
+    stop_container_sync "${container}"
     # launch another one with the same volume, and the data we created above
     # must still be there
     # By using the same --name also makes sure the previous container is really
     # gone, otherwise the new one wouldn't start
     debug "Launching new container with same volume"
     container=$(docker_run_server \
-        -e MYSQL_ROOT_PASSWORD=${password} \
-        --mount source=${volume},target=/var/lib/mysql)
+        -e MYSQL_ROOT_PASSWORD="${password}" \
+        --mount source="${volume}",target=/var/lib/mysql)
 
     wait_mysql_container_ready "${container}" || return 1
     # data we created previously should still be there

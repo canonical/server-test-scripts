@@ -2,6 +2,7 @@
 
 # shellcheck disable=SC1090
 . "$(dirname "$0")/helper/test_helper.sh"
+. "$(dirname "$0")/helper/common_vars.sh"
 
 # cheat sheet:
 #  assertTrue $?
@@ -11,8 +12,6 @@
 #  setUp() - run before each test
 #  tearDown() - run after each test
 
-readonly DOCKER_PREFIX=oci_telegraf_test
-readonly DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu/telegraf:edge}"
 readonly TELEGRAF_PORT=9273
 
 oneTimeSetUp() {

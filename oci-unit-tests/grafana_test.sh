@@ -2,6 +2,7 @@
 
 # shellcheck disable=SC1090
 . "$(dirname "$0")/helper/test_helper.sh"
+. "$(dirname "$0")/helper/common_vars.sh"
 
 # cheat sheet:
 #  assertTrue $?
@@ -11,10 +12,6 @@
 #  setUp() - run before each test
 #  tearDown() - run after each test
 
-# The name of the temporary docker network we will create for the
-# tests.
-readonly DOCKER_PREFIX=oci_grafana_test
-readonly DOCKER_IMAGE="${DOCKER_IMAGE:-ubuntu/grafana:edge}"
 readonly LOCAL_PORT=63180
 
 oneTimeSetUp() {
