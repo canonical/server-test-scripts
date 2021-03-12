@@ -120,6 +120,7 @@ test_cli() {
 test_default_target() {
     debug "Creating prometheus container"
     container=$(docker_run_prom)
+    assertNotNull "Failed to start the container" "${container}" || return 1
     wait_prometheus_container_ready "${container}" || return 1
 
     # Give some time for prometheus to check the health status of the target.
@@ -150,6 +151,7 @@ alerting:
       - ${alertmanager_url}
 EOF
     container=$(docker_run_prom --volume "${temp_dir}/prometheus.yml:/etc/prometheus/prometheus.yml")
+    assertNotNull "Failed to start the container" "${container}" || return 1
     wait_prometheus_container_ready "${container}" || return 1
 
     debug "Check if the alertmanager is configured"
@@ -180,6 +182,7 @@ groups:
 EOF
     container=$(docker_run_prom --volume "${temp_dir}/prometheus.yml:/etc/prometheus/prometheus.yml" \
                                 --volume "${temp_dir}/alerts.yml:/etc/prometheus/alerts.yml")
+    assertNotNull "Failed to start the container" "${container}" || return 1
     wait_prometheus_container_ready "${container}" || return 1
 
     debug "Check if the alert is active"
@@ -235,6 +238,7 @@ scrape_configs:
 EOF
     container=$(docker_run_prom --mount source="${volume}",target=/prometheus \
                                 --volume "${temp_dir}/prometheus.yml:/etc/prometheus/prometheus.yml")
+    assertNotNull "Failed to start the container" "${container}" || return 1
     wait_prometheus_container_ready "${container}" || return 1
 
     debug "Submit a dummy metric to pushgateway"
@@ -256,6 +260,7 @@ EOF
     debug "Start a new prometheus container using the same volume"
     container=$(docker_run_prom --mount source="${volume}",target=/prometheus \
                                 --volume "${temp_dir}/prometheus.yml:/etc/prometheus/prometheus.yml")
+    assertNotNull "Failed to start the container" "${container}" || return 1
     wait_prometheus_container_ready "${container}" || return 1
 
     debug "Check dummy metric in the new prometheus container"

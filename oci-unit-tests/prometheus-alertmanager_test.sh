@@ -52,6 +52,7 @@ wait_alertmanager_container_ready() {
 test_fire_an_alert() {
     debug "Creating alertmanager container"
     container=$(docker_run_alertmanager)
+    assertNotNull "Failed to start the container" "${container}" || return 1
     wait_alertmanager_container_ready "${container}" || return 1
 
     debug "Triggering alert"
