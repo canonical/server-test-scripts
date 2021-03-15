@@ -52,6 +52,7 @@ wait_cortex_container_ready() {
 test_services_status() {
     debug "Creating cortex container"
     container=$(docker_run_cortex)
+    assertNotNull "Failed to start the container" "${container}" || return 1
     wait_cortex_container_ready "${container}" || return 1
 
     debug "Check if all the expected services are running"

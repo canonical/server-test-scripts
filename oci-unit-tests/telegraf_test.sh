@@ -59,6 +59,7 @@ test_telegraf_up() {
     # "localhost:9273", and we don't want to specify any custom
     # configuration file here.
     container=$(docker_run_telegraf --network host)
+    assertNotNull "Failed to start the container" "${container}" || return 1
     wait_telegraf_container_ready "${container}" || return 1
 
     debug "Verifying that we can access the web endpoint"
@@ -82,6 +83,7 @@ test_telegraf_custom_config_http_endpoint() {
     container=$(docker_run_telegraf \
 		    --network=host \
 		    -v "$PWD"/telegraf_test_data/telegraf.conf:/etc/telegraf/telegraf.conf)
+    assertNotNull "Failed to start the container" "${container}" || return 1
     wait_telegraf_container_ready "${container}" || return 1
 
     # Listen to telegraf.

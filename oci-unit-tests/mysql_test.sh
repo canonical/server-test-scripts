@@ -188,6 +188,7 @@ test_persistent_volume_keeps_changes() {
         -e MYSQL_ROOT_PASSWORD="${password}" \
         --mount source="${volume}",target=/var/lib/mysql)
 
+    assertNotNull "Failed to start the container" "${container}" || return 1
     wait_mysql_container_ready "${container}" || return 1
     # data we created previously should still be there
     debug "Verifying database ${test_db} and table ${test_table} are there with our data"
