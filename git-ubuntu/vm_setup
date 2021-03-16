@@ -125,6 +125,9 @@ main() {
         vm_exec "$VM_NAME" "lxc profile set default environment.http_proxy ${http_proxy}"
     fi
 
+    echo "configuring the git lp: shorthand"
+    vm_exec "$VM_NAME" "git config --global url.'https://git.launchpad.net/'.insteadOf lp:"
+
     return 0
 }
 
