@@ -67,7 +67,7 @@ test_default_config_ipv6() {
 
 test_static_content() {
     debug "Creating all-defaults apache2 container"
-    test_data_wwwroot="$PWD/apache2_test_data/html"
+    test_data_wwwroot="$(realpath -e $(dirname "$0"))/apache2_test_data/html"
     container=$(docker_run_server -p "$LOCAL_PORT:80" -v "$test_data_wwwroot:/var/www/html:ro")
 
     assertNotNull "Failed to start the container" "${container}" || return 1
@@ -81,8 +81,8 @@ test_static_content() {
 
 test_custom_config() {
     debug "Creating apache2 container with custom config"
-    custom_config="$PWD/apache2_test_data/apache2_simple.conf"
-    test_data_wwwroot="$PWD/apache2_test_data/html"
+    custom_config="$(realpath -e $(dirname "$0"))/apache2_test_data/apache2_simple.conf"
+    test_data_wwwroot="$(realpath -e $(dirname "$0"))/apache2_test_data/html"
     container=$(docker_run_server -p "$LOCAL_PORT:80" -v "$custom_config:/etc/apache2/apache2.conf:ro" -v "$test_data_wwwroot:/srv/www:ro")
 
     assertNotNull "Failed to start the container" "${container}" || return 1
