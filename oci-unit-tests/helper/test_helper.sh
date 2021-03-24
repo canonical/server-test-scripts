@@ -66,3 +66,34 @@ wait_container_ready() {
     done
     debug "done"
 }
+
+# $1: container id
+check_manifest_exists()
+{
+    local id="${1}"
+    local manifest_dir="/usr/share/rocks"
+
+    # The expected files for each image type.
+    local possible_manifest_files="dpkg.query manifest.yaml snapcraft.yaml upstream"
+
+    debug -n "Listing the manifest file(s) inside ${id}"
+    local files
+    if ! files=$(docker exec "${id}" ls "${manifest_dir}" 2> /dev/null); then
+	debug "not found"
+	return 1
+    fi
+    debug "done"
+
+    debug -n "Verifying whether the manifest file(s) exist"
+    for want_file in ${possible_manifest_files}; do
+	for got_file in ${files}; do
+	    if [ "${got_file}" = "${want_file}" ]; then
+		debug "found ${got_file}"
+		return 0
+	    fi
+	done
+    done
+
+    debug "not found"
+    return 1
+}
