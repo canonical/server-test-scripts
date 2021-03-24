@@ -194,4 +194,12 @@ EOF
     assertEquals "Retrieval of values from the second container's database (with volume) succeeded" "100 200 " "${out}" || return 1
 }
 
+test_manifest_exists() {
+    debug "Testing that the manifest file is available in the image"
+    container=$(docker_run_server -e ALLOW_EMPTY_PASSWORD=yes)
+
+    check_manifest_exists "${container}"
+    assertTrue "Manifest file(s) do(es) not exist in image" $?
+}
+
 load_shunit2

@@ -138,5 +138,12 @@ test_reverse_proxy() {
     assertEquals "Checksum mismatch from retrieved test.txt" "${orig_checksum}" "${retrieved_checksum}"
 }
 
+test_manifest_exists() {
+    debug "Testing that the manifest file is available in the image"
+    container=$(docker_run_server)
+
+    check_manifest_exists "${container}"
+    assertTrue "Manifest file(s) do(es) not exist in image" $?
+}
 
 load_shunit2

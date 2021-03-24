@@ -96,4 +96,12 @@ test_telegraf_custom_config_http_endpoint() {
     assertTrue "Check if the cpu metric is present" "echo \"${data}\" | grep -qF cpu"
 }
 
+test_manifest_exists() {
+    debug "Testing that the manifest file is available in the image"
+    container=$(docker_run_telegraf)
+
+    check_manifest_exists "${container}"
+    assertTrue "Manifest file(s) do(es) not exist in image" $?
+}
+
 load_shunit2

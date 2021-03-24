@@ -198,5 +198,21 @@ test_persistent_volume_keeps_changes() {
     assertEquals "Failed to verify test table" "${id}%hello" "${out}" || return 1
 }
 
-load_shunit2
+test_manifest_exists() {
+    debug "Testing that the manifest file is available in the image"
+    admin_user="user${id}"
+    container=$(docker run \
+        --network "$DOCKER_NETWORK" \
+        --rm -d \
+        -e POSTGRES_USER=${admin_user} \
+        -e POSTGRES_PASSWORD="${password}" \
+        -p 5432:5432 \
+        --name postgres_test_${id} \
+        "${image}" \
+    )
 
+    check_manifest_exists "${container}"
+    assertTrue "Manifest file(s) do(es) not exist in image" $?
+}
+
+load_shunit2

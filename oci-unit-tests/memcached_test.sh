@@ -134,4 +134,12 @@ test_data_storage_and_retrieval() {
     assertEquals "Store/retrieve data" "$data" "$retr_data"
 }
 
+test_manifest_exists() {
+    debug "Testing that the manifest file is available in the image"
+    container=$(docker_run_server)
+
+    check_manifest_exists "${container}"
+    assertTrue "Manifest file(s) do(es) not exist in image" $?
+}
+
 load_shunit2

@@ -269,4 +269,12 @@ EOF
     rm -rf "${temp_dir}"
 }
 
+test_manifest_exists() {
+    debug "Testing that the manifest file is available in the image"
+    container=$(docker_run_prom)
+
+    check_manifest_exists "${container}"
+    assertTrue "Manifest file(s) do(es) not exist in image" $?
+}
+
 load_shunit2

@@ -69,4 +69,12 @@ test_services_status() {
     assertTrue "Check if querier is in the server response"        "echo \"${response}\" | grep -A1 querier        | grep -q Running"
 }
 
+test_manifest_exists() {
+    debug "Testing that the manifest file is available in the image"
+    container=$(docker_run_cortex)
+
+    check_manifest_exists "${container}"
+    assertTrue "Manifest file(s) do(es) not exist in image" $?
+}
+
 load_shunit2
