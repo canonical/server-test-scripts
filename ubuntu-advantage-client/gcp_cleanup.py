@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     if args.before_date:
         before_date = datetime.datetime.strptime(
-                    args.before_date, "%M/%d/%Y"
+                    args.before_date, "%m/%d/%Y"
         )
     else:
         before_date = datetime.datetime.today() - datetime.timedelta(days=1)
