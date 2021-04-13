@@ -113,24 +113,18 @@ copy_to_all_nodes() {
   done
 }
 
-generate_ssh_key_in_all_nodes() {
-  run_in_all_nodes 'ssh-keygen -t rsa -f /home/ubuntu/.ssh/id_rsa -q -P ""'
+generate_ssh_key_in_the_host() {
+  if [ ! -f $HOME/.ssh/virsh_fence_test_id_rsa ]; then
+    ssh-keygen -q -f $HOME/.ssh/virsh_fence_test_id_rsa -N "" -C "virsh fence agent test key"
+    cat $HOME/.ssh/virsh_fence_test_id_rsa.pub >> $HOME/.ssh/authorized_keys
+  fi
 }
 
-setup_authorized_keys_in_all_nodes() {
-  PUBKEY_VM01=$(${SSH} ubuntu@${IP_VM01} 'cat /home/ubuntu/.ssh/id_rsa.pub')
-  PUBKEY_VM02=$(${SSH} ubuntu@${IP_VM02} 'cat /home/ubuntu/.ssh/id_rsa.pub')
-  PUBKEY_VM03=$(${SSH} ubuntu@${IP_VM03} 'cat /home/ubuntu/.ssh/id_rsa.pub')
-  
-  # setup VM01
-  ${SSH} ubuntu@${IP_VM01} "echo ${PUBKEY_VM02} >> /home/ubuntu/.ssh/authorized_keys"
-  ${SSH} ubuntu@${IP_VM01} "echo ${PUBKEY_VM03} >> /home/ubuntu/.ssh/authorized_keys"
-  # setup VM02
-  ${SSH} ubuntu@${IP_VM02} "echo ${PUBKEY_VM01} >> /home/ubuntu/.ssh/authorized_keys"
-  ${SSH} ubuntu@${IP_VM02} "echo ${PUBKEY_VM03} >> /home/ubuntu/.ssh/authorized_keys"
-  # setup VM03
-  ${SSH} ubuntu@${IP_VM03} "echo ${PUBKEY_VM01} >> /home/ubuntu/.ssh/authorized_keys"
-  ${SSH} ubuntu@${IP_VM03} "echo ${PUBKEY_VM02} >> /home/ubuntu/.ssh/authorized_keys"
+copy_ssh_key_to_all_nodes() {
+  run_in_all_nodes "mkdir -p /home/ubuntu/.ssh"
+  copy_to_all_nodes "$HOME/.ssh/virsh_fence_test_id_rsa"
+  run_in_all_nodes "cp /home/ubuntu/virsh_fence_test_id_rsa /home/ubuntu/.ssh/id_rsa"
+  run_in_all_nodes "chmod 600 /home/ubuntu/.ssh/id_rsa"
 }
 
 copy_config_files_to_all_nodes() {
@@ -181,8 +175,8 @@ check_if_all_nodes_are_online() {
 create_nodes
 get_nodes_ip_address
 write_config_files
-generate_ssh_key_in_all_nodes
-setup_authorized_keys_in_all_nodes
+generate_ssh_key_in_the_host
+copy_ssh_key_to_all_nodes
 copy_config_files_to_all_nodes
 block_until_cloud_init_is_done
 setup_config_files_in_all_nodes
