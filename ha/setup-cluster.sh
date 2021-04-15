@@ -14,6 +14,10 @@ VM03="node03"
 SSH="ssh -o StrictHostKeyChecking=no"
 SCP="scp -o StrictHostKeyChecking=no"
 
+check_requirements() {
+    hash virsh ssh-keygen wget virt-install qemu-img cloud-localds uuidgen || exit 127
+}
+
 create_nodes() {
   for vm in "${VM01}" "${VM02}" "${VM03}"; do
     ${CREATE_VM_SCRIPT} ${vm} $(pwd)
@@ -172,6 +176,7 @@ check_if_all_nodes_are_online() {
   fi
 }
 
+check_requirements
 create_nodes
 get_nodes_ip_address
 write_config_files
