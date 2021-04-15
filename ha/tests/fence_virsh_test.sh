@@ -53,8 +53,8 @@ test_fence_virsh_is_started() {
 
 test_fence_a_node() {
   # Do not accept connection from the unique network interface to get node03
-  # disconnected from the Corosync ring,
-  run_command_in_node ${IP_VM03} "sudo iptables -A INPUT -i enp1s0 -j DROP"
+  # disconnected from the Corosync ring.
+  run_command_in_node ${IP_VM03} "sudo iptables -A INPUT -j DROP"
 
   # Check if node03 got offline
   sleep 20
