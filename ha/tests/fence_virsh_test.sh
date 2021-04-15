@@ -59,7 +59,7 @@ test_fence_a_node() {
   # Check if node03 got offline
   sleep 20
   cluster_status=$(run_command_in_node ${IP_VM01} "sudo crm status")
-  echo ${cluster_status} | grep node03 | grep offline
+  echo ${cluster_status} | grep node03 | grep -i offline
   assertTrue $?
 
   # Check if node03 is back online after rebooting
