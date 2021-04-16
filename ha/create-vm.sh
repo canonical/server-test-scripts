@@ -61,9 +61,14 @@ users:
 runcmd:
   - echo "AllowUsers ubuntu" >> /etc/ssh/sshd_config
   - systemctl restart ssh
+apt:
+  sources:
+    ha-agents-split.list:
+      source: "deb http://ppa.launchpad.net/lucaskanashiro/ha-agents-split/ubuntu hirsute main"
+      keyid: 5E6FEC392228FFDB9804C3A7F2AA00BB605DABB3
 package_update: true
 package_upgrade: true
-packages: ['corosync', 'pacemaker', 'pacemaker-cli-utils', 'crmsh', 'resource-agents', 'fence-agents']
+packages: ['corosync', 'pacemaker', 'pacemaker-cli-utils', 'crmsh', 'resource-agents', 'fence-agents-supported']
 EOF
 }
 
