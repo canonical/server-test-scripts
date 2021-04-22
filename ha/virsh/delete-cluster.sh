@@ -1,9 +1,9 @@
 #!/bin/bash
 
-virsh destroy node01
-virsh destroy node02
-virsh destroy node03
+VM_PREFIX="fence-test-virsh-node0"
 
-virsh undefine node01 --remove-all-storage
-virsh undefine node02 --remove-all-storage
-virsh undefine node03 --remove-all-storage
+virsh list --state-running --name | grep "^$VM_PREFIX" | xargs -L 1 --no-run-if-empty virsh destroy
+virsh list --state-shutoff --name | grep "^$VM_PREFIX" | xargs -L 1 --no-run-if-empty virsh undefine --remove-all-storage
+
+# Check for leftover VMs (cleanup failed!)
+! virsh list --all --name | grep -q "^$VM_PREFIX" || exit 1
