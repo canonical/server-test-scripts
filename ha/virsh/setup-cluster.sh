@@ -20,7 +20,7 @@ check_requirements() {
 
 create_nodes() {
   for vm in "${VM01}" "${VM02}" "${VM03}"; do
-    ${CREATE_VM_SCRIPT} ${vm} $(pwd)
+    ${CREATE_VM_SCRIPT} ${vm} "$(pwd)"
   done
   virsh list
 }
@@ -33,7 +33,7 @@ get_nodes_ip_address() {
 }
 
 write_hosts() {
-  cat > ${CONFIG_DIR}/hosts <<EOF
+  cat > "${CONFIG_DIR}"/hosts <<EOF
 127.0.0.1 localhost
 
 # The following lines are desirable for IPv6 capable hosts
@@ -51,7 +51,7 @@ EOF
 }
 
 write_corosync_conf() {
-  cat > ${CONFIG_DIR}/corosync.conf <<EOF
+  cat > "${CONFIG_DIR}"/corosync.conf <<EOF
 totem {
         version: 2
         secauth: off
@@ -106,21 +106,21 @@ write_config_files() {
 run_in_all_nodes() {
   CMD="${1}"
   for node_ip in "${IP_VM01}" "${IP_VM02}" "${IP_VM03}"; do
-    ${SSH} ubuntu@${node_ip} ${CMD} || exit 1
+    ${SSH} ubuntu@"${node_ip}" "${CMD}" || exit 1
   done
 }
 
 copy_to_all_nodes() {
   FILE="${1}"
   for node_ip in "${IP_VM01}" "${IP_VM02}" "${IP_VM03}"; do
-    ${SCP} ${FILE} ubuntu@${node_ip}:/home/ubuntu/
+    ${SCP} "${FILE}" ubuntu@"${node_ip}":/home/ubuntu/
   done
 }
 
 generate_ssh_key_in_the_host() {
-  if [ ! -f $HOME/.ssh/virsh_fence_test_id_rsa ]; then
-    ssh-keygen -q -f $HOME/.ssh/virsh_fence_test_id_rsa -N "" -C "virsh fence agent test key"
-    cat $HOME/.ssh/virsh_fence_test_id_rsa.pub >> $HOME/.ssh/authorized_keys
+  if [ ! -f "$HOME"/.ssh/virsh_fence_test_id_rsa ]; then
+    ssh-keygen -q -f "$HOME"/.ssh/virsh_fence_test_id_rsa -N "" -C "virsh fence agent test key"
+    cat "$HOME"/.ssh/virsh_fence_test_id_rsa.pub >> "$HOME"/.ssh/authorized_keys
   fi
 }
 
@@ -132,8 +132,8 @@ copy_ssh_key_to_all_nodes() {
 }
 
 copy_config_files_to_all_nodes() {
-  copy_to_all_nodes ${CONFIG_DIR}/hosts
-  copy_to_all_nodes ${CONFIG_DIR}/corosync.conf
+  copy_to_all_nodes "${CONFIG_DIR}"/hosts
+  copy_to_all_nodes "${CONFIG_DIR}"/corosync.conf
 }
 
 block_until_cloud_init_is_done() {
@@ -148,8 +148,8 @@ setup_config_files_in_all_nodes() {
 
 check_if_all_nodes_are_online() {
   sleep 30
-  cluster_status=$(${SSH} ubuntu@${IP_VM01} sudo crm status)
-  nodes_online=$(echo ${cluster_status} | grep -A1 "Node List" | grep Online)
+  cluster_status=$(${SSH} ubuntu@"${IP_VM01}" sudo crm status)
+  nodes_online=$(echo "${cluster_status}" | grep -A1 "Node List" | grep Online)
 
   if [[ "${nodes_online}" == *"${VM01}"* ]] && \
 	[[ "${nodes_online}" == *"${VM02}"* ]] && \

@@ -4,8 +4,7 @@
 
 test_failed=0
 for file in tests/*_test.sh; do
-  bash $file
-  if [ $? != 0 ]; then
+  if ! bash "$file"; then
     test_failed=1
   fi
 done

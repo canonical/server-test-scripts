@@ -1,3 +1,5 @@
+# shellcheck shell=bash
+
 PATH="$(dirname "$0")/..:$PATH"
 ROOTDIR="$(dirname "$0")/.."
 export PATH ROOTDIR
