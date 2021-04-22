@@ -136,24 +136,8 @@ copy_config_files_to_all_nodes() {
   copy_to_all_nodes ${CONFIG_DIR}/corosync.conf
 }
 
-
-loop() {
-  CMD="${1}"
-  until ${CMD}; do
-    sleep 30
-  done
-}
-
 block_until_cloud_init_is_done() {
-  for vm in "${VM01}" "${VM02}" "${VM03}"; do
-    if [[ "${vm}" == "${VM01}" ]]; then
-      loop "${SSH} ubuntu@${IP_VM01} test -f /var/lib/cloud/instance/boot-finished"
-    elif [[ "${vm}" == "${VM02}" ]]; then
-      loop "${SSH} ubuntu@${IP_VM02} test -f /var/lib/cloud/instance/boot-finished"
-    else
-      loop "${SSH} ubuntu@${IP_VM03} test -f /var/lib/cloud/instance/boot-finished"
-    fi
-  done
+  run_in_all_nodes "cloud-init status --wait"
 }
 
 setup_config_files_in_all_nodes() {
