@@ -11,8 +11,8 @@ VM01="node01"
 VM02="node02"
 VM03="node03"
 
-SSH="ssh -o StrictHostKeyChecking=no"
-SCP="scp -o StrictHostKeyChecking=no"
+SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+SCP="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 
 check_requirements() {
     hash virsh ssh-keygen wget virt-install qemu-img cloud-localds uuidgen || exit 127

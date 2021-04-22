@@ -10,7 +10,7 @@ oneTimeSetUp() {
 run_command_in_node() {
   NODE="${1}"
   CMD="${2}"
-  SSH="ssh -o StrictHostKeyChecking=no"
+  SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
   ${SSH} ubuntu@${NODE} "${CMD}"
 }
 
