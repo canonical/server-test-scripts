@@ -1,6 +1,6 @@
-VM01="node01"
-VM02="node02"
-VM03="node03"
+VM01="fence-test-virsh-node01"
+VM02="fence-test-virsh-node02"
+VM03="fence-test-virsh-node03"
 
 HOST_IP="192.168.122.1"
 HOST_USER="ubuntu"

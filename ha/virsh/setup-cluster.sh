@@ -7,9 +7,9 @@ CONFIG_DIR="${2:-"${WORK_DIR}/config"}"
 
 CREATE_VM_SCRIPT="$(pwd)/create-vm.sh"
 
-VM01="node01"
-VM02="node02"
-VM03="node03"
+VM01="fence-test-virsh-node01"
+VM02="fence-test-virsh-node02"
+VM03="fence-test-virsh-node03"
 
 SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 SCP="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
