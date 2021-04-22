@@ -11,7 +11,7 @@ run_command_in_node() {
   NODE="${1}"
   CMD="${2}"
   SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
-  ${SSH} ubuntu@${NODE} "${CMD}"
+  ${SSH} ubuntu@${NODE} "${CMD}" || exit 1
 }
 
 test_cluster_nodes_are_online() {

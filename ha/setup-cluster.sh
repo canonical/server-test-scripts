@@ -106,7 +106,7 @@ write_config_files() {
 run_in_all_nodes() {
   CMD="${1}"
   for node_ip in "${IP_VM01}" "${IP_VM02}" "${IP_VM03}"; do
-    ${SSH} ubuntu@${node_ip} ${CMD}
+    ${SSH} ubuntu@${node_ip} ${CMD} || exit 1
   done
 }
 
