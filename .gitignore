@@ -1,2 +1,4 @@
 .vscode
 results.xml
+ha/virsh/config/
+ha/virsh/images/
