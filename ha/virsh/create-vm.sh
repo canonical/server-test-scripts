@@ -28,7 +28,7 @@ setup_workdir() {
 
 download_base_image() {
   if [ ! -f "${IMAGES_DIR}"/base/"${CLOUD_IMAGE_FILENAME}" ]; then
-    wget -P "${IMAGES_DIR}"/base "${CLOUD_IMAGE_URL}"
+    wget --quiet -P "${IMAGES_DIR}"/base "${CLOUD_IMAGE_URL}"
   fi
 }
 
