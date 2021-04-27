@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# shellcheck disable=SC1091
+source /etc/profile.d/libvirt-uri.sh
+
 VM_PREFIX="fence-test-virsh-node0"
 
 virsh list --state-running --name | grep "^$VM_PREFIX" | xargs -L 1 --no-run-if-empty virsh destroy

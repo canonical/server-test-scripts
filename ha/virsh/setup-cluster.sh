@@ -2,6 +2,9 @@
 
 set -x
 
+# shellcheck disable=SC1091
+source /etc/profile.d/libvirt-uri.sh
+
 WORK_DIR="${1:-$(pwd)}"
 CONFIG_DIR="${2:-"${WORK_DIR}/config"}"
 

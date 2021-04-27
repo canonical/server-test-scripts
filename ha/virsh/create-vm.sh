@@ -2,6 +2,9 @@
 
 set -x
 
+# shellcheck disable=SC1091
+source /etc/profile.d/libvirt-uri.sh
+
 VM_NAME="${1}"
 WORK_DIR="${2:-$(pwd)}"
 CONFIG_DIR="${3:-"${WORK_DIR}/config"}"
@@ -85,7 +88,6 @@ create_seed_disk() {
 
 launch_vm() {
   virt-install \
-  	--connect qemu:///system \
   	--virt-type kvm \
 	--name "${VM_NAME}" \
   	--ram ${RAM} \
