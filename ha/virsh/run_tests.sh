@@ -1,5 +1,6 @@
 #!/bin/bash
 
+./delete-cluster.sh || exit 1
 ./setup-cluster.sh
 
 test_failed=0
