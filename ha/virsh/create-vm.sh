@@ -2,9 +2,6 @@
 
 set -eux -o pipefail
 
-# shellcheck disable=SC1091
-source /etc/profile.d/libvirt-uri.sh
-
 VM_NAME="${1}"
 WORK_DIR="${2:-$(pwd)}"
 CONFIG_DIR="${3:-"${WORK_DIR}/config"}"

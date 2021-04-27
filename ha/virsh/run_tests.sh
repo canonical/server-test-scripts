@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# shellcheck disable=SC1091
+source /etc/profile.d/libvirt-uri.sh
+
 ./delete-cluster.sh || exit 1
 ./setup-cluster.sh
 
