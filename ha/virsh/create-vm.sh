@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+set -eux -o pipefail
 
 # shellcheck disable=SC1091
 source /etc/profile.d/libvirt-uri.sh
