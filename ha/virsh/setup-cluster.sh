@@ -2,14 +2,16 @@
 
 set -eux -o pipefail
 
+export UBUNTU_SERIES="${UBUNTU_SERIES:-hirsute}"
+
 WORK_DIR="${1:-$(pwd)}"
 CONFIG_DIR="${2:-"${WORK_DIR}/config"}"
 
 CREATE_VM_SCRIPT="$(pwd)/create-vm.sh"
 
-VM01="fence-test-virsh-node01"
-VM02="fence-test-virsh-node02"
-VM03="fence-test-virsh-node03"
+VM01="fence-test-virsh-${UBUNTU_SERIES}-node01"
+VM02="fence-test-virsh-${UBUNTU_SERIES}-node02"
+VM03="fence-test-virsh-${UBUNTU_SERIES}-node03"
 
 SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 SCP="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
