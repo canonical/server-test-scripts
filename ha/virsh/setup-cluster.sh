@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+set -eux -o pipefail
 
 WORK_DIR="${1:-$(pwd)}"
 CONFIG_DIR="${2:-"${WORK_DIR}/config"}"
@@ -106,7 +106,7 @@ write_config_files() {
 run_in_all_nodes() {
   CMD="${1}"
   for node_ip in "${IP_VM01}" "${IP_VM02}" "${IP_VM03}"; do
-    ${SSH} ubuntu@"${node_ip}" "${CMD}" || exit 1
+    ${SSH} ubuntu@"${node_ip}" "${CMD}"
   done
 }
 
@@ -122,6 +122,16 @@ generate_ssh_key_in_the_host() {
     ssh-keygen -q -f "$HOME"/.ssh/virsh_fence_test_id_rsa -N "" -C "virsh fence agent test key"
     cat "$HOME"/.ssh/virsh_fence_test_id_rsa.pub >> "$HOME"/.ssh/authorized_keys
   fi
+}
+
+verify_all_nodes_reachable_via_ssh() {
+  for i in {0..9}; do
+    if run_in_all_nodes true; then
+      return 0
+    fi
+    sleep 2
+  done
+  exit 1
 }
 
 copy_ssh_key_to_all_nodes() {
@@ -165,6 +175,7 @@ create_nodes
 get_nodes_ip_address
 write_config_files
 generate_ssh_key_in_the_host
+verify_all_nodes_reachable_via_ssh
 copy_ssh_key_to_all_nodes
 copy_config_files_to_all_nodes
 block_until_cloud_init_is_done

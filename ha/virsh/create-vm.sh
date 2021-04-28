@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+set -eux -o pipefail
 
 VM_NAME="${1}"
 WORK_DIR="${2:-$(pwd)}"
@@ -25,7 +25,7 @@ setup_workdir() {
 
 download_base_image() {
   if [ ! -f "${IMAGES_DIR}"/base/"${CLOUD_IMAGE_FILENAME}" ]; then
-    wget -P "${IMAGES_DIR}"/base "${CLOUD_IMAGE_URL}"
+    wget --quiet -P "${IMAGES_DIR}"/base "${CLOUD_IMAGE_URL}"
   fi
 }
 
@@ -85,7 +85,6 @@ create_seed_disk() {
 
 launch_vm() {
   virt-install \
-  	--connect qemu:///system \
   	--virt-type kvm \
 	--name "${VM_NAME}" \
   	--ram ${RAM} \
