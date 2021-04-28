@@ -127,7 +127,7 @@ generate_ssh_key_in_the_host() {
 }
 
 verify_all_nodes_reachable_via_ssh() {
-  for i in {0..9}; do
+  for _ in {0..9}; do
     if run_in_all_nodes true; then
       return 0
     fi
