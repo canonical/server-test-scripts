@@ -2,12 +2,13 @@
 
 set -eux -o pipefail
 
+: "${UBUNTU_SERIES:=hirsute}"
+
 VM_NAME="${1}"
 WORK_DIR="${2:-$(pwd)}"
 CONFIG_DIR="${3:-"${WORK_DIR}/config"}"
 IMAGES_DIR="${4:-"${WORK_DIR}/images"}"
-UBUNTU_SERIES="${5:-"hirsute"}"
-PUB_KEY_FILE="${6:-"/home/$(whoami)/.ssh/id_rsa.pub"}"
+PUB_KEY_FILE="${5:-"/home/$(whoami)/.ssh/id_rsa.pub"}"
 
 CLOUD_IMAGE_FILENAME="${UBUNTU_SERIES}-server-cloudimg-amd64.img"
 CLOUD_IMAGE_URL="https://cloud-images.ubuntu.com/${UBUNTU_SERIES}/current/${CLOUD_IMAGE_FILENAME}"
@@ -64,7 +65,7 @@ runcmd:
 apt:
   sources:
     ha-agents-split.list:
-      source: "deb http://ppa.launchpad.net/lucaskanashiro/ha-agents-split/ubuntu hirsute main"
+      source: "deb http://ppa.launchpad.net/lucaskanashiro/ha-agents-split/ubuntu ${UBUNTU_RELEASE} main"
       keyid: 5E6FEC392228FFDB9804C3A7F2AA00BB605DABB3
 package_update: true
 package_upgrade: true
