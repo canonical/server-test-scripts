@@ -15,5 +15,8 @@ for file in tests/*_test.sh; do
 done
 
 if [ $test_failed -eq 1 ]; then
+  echo -e "\033[0;31mThere are failing tests\033[0m"
   exit 3
 fi
+
+echo -e "\033[0;32mAll tests successfully passed!\033[0m"
