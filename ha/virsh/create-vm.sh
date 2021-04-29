@@ -65,7 +65,7 @@ runcmd:
 apt:
   sources:
     ha-agents-split.list:
-      source: "deb http://ppa.launchpad.net/lucaskanashiro/ha-agents-split/ubuntu ${UBUNTU_RELEASE} main"
+      source: "deb http://ppa.launchpad.net/lucaskanashiro/ha-agents-split/ubuntu ${UBUNTU_SERIES} main"
       keyid: 5E6FEC392228FFDB9804C3A7F2AA00BB605DABB3
 package_update: true
 package_upgrade: true
