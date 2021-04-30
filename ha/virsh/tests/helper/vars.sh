@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 
-: "${UBUNTU_SERIES:=hirsute}"
+: "${UBUNTU_SERIES:=impish}"
 
 # shellcheck disable=SC2034
 VM01="fence-test-virsh-${UBUNTU_SERIES}-node01"
