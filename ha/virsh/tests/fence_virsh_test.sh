@@ -44,7 +44,7 @@ test_fence_virsh_is_started() {
   configure_cluster_properties
   configure_fence_virsh "${VM03}"
 
-  run_command_in_node "${IP_VM01}" "sudo crm cluster wait_for_startup"
+  sleep 15
   cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status")
   echo "${cluster_status}" | grep "fence-${VM03}" | grep Started
   assertTrue $?
