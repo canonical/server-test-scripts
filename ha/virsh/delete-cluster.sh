@@ -1,6 +1,6 @@
 #!/bin/bash
 
-: "${UBUNTU_SERIES:=hirsute}"
+: "${UBUNTU_SERIES:=impish}"
 VM_PREFIX="fence-test-virsh-${UBUNTU_SERIES}-node"
 
 virsh list --state-running --name | grep "^$VM_PREFIX" | xargs -L 1 --no-run-if-empty virsh destroy

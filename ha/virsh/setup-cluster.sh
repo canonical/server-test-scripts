@@ -2,7 +2,7 @@
 
 set -eux -o pipefail
 
-export UBUNTU_SERIES="${UBUNTU_SERIES:-hirsute}"
+export UBUNTU_SERIES="${UBUNTU_SERIES:-impish}"
 
 WORK_DIR="${1:-$(pwd)}"
 CONFIG_DIR="${2:-"${WORK_DIR}/config"}"
