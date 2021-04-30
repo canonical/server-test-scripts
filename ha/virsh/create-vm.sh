@@ -64,11 +64,9 @@ runcmd:
   - systemctl restart ssh
 apt:
   sources:
-    ha-agents-split.list:
-      source: "deb http://ppa.launchpad.net/lucaskanashiro/ha-agents-split/ubuntu ${UBUNTU_SERIES} main"
-      keyid: 5E6FEC392228FFDB9804C3A7F2AA00BB605DABB3
+    proposed.list:
+      source: "deb http://archive.ubuntu.com/ubuntu ${UBUNTU_SERIES}-proposed main universe"
 package_update: true
-package_upgrade: true
 packages: ['corosync', 'pacemaker', 'pacemaker-cli-utils', 'crmsh', 'resource-agents', 'fence-agents-supported']
 EOF
 }
