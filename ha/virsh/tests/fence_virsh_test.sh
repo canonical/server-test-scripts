@@ -3,18 +3,14 @@
 # shellcheck disable=SC1090
 . "$(dirname "$0")/helper/test_helper.sh"
 # shellcheck disable=SC1090
-. "$(dirname "$0")/helper/vars.sh"
+. "$(dirname "$0")/../vm_utils.sh"
 
 oneTimeSetUp() {
-  IP_VM01=$(virsh domifaddr "${VM01}" | grep ipv4 | xargs | cut -d ' ' -f4 | cut -d '/' -f1)
-  IP_VM03=$(virsh domifaddr "${VM03}" | grep ipv4 | xargs | cut -d ' ' -f4 | cut -d '/' -f1)
-}
+  get_all_nodes_ip_address
 
-run_command_in_node() {
-  NODE="${1}"
-  CMD="${2}"
-  SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
-  ${SSH} ubuntu@"${NODE}" "${CMD}" || exit 1
+  readonly HOST_IP="192.168.122.1"
+  readonly HOST_USER="${USER}"
+  readonly PRIVATE_SSH_KEY="/home/ubuntu/.ssh/id_rsa"
 }
 
 test_cluster_nodes_are_online() {
