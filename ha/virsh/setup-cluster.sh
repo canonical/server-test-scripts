@@ -16,7 +16,7 @@ check_requirements() {
 
 create_nodes() {
   for vm in "${VM01}" "${VM02}" "${VM03}"; do
-    ${CREATE_VM_SCRIPT} ${vm} "$(pwd)"
+    ${CREATE_VM_SCRIPT} "${vm}" "$(pwd)"
   done
   virsh list
 }
