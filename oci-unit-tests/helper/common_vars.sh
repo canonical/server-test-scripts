@@ -9,3 +9,6 @@ readonly DOCKER_IMAGE="${DOCKER_IMAGE:-${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/${
 
 readonly DOCKER_PREFIX="${DOCKER_PREFIX:-oci_${DOCKER_PACKAGE}_test}"
 readonly DOCKER_NETWORK="${DOCKER_NETWORK:-${DOCKER_PREFIX}_net}"
+
+# List of all supported architectures for the images.
+readonly SUPPORTED_ARCHITECTURES="amd64 arm64 ppc64el s390x"
