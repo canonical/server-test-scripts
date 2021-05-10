@@ -36,23 +36,7 @@ test_ipaddr2_is_started() {
 }
 
 test_if_correct_ip_address_is_set() {
-  # Find out in which node the resource is running
-  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status | grep ${RESOURCE_NAME}")
-  node_running_resource=$(echo "${cluster_status}" | rev | cut -d ' ' -f 1 | rev)
-  export node_running_resource="${node_running_resource}"
-
-  # Get the IP address of the VM running the resource
-  case $node_running_resource in
-    "${VM01}")
-      IP_RESOURCE="${IP_VM01}"
-      ;;
-    "${VM02}")
-      IP_RESOURCE="${IP_VM02}"
-      ;;
-    *)
-      IP_RESOURCE="${IP_VM03}"
-      ;;
-  esac
+  find_node_running_resource "${RESOURCE_NAME}"
 
   # Check if the IP address was correctly set as secondary in the default NIC
   ip_address_out=$(run_command_in_node "${IP_RESOURCE}" "ip address")
@@ -61,21 +45,7 @@ test_if_correct_ip_address_is_set() {
 }
 
 test_move_resource() {
-  # Find which node is not running the resource
-  case $node_running_resource in
-    "${VM01}")
-      VM_TARGET="${VM02}"
-      IP_TARGET="${IP_VM02}"
-      ;;
-    "${VM02}")
-      VM_TARGET="${VM03}"
-      IP_TARGET="${IP_VM03}"
-      ;;
-    *)
-      VM_TARGET="${VM01}"
-      IP_TARGET="${IP_VM01}"
-      ;;
-  esac
+  find_node_to_move_resource "${RESOURCE_NAME}"
 
   # Move resource to another VM
   run_command_in_node "${IP_VM01}" "sudo crm resource move ${RESOURCE_NAME} ${VM_TARGET}"

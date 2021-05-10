@@ -34,3 +34,50 @@ copy_to_all_nodes() {
     ${SCP} "${FILE}" ubuntu@"${node_ip}":/home/ubuntu/
   done
 }
+
+get_name_node_running_resource() {
+  RES_NAME="${1}"
+  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status | grep ${RES_NAME}")
+  node_running_resource=$(echo "${cluster_status}" | rev | cut -d ' ' -f 1 | rev)
+}
+
+find_node_running_resource() {
+  RES_NAME="${1}"
+  get_name_node_running_resource "${RES_NAME}"
+
+  # Get the IP address of the VM running the resource
+  case $node_running_resource in
+    "${VM01}")
+      export IP_RESOURCE="${IP_VM01}"
+      export VM_RESOURCE="${VM01}"
+      ;;
+    "${VM02}")
+      export IP_RESOURCE="${IP_VM02}"
+      export VM_RESOURCE="${VM02}"
+      ;;
+    *)
+      export IP_RESOURCE="${IP_VM03}"
+      export VM_RESOURCE="${VM03}"
+      ;;
+  esac
+}
+
+find_node_to_move_resource() {
+  RES_NAME="${1}"
+  get_name_node_running_resource "${RES_NAME}"
+
+  case $node_running_resource in
+    "${VM01}")
+      export IP_TARGET="${IP_VM02}"
+      export VM_TARGET="${VM02}"
+      ;;
+    "${VM02}")
+      export IP_TARGET="${IP_VM03}"
+      export VM_TARGET="${VM03}"
+      ;;
+    *)
+      export IP_TARGET="${IP_VM01}"
+      export VM_TARGET="${VM01}"
+      ;;
+  esac
+}
