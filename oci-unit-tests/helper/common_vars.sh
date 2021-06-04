@@ -11,7 +11,7 @@ readonly DOCKER_PREFIX="${DOCKER_PREFIX:-oci_${DOCKER_PACKAGE}_test}"
 readonly DOCKER_NETWORK="${DOCKER_NETWORK:-${DOCKER_PREFIX}_net}"
 
 # List of all supported architectures for the images.
-readonly SUPPORTED_ARCHITECTURES="amd64 arm64 ppc64el s390x"
+readonly SUPPORTED_ARCHITECTURES="amd64 arm64 ppc64le s390x"
 # List of all supported registries.
 readonly SUPPORTED_REGISTRIES="aws docker"
 # List of all supported namespaces.
