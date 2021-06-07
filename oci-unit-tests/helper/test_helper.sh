@@ -97,3 +97,16 @@ check_manifest_exists()
     debug "not found"
     return 1
 }
+
+# Remove the current image.
+# This is useful before starting a test, in order to make sure that
+# we're using the latest image available to us.
+remove_current_image()
+{
+    # Remove the current downloaded image.  Just do it if the image
+    # spec (${DOCKER_IMAGE}) starts with ${DOCKER_REGISTRY}, because
+    # we don't want to remove locally built images.
+    if echo "${DOCKER_IMAGE}" | grep -q "^${DOCKER_REGISTRY}"; then
+        docker image rm --force "${DOCKER_IMAGE}" > /dev/null 2>&1
+    fi
+}
