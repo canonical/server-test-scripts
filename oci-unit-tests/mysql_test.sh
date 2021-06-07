@@ -13,6 +13,9 @@
 #  tearDown() - run after each test
 
 oneTimeSetUp() {
+    # Remove image before test.
+    remove_current_image
+
     # Make sure we're using the latest OCI image.
     docker pull --quiet "${DOCKER_IMAGE}" > /dev/null
 
