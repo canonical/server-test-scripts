@@ -127,6 +127,8 @@ copy_config_files_to_all_nodes() {
 }
 
 block_until_cloud_init_is_done() {
+  # set debconf frontend to Noninteractive
+  run_in_all_nodes "echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections"
   run_in_all_nodes "cloud-init status --wait"
 }
 

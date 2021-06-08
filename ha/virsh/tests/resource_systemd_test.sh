@@ -52,8 +52,7 @@ test_systemd_resource_is_started() {
 test_if_hostname_is_correct() {
   find_node_running_resource "${RESOURCE_NAME}"
 
-  # netcat uses an old version of the HTTP protocol
-  running_node=$(curl --silent --http0.9 "${IP_RESOURCE}":8080)
+  running_node=$(curl --silent "${IP_RESOURCE}":8080)
   [[ "${running_node}" == *"${VM_RESOURCE}"* ]]
   assertTrue $?
 }
@@ -71,13 +70,13 @@ test_move_resource() {
   assertTrue $?
 
   # Check if the systemd service is running in the target node
-  running_node=$(curl --silent --http0.9 "${IP_TARGET}":8080)
+  running_node=$(curl --silent "${IP_TARGET}":8080)
   [[ "${running_node}" == *"${VM_TARGET}"* ]]
   assertTrue $?
 
   # Make sure the service is not running on the previous node
   running_in_previous_node=0
-  if curl --silent --http0.9 "${VM_RESOURCE}":8080; then
+  if curl --silent "${VM_RESOURCE}":8080; then
     running_in_previous_node=1
   fi
   assertTrue "${running_in_previous_node}"
