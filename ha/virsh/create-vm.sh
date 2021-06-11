@@ -82,6 +82,15 @@ create_seed_disk() {
 	"${CONFIG_DIR}"/meta-data
 }
 
+create_storage_disk() {
+  if [ ! -f "${IMAGES_DIR}"/"${VM_NAME}"/"${VM_NAME}"-storage.qcow2 ]; then
+    qemu-img create \
+	-f qcow2 \
+	"${IMAGES_DIR}"/"${VM_NAME}"/"${VM_NAME}"-storage.qcow2 \
+	1G
+  fi
+}
+
 launch_vm() {
   virt-install \
   	--virt-type kvm \
@@ -92,6 +101,7 @@ launch_vm() {
 	--os-variant ubuntu18.04 \
 	--disk path="${IMAGES_DIR}"/"${VM_NAME}"/"${VM_NAME}".qcow2,device=disk \
 	--disk path="${IMAGES_DIR}"/"${VM_NAME}"/"${VM_NAME}"-seed.qcow2,device=disk \
+	--disk path="${IMAGES_DIR}"/"${VM_NAME}"/"${VM_NAME}"-storage.qcow2,device=disk \
   	--import \
   	--network network=default,model=virtio \
   	--noautoconsole
@@ -110,5 +120,6 @@ download_base_image
 create_qcow2_image
 create_config
 create_seed_disk
+create_storage_disk
 launch_vm
 get_vm_info
