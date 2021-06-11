@@ -131,7 +131,7 @@ test_default_target() {
     sleep 20
 
     debug "Check if the default prometheus target is running"
-    out=$(curl --silent "http://localhost:${PROM_PORT}/targets" \
+    out=$(curl --silent "http://localhost:${PROM_PORT}/classic/targets" \
 	    | grep job-prometheus \
             | cut -d '>' -f 2 \
             | cut -d '<' -f 1)
@@ -158,7 +158,7 @@ EOF
     wait_prometheus_container_ready "${container}" || return 1
 
     debug "Check if the alertmanager is configured"
-    out=$(curl --silent "http://localhost:${PROM_PORT}/status")
+    out=$(curl --silent "http://localhost:${PROM_PORT}/classic/status")
     assertTrue echo "${out}" | grep "${alertmanager_url}" >/dev/null
 }
 
@@ -189,7 +189,7 @@ EOF
     wait_prometheus_container_ready "${container}" || return 1
 
     debug "Check if the alert is active"
-    out=$(curl --silent "http://localhost:${PROM_PORT}/alerts")
+    out=$(curl --silent "http://localhost:${PROM_PORT}/classic/alerts")
     assertTrue echo "${out}" | grep "${alert_name}" | grep active >/dev/null
 }
 
