@@ -21,14 +21,6 @@ oneTimeSetUp() {
 
     # Cleanup stale resources
     tearDown
-    oneTimeTearDown
-
-    # Setup network
-    docker network create "$DOCKER_NETWORK" > /dev/null 2>&1
-}
-
-oneTimeTearDown() {
-        docker network rm "$DOCKER_NETWORK" > /dev/null 2>&1
 }
 
 tearDown() {
@@ -41,7 +33,6 @@ tearDown() {
 docker_run_server() {
     suffix=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 8 | head -n 1)
     docker run \
-       --network "$DOCKER_NETWORK" \
        --rm \
        -d \
        --name "${DOCKER_PREFIX}_${suffix}" \
