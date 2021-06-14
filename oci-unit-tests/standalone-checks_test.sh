@@ -181,17 +181,13 @@ test_images_hashes_are_equal()
                 cnt_images_list_tmp=$(echo "${images_list_tmp}" | wc -w)
 
                 if [ "${cnt_images_list}" -lt "${cnt_images_list_tmp}" ]; then
-                    echo "E: Registry '${registry}' contains more images than '${orig_registry}'.  Here are the extra images:" > /dev/stderr
+                    echo "W: Registry '${registry}' contains more images than '${orig_registry}'.  Here are the extra images:" > /dev/stderr
                     echo > /dev/stderr
                     echo "$(echo "${images_list_tmp}" | grep -Fvw "${images_list}")"
-                    echo > /dev/stderr
-                    echo "E: Aborting." > /dev/stderr
                 elif [ "${cnt_images_list}" -gt "${cnt_images_list_tmp}" ]; then
-                    echo "E: Registry '${registry}' contains less images than '${orig_registry}'.  Here are the missing images:" > /dev/stderr
+                    echo "W: Registry '${registry}' contains less images than '${orig_registry}'.  Here are the missing images:" > /dev/stderr
                     echo > /dev/stderr
                     echo "$(echo "${images_list}" | grep -Fvw "${images_list_tmp}")"
-                    echo > /dev/stderr
-                    echo "E: Aborting." > /dev/stderr
                 fi
             fi
         done
