@@ -21,6 +21,14 @@ oneTimeSetUp() {
 
     # Cleanup stale resources
     tearDown
+    oneTimeTearDown
+
+    # Setup network
+    docker network create "$DOCKER_NETWORK" > /dev/null 2>&1
+}
+
+oneTimeTearDown() {
+    docker network rm "$DOCKER_NETWORK" > /dev/null 2>&1
 }
 
 tearDown() {
@@ -116,7 +124,7 @@ test_custom_config() {
 test_reverse_proxy() {
     debug "Creating nginx container serving known data"
     # Override the random --name from docker_run_server()
-    container=$(docker_run_server --name "${DOCKER_PREFIX}_backend" -p 48080:80 -v "$test_data_wwwroot:/var/www/html:ro")
+    container=$(docker_run_server --name "${DOCKER_PREFIX}_backend" --network "${DOCKER_NETWORK}" -p 48080:80 -v "$test_data_wwwroot:/var/www/html:ro")
     assertNotNull "Failed to start the container" "${container}" || return 1
     wait_nginx_container_ready "${container}" || return 1
     orig_checksum=$(md5sum "$test_data_wwwroot/test.txt" | awk '{ print $1 }')
@@ -125,7 +133,7 @@ test_reverse_proxy() {
 
     debug "Creating reverse proxy nginx container"
     rp_config="$PWD/nginx_test_data/nginx_reverse_proxy.conf"
-    rp_container=$(docker_run_server -p 48070:48070 -v "$rp_config:/etc/nginx/nginx.conf:ro")
+    rp_container=$(docker_run_server --network "${DOCKER_NETWORK}" -p 48070:48070 -v "$rp_config:/etc/nginx/nginx.conf:ro")
     assertNotNull "Failed to start the container" "${rp_container}" || return 1
     wait_nginx_container_ready "${rp_container}" || return 1
     retrieved_checksum=$(curl -sS http://127.0.0.1:48070/test.txt | md5sum | awk '{ print $1 }')
