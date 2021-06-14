@@ -219,6 +219,19 @@ check_dummy_metric_status() {
 }
 
 test_persistent_volume_keeps_changes() {
+    if [ "$(dpkg --print-architecture)" != "amd64" ]; then
+        # We only run this test on amd64 because we cannot guarantee
+        # that prom/pushgateway will be available on different
+        # architectures.
+
+        # The startSkipping dance below is just a formality so that
+        # the user knows one test was skipped.
+        startSkipping
+        assertTrue "" 1
+
+        return
+    fi
+
     # Verify that a container launched with a volume that already has data in
     # it won't re-initialize it, thus preserving the data.
     debug "Creating persistent volume"
