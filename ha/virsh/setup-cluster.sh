@@ -126,10 +126,10 @@ copy_config_files_to_all_nodes() {
   copy_to_all_nodes "${CONFIG_DIR}"/corosync.conf
 }
 
-block_until_cloud_init_is_done() {
-  # set debconf frontend to Noninteractive
-  run_in_all_nodes "echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections"
-  run_in_all_nodes "cloud-init status --wait"
+wait_until_all_nodes_are_ready() {
+  block_until_cloud_init_is_done "${IP_VM01}"
+  block_until_cloud_init_is_done "${IP_VM02}"
+  block_until_cloud_init_is_done "${IP_VM03}"
 }
 
 setup_config_files_in_all_nodes() {
@@ -160,6 +160,6 @@ generate_ssh_key_in_the_host
 verify_all_nodes_reachable_via_ssh
 copy_ssh_key_to_all_nodes
 copy_config_files_to_all_nodes
-block_until_cloud_init_is_done
+wait_until_all_nodes_are_ready
 setup_config_files_in_all_nodes
 check_if_all_nodes_are_online
