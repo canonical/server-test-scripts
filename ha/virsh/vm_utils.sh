@@ -31,8 +31,14 @@ run_in_all_nodes() {
 copy_to_all_nodes() {
   FILE="${1}"
   for node_ip in "${IP_VM01}" "${IP_VM02}" "${IP_VM03}"; do
-    ${SCP} "${FILE}" ubuntu@"${node_ip}":/home/ubuntu/
+    copy_to_node "${node_ip}" "${FILE}"
   done
+}
+
+copy_to_node() {
+  NODE="${1}"
+  FILE="${2}"
+  ${SCP} "${FILE}" ubuntu@"${NODE}":/home/ubuntu/
 }
 
 get_name_node_running_resource() {
