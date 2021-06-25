@@ -10,9 +10,9 @@ VM01_ISCSI_INITIATOR="initiator01"
 VM02_ISCSI_INITIATOR="initiator02"
 VM03_ISCSI_INITIATOR="initiator03"
 
-VM01="fence-test-virsh-${UBUNTU_SERIES}-node01"
-VM02="fence-test-virsh-${UBUNTU_SERIES}-node02"
-VM03="fence-test-virsh-${UBUNTU_SERIES}-node03"
+VM01="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node01"
+VM02="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node02"
+VM03="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node03"
 
 SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 SCP="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
