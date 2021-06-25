@@ -9,6 +9,7 @@ source /etc/profile.d/libvirt-uri.sh
 
 test_failed=0
 for file in $TESTS; do
+  export AGENT=$(echo $file | grep -oP '(?<=/).+(?=\_)')
   ./setup-cluster.sh
   if ! bash "$file"; then
     test_failed=1

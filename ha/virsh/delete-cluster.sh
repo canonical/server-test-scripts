@@ -1,7 +1,7 @@
 #!/bin/bash
 
 : "${UBUNTU_SERIES:=impish}"
-VM_PREFIX="fence-test-virsh-${UBUNTU_SERIES}-node"
+VM_PREFIX="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node"
 VM_SERVICES="services-${UBUNTU_SERIES}"
 
 # Remove all cluster nodes
