@@ -9,8 +9,15 @@ source /etc/profile.d/libvirt-uri.sh
 
 test_failed=0
 for file in $TESTS; do
-  export AGENT=$(echo $file | grep -oP '(?<=/).+(?=\_)')
-  ./setup-cluster.sh
+  AGENT=$(echo "$file" | grep -oP '(?<=/).+(?=\_)')
+  export AGENT=$AGENT
+
+  if [[ "$AGENT" == "fence_scsi" ]]; then
+    ./setup-cluster.sh --iscsi
+  else
+    ./setup-cluster.sh
+  fi
+
   if ! bash "$file"; then
     test_failed=1
   fi
