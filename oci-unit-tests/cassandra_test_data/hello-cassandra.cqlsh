@@ -1,0 +1,6 @@
+CREATE keyspace mykeyspace WITH replication = {'class':'SimpleStrategy','replication_factor' : 1};
+USE mykeyspace;
+CREATE TABLE ocitable (ociid int primary key, name varchar, version varchar, series varchar);
+INSERT INTO ocitable (ociid, name, version, series) VALUES (1, 'cassandra', '4.0-rc1', '20.04');
+INSERT INTO ocitable (ociid, name, version, series) VALUES (2, 'cassandra', '4.0-rc1', '21.04');
+SELECT * FROM ocitable;
