@@ -40,7 +40,7 @@ check_requirements() {
 
 create_service_vm() {
   ${CREATE_VM_SCRIPT} "${VM_SERVICES}" "$(pwd)"
-  sleep 20
+  sleep 60
   get_vm_services_ip_address
   block_until_cloud_init_is_done "${IP_VM_SERVICES}"
 }
