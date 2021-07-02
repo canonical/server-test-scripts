@@ -12,7 +12,7 @@ setup_systemd_service() {
 Description=foo
 
 [Service]
-ExecStart=/bin/bash -c \"while true; do echo \$(hostname) | netcat -q 0 -l -p 8080; done\"
+ExecStart=/bin/bash -c \"while true; do echo \$(hostname) | netcat -l -N 8080; done\"
 
 [Install]
 WantedBy=multi-user.target
@@ -27,14 +27,6 @@ oneTimeSetUp() {
   setup_systemd_service
 
   readonly RESOURCE_NAME="gethostname-service"
-
-  # After version 7.66.0 the support to HTTP 0.9 was disabled by default
-  curl_version=$(curl --version | grep -m1 curl | cut -d ' ' -f 2)
-  if dpkg --compare-versions "$curl_version" gt "7.66.0"; then
-    CURL="curl --http0.9 --silent"
-  else
-    CURL="curl --silent"
-  fi
 }
 
 configure_cluster_properties() {
@@ -60,7 +52,7 @@ test_systemd_resource_is_started() {
 test_if_hostname_is_correct() {
   find_node_running_resource "${RESOURCE_NAME}"
 
-  running_node=$(${CURL} ${IP_RESOURCE}:8080)
+  running_node=$(netcat -d "${IP_RESOURCE}" 8080)
   [[ "${running_node}" == *"${VM_RESOURCE}"* ]]
   assertTrue $?
 }
@@ -78,13 +70,13 @@ test_move_resource() {
   assertTrue $?
 
   # Check if the systemd service is running in the target node
-  running_node=$(${CURL} ${IP_TARGET}:8080)
+  running_node=$(netcat -d "${IP_TARGET}" 8080)
   [[ "${running_node}" == *"${VM_TARGET}"* ]]
   assertTrue $?
 
   # Make sure the service is not running on the previous node
   running_in_previous_node=0
-  if ${CURL} ${VM_RESOURCE}:8080; then
+  if netcat -z "${VM_RESOURCE}" 8080; then
     running_in_previous_node=1
   fi
   assertTrue "${running_in_previous_node}"
