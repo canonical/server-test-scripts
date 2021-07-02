@@ -9,10 +9,10 @@ source /etc/profile.d/libvirt-uri.sh
 
 test_failed=0
 for file in $TESTS; do
-  AGENT=$(echo "$file" | grep -oP '(?<=/).+(?=\_)')
+  AGENT=$(echo "$file" | grep -oP '(?<=/).+(?=\_)' | tr _ -)
   export AGENT=$AGENT
 
-  if [[ "$AGENT" == "fence_scsi" ]]; then
+  if [[ "$AGENT" == "fence-scsi" ]]; then
     ./setup-cluster.sh --iscsi
   else
     ./setup-cluster.sh
