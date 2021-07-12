@@ -49,7 +49,7 @@ test_fence_node_running_the_resource() {
   run_command_in_node "${IP_RESOURCE}" "sudo iptables -A INPUT -j DROP"
 
   # Check if the node got offline
-  sleep 10
+  sleep 30
   cluster_status=$(run_command_in_node "${IP_TARGET}" "sudo crm status")
   echo "${cluster_status}" | grep "${VM_RESOURCE}" | grep -i offline
   assertTrue $?
