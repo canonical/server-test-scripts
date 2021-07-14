@@ -18,6 +18,8 @@ PUB_KEY=$(cat "${PUB_KEY_FILE}")
 RAM=1024
 VCPU=1
 
+HA_NETWORK="ha"
+
 setup_workdir() {
   mkdir -p "${IMAGES_DIR}"/base \
 	   "${IMAGES_DIR}"/"${VM_NAME}" \
@@ -91,6 +93,34 @@ create_storage_disk() {
   fi
 }
 
+create_ha_network() {
+  cat > "${CONFIG_DIR}"/ha-network.xml <<EOF
+<network>
+  <name>${HA_NETWORK}</name>
+  <forward mode='nat'>
+    <nat>
+      <port start='1024' end='65535'/>
+    </nat>
+  </forward>
+  <bridge name='${HA_NETWORK}' stp='on' delay='0'/>
+  <ip address='192.168.30.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.168.30.2' end='192.168.30.254'/>
+    </dhcp>
+  </ip>
+</network>
+EOF
+
+  virsh net-define "${CONFIG_DIR}"/ha-network.xml
+  virsh net-start "${HA_NETWORK}"
+}
+
+define_ha_network() {
+  if ! virsh net-list --name  | grep "${HA_NETWORK}"; then
+    create_ha_network
+  fi
+}
+
 launch_vm() {
   virt-install \
   	--virt-type kvm \
@@ -104,6 +134,7 @@ launch_vm() {
 	--disk path="${IMAGES_DIR}"/"${VM_NAME}"/"${VM_NAME}"-storage.qcow2,device=disk \
   	--import \
   	--network network=default,model=virtio \
+	--network network="${HA_NETWORK}",model=virtio \
   	--noautoconsole
 }
 
@@ -121,5 +152,6 @@ create_qcow2_image
 create_config
 create_seed_disk
 create_storage_disk
+define_ha_network
 launch_vm
 get_vm_info
