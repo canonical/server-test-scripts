@@ -6,7 +6,7 @@
 . "$(dirname "$0")/../vm_utils.sh"
 
 oneTimeSetUp() {
-  get_all_nodes_ip_address
+  get_all_nodes_ip_addresses
 
   readonly HOST_IP="192.168.122.1"
   readonly HOST_USER="${USER}"

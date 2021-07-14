@@ -20,7 +20,7 @@ setup_lvm() {
 }
 
 oneTimeSetUp() {
-  get_all_nodes_ip_address
+  get_all_nodes_ip_addresses
 
   readonly RESOURCE_NAME="lvm2-activator"
   readonly VG="clustervg"

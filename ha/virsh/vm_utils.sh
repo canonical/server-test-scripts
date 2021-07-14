@@ -17,20 +17,36 @@ VM03="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node03"
 SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 SCP="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
 
-get_vm_services_ip_address() {
-  IP_VM_SERVICES=$(virsh domifaddr "${VM_SERVICES}" | grep ipv4 | xargs | cut -d ' ' -f4 | cut -d '/' -f1)
-}
-
-get_all_nodes_ip_address() {
+get_all_nodes_ip_addresses() {
   IP_VM01=$(virsh domifaddr "${VM01}" | grep ipv4 | xargs | cut -d ' ' -f4 | cut -d '/' -f1)
+  IP2_VM01=$(virsh domifaddr "${VM01}" | grep ipv4 | xargs | cut -d ' ' -f8 | cut -d '/' -f1)
+
   IP_VM02=$(virsh domifaddr "${VM02}" | grep ipv4 | xargs | cut -d ' ' -f4 | cut -d '/' -f1)
+  IP2_VM02=$(virsh domifaddr "${VM02}" | grep ipv4 | xargs | cut -d ' ' -f8 | cut -d '/' -f1)
+
   IP_VM03=$(virsh domifaddr "${VM03}" | grep ipv4 | xargs | cut -d ' ' -f4 | cut -d '/' -f1)
+  IP2_VM03=$(virsh domifaddr "${VM03}" | grep ipv4 | xargs | cut -d ' ' -f8 | cut -d '/' -f1)
 }
 
 run_command_in_node() {
   NODE="${1}"
   CMD="${2}"
   ${SSH} ubuntu@"${NODE}" "${CMD}" || exit 1
+}
+
+get_name_second_nic() {
+  NODE_IP="${1}"
+  run_command_in_node "${NODE_IP}" "find /sys/class/net/* ! -name '*lo' -printf '%f ' | cut -d ' ' -f2"
+}
+
+get_vm_services_ip_addresses() {
+  IP_VM_SERVICES=$(virsh domifaddr "${VM_SERVICES}" | grep ipv4 | xargs | cut -d ' ' -f4 | cut -d '/' -f1)
+
+  # Workaround to get an IP address in the second network interface
+  network_interface=$(get_name_second_nic "${IP_VM_SERVICES}")
+  run_command_in_node "${IP_VM_SERVICES}" "sudo dhclient ${network_interface}"
+  sleep 10
+  IP2_VM_SERVICES=$(virsh domifaddr "${VM_SERVICES}" | grep ipv4 | xargs | cut -d ' ' -f8 | cut -d '/' -f1)
 }
 
 run_in_all_nodes() {
