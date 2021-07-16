@@ -41,7 +41,7 @@ check_requirements() {
 create_service_vm() {
   ${CREATE_VM_SCRIPT} "${VM_SERVICES}" "$(pwd)"
   sleep 60
-  get_vm_services_ip_address
+  get_vm_services_ip_addresses
   block_until_cloud_init_is_done "${IP_VM_SERVICES}"
 }
 
@@ -69,9 +69,16 @@ create_nodes() {
   virsh list
 }
 
-get_nodes_ip_address() {
+get_nodes_ip_addresses() {
   sleep 30
-  get_all_nodes_ip_address
+  get_all_nodes_ip_addresses
+
+  # Get IP address in the second network interface. For some reason this is not
+  # done automatically during VM creation.
+  for ip in "${IP_VM01}" "${IP_VM02}" "${IP_VM03}"; do
+    network_interface=$(get_name_second_nic "${ip}")
+    run_command_in_node "${ip}" "sudo dhclient ${network_interface}"
+  done
 }
 
 write_hosts() {
@@ -244,7 +251,7 @@ check_if_all_nodes_are_online() {
 check_requirements
 setup_service_vm
 create_nodes
-get_nodes_ip_address
+get_nodes_ip_addresses
 write_config_files
 generate_ssh_key_in_the_host
 verify_all_nodes_reachable_via_ssh
