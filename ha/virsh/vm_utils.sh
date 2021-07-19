@@ -14,9 +14,6 @@ VM01="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node01"
 VM02="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node02"
 VM03="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node03"
 
-SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
-SCP="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
-
 get_all_nodes_ip_addresses() {
   IP_VM01=$(virsh domifaddr "${VM01}" | grep ipv4 | xargs | cut -d ' ' -f4 | cut -d '/' -f1)
   IP2_VM01=$(virsh domifaddr "${VM01}" | grep ipv4 | xargs | cut -d ' ' -f8 | cut -d '/' -f1)
@@ -31,7 +28,11 @@ get_all_nodes_ip_addresses() {
 run_command_in_node() {
   NODE="${1}"
   CMD="${2}"
-  ${SSH} ubuntu@"${NODE}" "${CMD}" || exit 1
+  ssh -o StrictHostKeyChecking=no \
+      -o UserKnownHostsFile=/dev/null \
+      -o LogLevel=ERROR \
+      ubuntu@"${NODE}" \
+      "${CMD}" || exit 1
 }
 
 get_name_second_nic() {
@@ -52,7 +53,7 @@ get_vm_services_ip_addresses() {
 run_in_all_nodes() {
   CMD="${1}"
   for node_ip in "${IP_VM01}" "${IP_VM02}" "${IP_VM03}"; do
-    ${SSH} ubuntu@"${node_ip}" "${CMD}"
+    run_command_in_node "${node_ip}" "${CMD}"
   done
 }
 
@@ -66,7 +67,11 @@ copy_to_all_nodes() {
 copy_to_node() {
   NODE="${1}"
   FILE="${2}"
-  ${SCP} "${FILE}" ubuntu@"${NODE}":/home/ubuntu/
+  scp -o StrictHostKeyChecking=no \
+      -o UserKnownHostsFile=/dev/null \
+      -o LogLevel=ERROR \
+      "${FILE}" \
+      ubuntu@"${NODE}":/home/ubuntu/
 }
 
 get_name_node_running_resource() {
