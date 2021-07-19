@@ -236,7 +236,7 @@ configure_service_vm() {
 
 check_if_all_nodes_are_online() {
   sleep 30
-  cluster_status=$(${SSH} ubuntu@"${IP_VM01}" sudo crm status)
+  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status")
   nodes_online=$(echo "${cluster_status}" | grep -A1 "Node List" | grep Online)
 
   if [[ "${nodes_online}" == *"${VM01}"* ]] && \
