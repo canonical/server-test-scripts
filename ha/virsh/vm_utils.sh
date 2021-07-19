@@ -14,15 +14,26 @@ VM01="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node01"
 VM02="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node02"
 VM03="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node03"
 
-get_all_nodes_ip_addresses() {
+get_network_data_nic1() {
   IP_VM01=$(virsh domifaddr "${VM01}" | grep ipv4 | xargs | cut -d ' ' -f4 | cut -d '/' -f1)
-  IP2_VM01=$(virsh domifaddr "${VM01}" | grep ipv4 | xargs | cut -d ' ' -f8 | cut -d '/' -f1)
+  MAC_VM01=$(virsh domifaddr "${VM01}" | grep ipv4 | xargs | cut -d ' ' -f2)
 
   IP_VM02=$(virsh domifaddr "${VM02}" | grep ipv4 | xargs | cut -d ' ' -f4 | cut -d '/' -f1)
-  IP2_VM02=$(virsh domifaddr "${VM02}" | grep ipv4 | xargs | cut -d ' ' -f8 | cut -d '/' -f1)
+  MAC_VM02=$(virsh domifaddr "${VM02}" | grep ipv4 | xargs | cut -d ' ' -f2)
 
   IP_VM03=$(virsh domifaddr "${VM03}" | grep ipv4 | xargs | cut -d ' ' -f4 | cut -d '/' -f1)
+  MAC_VM03=$(virsh domifaddr "${VM03}" | grep ipv4 | xargs | cut -d ' ' -f2)
+}
+
+get_network_data_nic2() {
+  IP2_VM01=$(virsh domifaddr "${VM01}" | grep ipv4 | xargs | cut -d ' ' -f8 | cut -d '/' -f1)
+  MAC2_VM01=$(virsh domifaddr "${VM01}" | grep ipv4 | xargs | cut -d ' ' -f6)
+
+  IP2_VM02=$(virsh domifaddr "${VM02}" | grep ipv4 | xargs | cut -d ' ' -f8 | cut -d '/' -f1)
+  MAC2_VM02=$(virsh domifaddr "${VM02}" | grep ipv4 | xargs | cut -d ' ' -f6)
+
   IP2_VM03=$(virsh domifaddr "${VM03}" | grep ipv4 | xargs | cut -d ' ' -f8 | cut -d '/' -f1)
+  MAC2_VM03=$(virsh domifaddr "${VM03}" | grep ipv4 | xargs | cut -d ' ' -f6)
 }
 
 run_command_in_node() {
