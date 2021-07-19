@@ -23,7 +23,7 @@ EOF
 }
 
 oneTimeSetUp() {
-  get_all_nodes_ip_addresses
+  get_network_data_nic1
   setup_systemd_service
 
   readonly RESOURCE_NAME="gethostname-service"

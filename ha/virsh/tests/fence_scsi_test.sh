@@ -6,7 +6,7 @@
 . "$(dirname "$0")/../vm_utils.sh"
 
 oneTimeSetUp() {
-  get_all_nodes_ip_addresses
+  get_network_data_nic1
 
   readonly RESOURCE_NAME="fence-scsi"
   readonly SCSI_DEVICE="/dev/sda"
