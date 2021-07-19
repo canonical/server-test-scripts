@@ -46,9 +46,14 @@ run_command_in_node() {
       "${CMD}" || exit 1
 }
 
+get_name_first_nic() {
+  NODE_IP="${1}"
+  run_command_in_node "${NODE_IP}" 'find /sys/class/net/* ! -name "*lo" -printf "%f " | cut -d " " -f1'
+}
+
 get_name_second_nic() {
   NODE_IP="${1}"
-  run_command_in_node "${NODE_IP}" "find /sys/class/net/* ! -name '*lo' -printf '%f ' | cut -d ' ' -f2"
+  run_command_in_node "${NODE_IP}" 'find /sys/class/net/* ! -name "*lo" -printf "%f " | cut -d " " -f2'
 }
 
 get_vm_services_ip_addresses() {
