@@ -226,8 +226,37 @@ setup_config_files_in_all_nodes() {
 }
 
 login_iscsi_target() {
-  run_in_all_nodes "sudo iscsiadm -m discovery -t sendtargets -p ${IP_VM_SERVICES}"
-  run_in_all_nodes "sudo iscsiadm -m node --login"
+  # Iterate over IP and MAC addresses of each VM
+  for node in "${IP_VM01}","${IP2_VM01}","${MAC_VM01}","${MAC2_VM01}" \
+	      "${IP_VM02}","${IP2_VM02}","${MAC_VM02}","${MAC2_VM02}" \
+	      "${IP_VM03}","${IP2_VM03}","${MAC_VM03}","${MAC2_VM03}"; do
+
+
+    IFS=","
+    # shellcheck disable=SC2086
+    set -- ${node}
+
+    # Get the name of the network interfaces
+    nic1=$(get_name_first_nic "${1}")
+    nic2=$(get_name_second_nic "${1}")
+
+    # Setup first network interface
+    run_command_in_node "${1}" "sudo iscsiadm -m iface -I ${nic1} --op=new"
+    run_command_in_node "${1}" "sudo iscsiadm -m iface -I ${nic1} --op=update -n iface.ipaddress -v ${1}"
+    run_command_in_node "${1}" "sudo iscsiadm -m iface -I ${nic1} --op=update -n iface.hwaddress -v ${3}"
+
+    # Setup second network interface
+    run_command_in_node "${1}" "sudo iscsiadm -m iface -I ${nic2} --op=new"
+    run_command_in_node "${1}" "sudo iscsiadm -m iface -I ${nic2} --op=update -n iface.ipaddress -v ${2}"
+    run_command_in_node "${1}" "sudo iscsiadm -m iface -I ${nic2} --op=update -n iface.hwaddress -v ${4}"
+
+    # Dicovery the target using both network interfaces
+    run_command_in_node "${1}" "sudo iscsiadm -m discovery -I ${nic1} -t sendtargets -p ${IP_VM_SERVICES}"
+    run_command_in_node "${1}" "sudo iscsiadm -m discovery -I ${nic2} -t sendtargets -p ${IP2_VM_SERVICES}"
+
+    # Login to all dicovered targets
+    run_command_in_node "${1}" "sudo iscsiadm -m node --login"
+  done
 }
 
 configure_service_vm() {
