@@ -205,7 +205,7 @@ test_manifest_exists() {
     container=$(docker_run_server -e MYSQL_ROOT_PASSWORD="${password}")
 
     check_manifest_exists "${container}"
-    assertTrue "Manifest file(s) do(es) not exist in image" $?
+    assertTrue "Manifest file(s) do(es) not exist or is(are) empty in image" $?
 }
 
 load_shunit2
