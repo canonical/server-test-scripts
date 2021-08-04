@@ -72,6 +72,7 @@ check_manifest_exists()
 {
     local id="${1}"
     local manifest_dir="/usr/share/rocks"
+    local found=0
 
     # The expected files for each image type.
     local possible_manifest_files="dpkg.query manifest.yaml snapcraft.yaml upstream"
@@ -84,18 +85,35 @@ check_manifest_exists()
     fi
     debug "done"
 
-    debug -n "Verifying whether the manifest file(s) exist"
+    debug "Verifying whether the manifest file(s) exist"
     for want_file in ${possible_manifest_files}; do
 	for got_file in ${files}; do
 	    if [ "${got_file}" = "${want_file}" ]; then
 		debug "found ${got_file}"
-		return 0
+		found=1
 	    fi
 	done
     done
 
-    debug "not found"
-    return 1
+    if [ "${found}" -eq 0 ]; then
+        echo "E: No manifest file found in the image" > /dev/stderr
+        debug "not found"
+        return 1
+    fi
+
+    debug "Verifying that the manifest file(s) is(are) not empty"
+    for file in ${files}; do
+        fsize=$(docker exec "${id}" stat -c '%s' "${manifest_dir}/${file}" 2> /dev/null)
+        if [ "${fsize}" -eq 0 ]; then
+            echo "E: Manifest file ${file} is empty" > /dev/stderr
+            debug "file ${file} is empty"
+            return 1
+        else
+            debug "file ${file} has ${fsize} bytes"
+        fi
+    done
+
+    return 0
 }
 
 # Remove the current image.
