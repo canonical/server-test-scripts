@@ -1,5 +1,12 @@
 #!/bin/bash
 
+set -e
+
+progdir=$(dirname "$(readlink -f "${0}")")
+
+# We have to build the image of the test container first.
+docker build "${progdir}/tests/" -t localtest/lma-integration-tests
+
 # We want the main docker-compose process to exit with the same code
 # as the "tests" container.  For this reason, we use
 # '--exit-code-from', which implies that we cannot detach from the
