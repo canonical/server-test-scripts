@@ -2,7 +2,7 @@ version: '3'
 
 services:
     prometheus:
-        image: squeakywheel/prometheus:edge
+        image: ubuntu/prometheus:edge
         ports:
             - 9090:9090
         volumes:
@@ -19,7 +19,7 @@ services:
             - lmatest
 
     telegraf:
-        image: squeakywheel/telegraf:edge
+        image: ubuntu/telegraf:edge
         ports:
             - 9273:9273
         volumes:
@@ -28,7 +28,7 @@ services:
             - lmatest
 
     alertmanager:
-        image: squeakywheel/prometheus-alertmanager:edge
+        image: ubuntu/prometheus-alertmanager:edge
         ports:
             - 9093:9093
         volumes:
@@ -37,7 +37,7 @@ services:
             - lmatest
 
     grafana:
-        image: squeakywheel/grafana:edge
+        image: ubuntu/grafana:edge
         ports:
             - 3000:3000
         volumes:
@@ -46,19 +46,14 @@ services:
             - lmatest
 
     cortex:
-        image: squeakywheel/cortex:edge
+        image: ubuntu/cortex:edge
         ports:
             - 9009:9009
-        volumes:
-            - ./config/cortex.yaml:/etc/cortex/cortex.yaml
-        command: [
-            "-config.file=/etc/cortex/cortex.yaml"
-            ]
         networks:
             - lmatest
 
     tests:
-        image: squeakywheel/lma-integration-tests
+        image: localtest/lma-integration-tests
         ports:
             - 5001:5001
             - 8080:8080
