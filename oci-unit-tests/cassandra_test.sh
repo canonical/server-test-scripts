@@ -12,6 +12,7 @@
 #  setUp() - run before each test
 #  tearDown() - run after each test
 
+readonly UPSTREAM_DOCKER_IMAGE="docker.io/cassandra:latest"
 readonly CQLSH_DOCKER_IMAGE="cassandra-cqlsh:test"
 
 oneTimeSetUp() {
@@ -25,8 +26,16 @@ oneTimeSetUp() {
 
     docker network create "$DOCKER_NETWORK" > /dev/null 2>&1
 
-    # build image with cqlsh client
-    docker build -t $CQLSH_DOCKER_IMAGE ./cassandra_test_data > /dev/null 2>&1
+    # pull image with cqlsh client
+    debug "Pulling cqlsh image"
+    if docker pull --quiet "${UPSTREAM_DOCKER_IMAGE}" > /dev/null; then
+      docker tag "${UPSTREAM_DOCKER_IMAGE}" "${CQLSH_DOCKER_IMAGE}"
+      docker rmi "${UPSTREAM_DOCKER_IMAGE}" > /dev/null 2>&1
+    else
+      debug "Image not available. Building cqlsh image locally. This may take a while"
+      # build image with cqlsh client
+      docker build -t "${CQLSH_DOCKER_IMAGE}" ./cassandra_test_data
+    fi
 }
 
 oneTimeTearDown() {
@@ -66,6 +75,7 @@ docker_run_client() {
      --name cqlsh_test_${id} \
      -v "${cqlsh_file}":/hello-cassandra.cqlsh \
      "${CQLSH_DOCKER_IMAGE}" \
+     cqlsh \
      cassandra_test_${id} \
      "$@"
 }
