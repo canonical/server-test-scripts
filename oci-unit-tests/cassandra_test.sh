@@ -62,7 +62,7 @@ docker_run_client() {
     docker run \
      --network "$DOCKER_NETWORK" \
      --rm \
-     -it \
+     --tty \
      --name cqlsh_test_${id} \
      -v "${cqlsh_file}":/hello-cassandra.cqlsh \
      "${CQLSH_DOCKER_IMAGE}" \
