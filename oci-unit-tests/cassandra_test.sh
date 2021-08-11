@@ -12,8 +12,11 @@
 #  setUp() - run before each test
 #  tearDown() - run after each test
 
-readonly UPSTREAM_DOCKER_IMAGE="docker.io/cassandra:latest"
+readonly UPSTREAM_CASSANDRA_IMAGE="docker.io/cassandra:latest"
 readonly CQLSH_DOCKER_IMAGE="cassandra-cqlsh:test"
+# We build the cqlsh image locally because upstream does not ship a s390x image
+# See https://github.com/canonical/server-test-scripts/pull/130
+readonly USE_UPSTREAM_CASSANDRA_IMAGE=false
 
 oneTimeSetUp() {
     id=$$
@@ -26,15 +29,14 @@ oneTimeSetUp() {
 
     docker network create "$DOCKER_NETWORK" > /dev/null 2>&1
 
-    # pull image with cqlsh client
-    debug "Pulling cqlsh image"
-    if docker pull --quiet "${UPSTREAM_DOCKER_IMAGE}" > /dev/null; then
-      docker tag "${UPSTREAM_DOCKER_IMAGE}" "${CQLSH_DOCKER_IMAGE}"
-      docker rmi "${UPSTREAM_DOCKER_IMAGE}" > /dev/null 2>&1
+    if "${USE_UPSTREAM_CASSANDRA_IMAGE}"; then
+        debug "Pulling image with cqlsh"
+        docker pull --quiet "${UPSTREAM_CASSANDRA_IMAGE}" > /dev/null
+        docker tag "${UPSTREAM_CASSANDRA_IMAGE}" "${CQLSH_DOCKER_IMAGE}"
+        docker rmi "${UPSTREAM_CASSANDRA_IMAGE}" > /dev/null 2>&1
     else
-      debug "Image not available. Building cqlsh image locally. This may take a while"
-      # build image with cqlsh client
-      docker build -t "${CQLSH_DOCKER_IMAGE}" ./cassandra_test_data
+        debug "Building cqlsh image locally. This may take a while"
+        docker build -t "${CQLSH_DOCKER_IMAGE}" ./cassandra_test_data
     fi
 }
 
