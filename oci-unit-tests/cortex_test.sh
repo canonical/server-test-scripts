@@ -48,7 +48,7 @@ docker_run_cortex() {
 
 wait_cortex_container_ready() {
     local container="${1}"
-    local log="creating table"
+    local log="auto-joining cluster after timeout"
     wait_container_ready "${container}" "${log}"
 }
 
@@ -64,7 +64,6 @@ test_services_status() {
     assertTrue "Check if memberlist-kv is in the server response"  "echo \"${response}\" | grep -A1 memberlist-kv  | grep -q Running"
     assertTrue "Check if server is in the server response"         "echo \"${response}\" | grep -A1 server         | grep -q Running"
     assertTrue "Check if store is in the server response"          "echo \"${response}\" | grep -A1 store          | grep -q Running"
-    assertTrue "Check if table-manager is in the server response"  "echo \"${response}\" | grep -A1 table-manager  | grep -q Running"
     assertTrue "Check if query-frontend is in the server response" "echo \"${response}\" | grep -A1 query-frontend | grep -q Running"
     assertTrue "Check if distributor is in the server response"    "echo \"${response}\" | grep -A1 distributor    | grep -q Running"
     assertTrue "Check if ingester is in the server response"       "echo \"${response}\" | grep -A1 ingester       | grep -q Running"
