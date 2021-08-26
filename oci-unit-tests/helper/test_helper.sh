@@ -1,8 +1,7 @@
 # shellcheck shell=dash
 
-PATH="$(dirname "$0")/..:$PATH"
-ROOTDIR="$(dirname "$0")/.."
-export PATH ROOTDIR
+ROOTDIR=$(realpath -e "$(dirname "$0")")
+export ROOTDIR
 
 load_shunit2() {
   if [ -e /usr/share/shunit2/shunit2 ]; then

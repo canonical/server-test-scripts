@@ -85,7 +85,7 @@ test_telegraf_custom_config_http_endpoint() {
     # GNU/Linux doesn't.
     container=$(docker_run_telegraf \
 		    --network=host \
-		    -v "$PWD"/telegraf_test_data/telegraf.conf:/etc/telegraf/telegraf.conf)
+		    -v "${ROOTDIR}"/telegraf_test_data/telegraf.conf:/etc/telegraf/telegraf.conf)
     assertNotNull "Failed to start the container" "${container}" || return 1
     wait_telegraf_container_ready "${container}" || return 1
 

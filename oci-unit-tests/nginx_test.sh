@@ -77,7 +77,7 @@ test_default_config_ipv6() {
 
 test_static_files() {
     debug "Creating container with known static files"
-    test_data_wwwroot="$PWD/nginx_test_data/html"
+    test_data_wwwroot="${ROOTDIR}/nginx_test_data/html"
     container=$(docker_run_server -p 48080:80 -v "$test_data_wwwroot:/var/www/html:ro")
 
     assertNotNull "Failed to start the container" "${container}" || return 1
@@ -91,7 +91,7 @@ test_static_files() {
 
 test_static_files_read_only_mode() {
     debug "Creating container with known static files"
-    test_data_wwwroot="$PWD/nginx_test_data/html"
+    test_data_wwwroot="${ROOTDIR}/nginx_test_data/html"
     nginx_scratch=$(mktemp -d /tmp/nginx-cache-XXXXXXXX)
     container=$(docker_run_server -p 48080:80 --read-only -v "$nginx_scratch:/var/lib/nginx" -v "$nginx_scratch:/var/log/nginx" -v "$nginx_scratch:/var/run" -v "$test_data_wwwroot:/var/www/html:ro")
 
@@ -108,8 +108,8 @@ test_static_files_read_only_mode() {
 
 test_custom_config() {
     debug "Creating container with custom config"
-    custom_config="$PWD/nginx_test_data/nginx_simple.conf"
-    test_data_wwwroot="$PWD/nginx_test_data/html"
+    custom_config="${ROOTDIR}/nginx_test_data/nginx_simple.conf"
+    test_data_wwwroot="${ROOTDIR}/nginx_test_data/html"
     container=$(docker_run_server -p 48080:80 -v "$custom_config:/etc/nginx/nginx.conf:ro" -v "$test_data_wwwroot:/srv/www/html:ro")
 
     assertNotNull "Failed to start the container" "${container}" || return 1
@@ -132,7 +132,7 @@ test_reverse_proxy() {
     assertEquals "${orig_checksum}" "${retrieved_checksum}"
 
     debug "Creating reverse proxy nginx container"
-    rp_config="$PWD/nginx_test_data/nginx_reverse_proxy.conf"
+    rp_config="${ROOTDIR}/nginx_test_data/nginx_reverse_proxy.conf"
     rp_container=$(docker_run_server --network "${DOCKER_NETWORK}" -p 48070:48070 -v "$rp_config:/etc/nginx/nginx.conf:ro")
     assertNotNull "Failed to start the container" "${rp_container}" || return 1
     wait_nginx_container_ready "${rp_container}" || return 1

@@ -69,7 +69,7 @@ docker_run_server() {
 # Helper function to execute cqlsh with some common arguments.
 docker_run_client() {
     # mount data into the container
-    cqlsh_file="$(realpath "$(dirname "$0")")/cassandra_test_data/hello-cassandra.cqlsh"
+    cqlsh_file="${ROOTDIR}/cassandra_test_data/hello-cassandra.cqlsh"
     docker run \
      --network "$DOCKER_NETWORK" \
      --rm \
