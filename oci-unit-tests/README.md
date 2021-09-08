@@ -8,15 +8,15 @@ with the `dash` implementation of `sh` (Ubuntu's default).
 
 ### Test dependencies
 
-The tests should run on any Ubuntu >=Bionic system. Other than all the
+The tests should run on any Ubuntu >= Bionic system. Other than all the
 `Priority: required` packages the tests can assume the following packages
-an all of their dependencies are installed on the host system:
+and all of their dependencies are installed on the host system:
 
  - `ubuntu-server`
  - `docker.io`
  - `shunit2`
 
-If a test requires specific dependencies they should be installed in a
+If a test requires specific dependencies it should be installed in a
 dedicated Docker container.
 
 ### Port allocation
@@ -24,7 +24,7 @@ dedicated Docker container.
 Many OCI unit tests require listening on local ports on the host system. Tests
 should use ports in the
 [Dynamic Ports range](https://tools.ietf.org/html/rfc6335#section-8.1.2)
-(49152-65535). When writing a new tests care should be taken not to re-use a
+(49152-65535). When writing a new test, care should be taken not to re-use a
 port already used by another test.
 
 ## Jenkins
