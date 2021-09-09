@@ -141,6 +141,7 @@ block_until_cloud_init_is_done() {
   NODE="${1}"
 
   # set debconf frontend to Noninteractive
+  run_command_in_node "${NODE}" "flock /var/cache/debconf/config.dat true"
   run_command_in_node "${NODE}" "echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections"
   run_command_in_node "${NODE}" "cloud-init status --wait"
 }
