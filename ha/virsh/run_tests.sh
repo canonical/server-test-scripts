@@ -12,7 +12,7 @@ for file in $TESTS; do
   AGENT=$(echo "$file" | grep -oP '(?<=/).+(?=\_)' | tr _ -)
   export AGENT=$AGENT
 
-  if [[ "$AGENT" == "fence-scsi" ]]; then
+  if [[ "$AGENT" == "fence-scsi" ]] || [[ "$AGENT" == "fence-mpath" ]]; then
     ./setup-cluster.sh --iscsi
   else
     ./setup-cluster.sh
