@@ -103,6 +103,31 @@ wait_container_ready() {
 }
 
 # $1: container id
+# ${2...}: source package names to be installed
+install_container_packages()
+{
+    local retval=0
+    local id="${1}"
+    shift
+
+    docker exec -u root "${id}" apt-get -qy update > /dev/null
+    for package in "${@}"; do
+        debug "Installing ${package} into ${id}"
+        if docker exec -u root "${id}" \
+               apt-get -qy install "${package}" \
+               > /dev/null 2>&1;
+        then
+            debug "${package} installation succeeded"
+        else
+            fail "ERROR, failed to install '${package}' into ${id}"
+            retval=1
+        fi
+    done
+
+    return ${retval}
+}
+
+# $1: container id
 check_manifest_exists()
 {
     local id="${1}"
