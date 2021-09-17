@@ -53,15 +53,15 @@ wait_container_ready() {
 
     debug -n "Waiting for container to be ready "
     while ! docker logs "${id}" 2>&1 | grep -qE "${msg}"; do
-	sleep 1
-	timeout=$((timeout - 1))
-	if [ $timeout -le 0 ]; then
-	    fail "ERROR, failed to start container ${id} in ${max} seconds"
-	    echo "Current container list (docker ps):"
-	    docker ps
-	    return 1
-	fi
-	debug -n "."
+        sleep 1
+        timeout=$((timeout - 1))
+        if [ $timeout -le 0 ]; then
+            fail "ERROR, failed to start container ${id} in ${max} seconds"
+            echo "Current container list (docker ps):"
+            docker ps
+            return 1
+        fi
+        debug -n "."
     done
     debug "done"
 }
@@ -79,19 +79,19 @@ check_manifest_exists()
     debug -n "Listing the manifest file(s) inside ${id}"
     local files
     if ! files=$(docker exec "${id}" ls "${manifest_dir}" 2> /dev/null); then
-	debug "not found"
-	return 1
+        debug "not found"
+        return 1
     fi
     debug "done"
 
     debug "Verifying whether the manifest file(s) exist"
     for want_file in ${possible_manifest_files}; do
-	for got_file in ${files}; do
-	    if [ "${got_file}" = "${want_file}" ]; then
-		debug "found ${got_file}"
-		found=1
-	    fi
-	done
+        for got_file in ${files}; do
+            if [ "${got_file}" = "${want_file}" ]; then
+                debug "found ${got_file}"
+                found=1
+            fi
+        done
     done
 
     if [ "${found}" -eq 0 ]; then
