@@ -24,6 +24,42 @@ debug() {
     fi
 }
 
+# Creates a new docker container from $DOCKER_IMAGE.
+#
+# By default, creates a temporary container running the software under
+# test as a daemon service.  The container is automatically removed
+# when the daemon exits.  All parameters to run_container_service() are
+# passed directly through to the contained software daemon.  The docker
+# behavior can be adjusted through environmental variables listed
+# below.  In particular, $suffix can be used to distinguish between
+# multiple containers used in a given test, such as 'client' and
+# 'server'.
+#
+# Parameters:
+#   $@: parameters to pass through to the container
+# Environment:
+#   $DOCKER_IMAGE: Name of the image containing the software to be tested.
+#       Defaults to "docker.io/ubuntu/<package>:edge"
+#   $DOCKER_PREFIX: Common prefix for all containers for this test.
+#       Defaults to "oci_<package>_test".
+#   $DOCKER_NETWORK: User-created network to connect the container to.
+#       Defaults to "oci_<package>_test_net".
+#   $SUFFIX: Optional tag for ensuring unique container names.
+#       Defaults to a random string.
+#
+# Stdout: Name of created container.
+# Returns: Error code from docker, or 0 on success.
+run_container_service() {
+    SUFFIX=${SUFFIX:-$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 8 | head -n 1)}
+    docker run \
+       --network "${DOCKER_NETWORK}" \
+       --rm \
+       -d \
+       --name "${DOCKER_PREFIX}_${SUFFIX}" \
+       "${DOCKER_IMAGE}" \
+       "$@"
+}
+
 # $1: container id
 # $2: timeout (optional).  If not specified, defaults to 10 seconds
 stop_container_sync() {
