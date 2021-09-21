@@ -103,8 +103,7 @@ test_libmemcached_compliance() {
     debug "Creating memcached container with libmemcached-tools"
     container_client=$(suffix=client docker_run_server)
     assertNotNull "Failed to start the container" "${container_client}" || return 1
-    docker exec -u root "$container_client" apt-get -qy update
-    docker exec -u root "$container_client" apt-get -qy --option=Dpkg::options::=--force-unsafe-io install libmemcached-tools
+    install_container_packages "${container_client}" "libmemcached-tools" || return 1
 
     docker exec "$container_client" memcping --servers="${DOCKER_PREFIX}_server"
     assertTrue $?
@@ -126,8 +125,7 @@ test_data_storage_and_retrieval() {
     assertNotNull "Failed to start the container" "${container_client}" || return 1
 
     debug "Installing libmemcached-tools"
-    docker exec -u root "$container_client" apt-get -q update
-    docker exec -u root "$container_client" apt-get -qy --option=Dpkg::options::=--force-unsafe-io install libmemcached-tools
+    install_container_packages "libmemcached-tools"
 
     debug "Running store/retrieve test"
     data="test data"
