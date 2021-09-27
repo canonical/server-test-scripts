@@ -125,7 +125,7 @@ test_data_storage_and_retrieval() {
     assertNotNull "Failed to start the container" "${container_client}" || return 1
 
     debug "Installing libmemcached-tools"
-    install_container_packages "libmemcached-tools"
+    install_container_packages "${container_client}" "libmemcached-tools"
 
     debug "Running store/retrieve test"
     data="test data"
