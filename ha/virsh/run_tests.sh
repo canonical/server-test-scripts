@@ -5,12 +5,13 @@
 # shellcheck disable=SC1091
 source /etc/profile.d/libvirt-uri.sh
 
-./delete-cluster.sh || exit 1
-
 test_failed=0
 for file in $TESTS; do
   AGENT=$(echo "$file" | grep -oP '(?<=/).+(?=\_)' | tr _ -)
   export AGENT=$AGENT
+
+  # Cleanup stale VMs
+  ./delete-cluster.sh || exit 1
 
   if [[ "$AGENT" == "fence-scsi" ]] || [[ "$AGENT" == "fence-mpath" ]]; then
     ./setup-cluster.sh --iscsi
