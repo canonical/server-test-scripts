@@ -99,6 +99,7 @@ wait_container_ready() {
         fi
         debug -n "."
     done
+    sleep 5
     debug "done"
 }
 
