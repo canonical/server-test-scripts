@@ -67,7 +67,7 @@ test_move_resource() {
 
   # Move resource to another VM
   run_command_in_node "${IP_VM01}" "sudo crm resource move ${RESOURCE_NAME} ${VM_TARGET}"
-  sleep 1
+  sleep 3
   cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started
   assertTrue $?
