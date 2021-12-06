@@ -12,7 +12,7 @@ import os
 import sys
 import time
 
-import copr
+from copr.v3 import Client
 
 URL_COPR = "https://copr.fedorainfracloud.org/coprs/g/cloud-init"
 PROJECT_OWNER = "@cloud-init"
@@ -34,16 +34,16 @@ def check_test_chroot(tasks):
             sys.exit(1)
 
 
-def check_build_status(build, tasks):
+def check_build_status(client, build_id, tasks):
     """Check status of builds in each chroot."""
     tasks_watched = set(tasks.keys())
     tasks_done = set()
 
     print('\nChecking stauts of build(s):\n')
     while tasks_watched != tasks_done:
-        for task in build.get_build_tasks():
-            name = task.chroot_name
-            state_cur = task.state
+        for task in client.build_chroot_proxy.get_list(build_id):
+            name = task['name']
+            state_cur = task['state']
             state_previous = tasks[name]
 
             if name in tasks_done:
@@ -59,11 +59,14 @@ def check_build_status(build, tasks):
         time.sleep(10)
 
 
-def get_build_tasks(build):
+def get_build_tasks(client, build_id):
     """Get build tasks."""
     tasks = {}
-    for chroot in build.get_build_tasks():
-        tasks[chroot.chroot_name] = 'importing'
+    chroots = client.build_proxy.get(build_id).chroots
+    if not chroots:
+        return tasks
+    for chroot in chroots:
+        tasks[chroot] = 'importing'
 
     print('\nBuilding in the following chroot(s):\n')
     for key in sorted(tasks):
@@ -72,14 +75,14 @@ def get_build_tasks(build):
     return tasks
 
 
-def launch_build(project, srpm):
+def launch_build(client, project, srpm):
     """Launch a build from given srpm."""
-    build = project.create_build_from_file(srpm, enable_net=False)
+    build = client.build_proxy.create_from_file(PROJECT_OWNER, project, srpm)
 
-    print('Started COPR build on %s (ID: %s)' % (project.name, build.id))
-    print('%s/%s/build/%s' % (URL_COPR, project.name, build.id))
+    print('Started COPR build on %s (ID: %s)' % (project, build.id))
+    print('%s/%s/build/%s' % (URL_COPR, project, build.id))
 
-    return build
+    return build.id
 
 
 def mention_expiration_on_creds(conf_file):
@@ -100,28 +103,17 @@ def mention_expiration_on_creds(conf_file):
         print(''.join(["  %s\n" % l for l in exp_lines]))
 
 
-def main(srpm, copr_conf=DEFAULT_COPR_CONF, project_name=DEFAULT_PROJECT):
+def main(srpm, copr_conf=DEFAULT_COPR_CONF, project=DEFAULT_PROJECT):
     """Query COPR info."""
     if not os.path.isfile(srpm):
         print("Error: The given SRPM is not a file:\n%s" % srpm)
         sys.exit(1)
 
-    client = copr.create_client2_from_file_config(copr_conf)
-
-    project = client.projects.get_list(
-        owner=PROJECT_OWNER,
-        name=project_name
-    )
-
-    if not project:
-        print("Project not found: %s/%s" % (PROJECT_OWNER, project_name))
-        sys.exit(1)
-
-    project = project[0]
+    client = Client.create_from_config_file(copr_conf)
 
     print(datetime.datetime.now())
     try:
-        build = launch_build(project, srpm)
+        build_id = launch_build(client, project, srpm)
     except Exception as e:
         mention_expiration_on_creds(copr_conf)
         raise e
@@ -131,11 +123,11 @@ def main(srpm, copr_conf=DEFAULT_COPR_CONF, project_name=DEFAULT_PROJECT):
     reps = 6
     for naptime in [5]*reps + [10]*reps + [30]*reps:
         time.sleep(naptime)
-        tasks = get_build_tasks(build)
+        tasks = get_build_tasks(client, build_id)
         if tasks:
             break
 
-    check_build_status(build, tasks)
+    check_build_status(client, build_id, tasks)
     check_test_chroot(tasks)
     print()
     print(datetime.datetime.now())
