@@ -129,14 +129,21 @@ install_container_packages()
 }
 
 # $1: container id
+# ${2...}: required manifest files
 check_manifest_exists()
 {
     local id="${1}"
+    shift
     local manifest_dir="/usr/share/rocks"
-    local found=0
+    local found=""
 
     # The expected files for each image type.
     local possible_manifest_files="dpkg.query manifest.yaml snapcraft.yaml upstream"
+    if [ -n "${1}" ]; then
+        local required_manifest_files="dpkg.query ${*}"
+    else
+        local required_manifest_files="dpkg.query"
+    fi
 
     debug -n "Listing the manifest file(s) inside ${id}"
     local files
@@ -151,15 +158,28 @@ check_manifest_exists()
         for got_file in ${files}; do
             if [ "${got_file}" = "${want_file}" ]; then
                 debug "found ${got_file}"
-                found=1
+                if [ -n "${found}" ]; then
+                    found="${found} ${got_file}"
+                else
+                    found="${got_file}"
+                fi
             fi
         done
     done
 
-    if [ "${found}" -eq 0 ]; then
+    if [ -z "${found}" ]; then
         echo "E: No manifest file found in the image" > /dev/stderr
         debug "not found"
         return 1
+    else
+      debug "Verifying required manifest file(s) presence [${required_manifest_files}]"
+        for required_file in ${required_manifest_files}; do
+            if ! echo "${found}" | grep -qFw "${required_file}"; then
+                echo "E: Required manifest file ${required_file} is missing" > /dev/stderr
+                debug "Required manifest file ${required_file} is missing"
+                return 1
+            fi
+        done
     fi
 
     debug "Verifying that the manifest file(s) is(are) not empty"
