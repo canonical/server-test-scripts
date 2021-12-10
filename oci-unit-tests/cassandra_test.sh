@@ -143,7 +143,7 @@ test_manifest_exists() {
     debug "Testing that the manifest file is available in the image"
     container=$(docker_run_server)
 
-    check_manifest_exists "${container}"
+    check_manifest_exists "${container}" manifest.yaml snapcraft.yaml
     assertTrue "Manifest file(s) do(es) not exist or is(are) empty in image" $?
 }
 

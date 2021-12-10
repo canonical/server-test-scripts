@@ -75,7 +75,7 @@ test_manifest_exists() {
     debug "Testing that the manifest file is available in the image"
     container=$(docker_run_cortex)
 
-    check_manifest_exists "${container}"
+    check_manifest_exists "${container}" upstream
     assertTrue "Manifest file(s) do(es) not exist or is(are) empty in image" $?
 }
 
