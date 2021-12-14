@@ -111,7 +111,7 @@ wait_pushgateway_container_ready() {
 test_cli() {
     debug "Check prometheus help via CLI"
     temp_dir=$(mktemp -d)
-    docker run --rm --name "${DOCKER_PREFIX}_${suffix}" ubuntu/prometheus:edge --help 2>"${temp_dir}/prom_help"
+    docker run --rm --name "${DOCKER_PREFIX}_${suffix}" "${DOCKER_IMAGE}" --help 2>"${temp_dir}/prom_help"
     out=$(cat "${temp_dir}/prom_help") && ret=1
     if echo "${out}" | grep "The Prometheus monitoring server" >/dev/null; then
         ret=0
