@@ -135,6 +135,14 @@ test_default_target() {
 	    | grep job-prometheus \
             | cut -d '>' -f 2 \
             | cut -d '<' -f 1)
+    # The react UI became the default on prometheus 2.23.0
+    # Fallback to classic UI on default URL for images with prometheus < 2.23
+    if [ -z "${out}" ]; then
+      out=$(curl --silent "http://localhost:${PROM_PORT}/targets" \
+            | grep job-prometheus \
+            | cut -d '>' -f 2 \
+            | cut -d '<' -f 1)
+    fi
     assertEquals "Default prometheus target" "prometheus (1/1 up)" "${out}" || return 1
 }
 
