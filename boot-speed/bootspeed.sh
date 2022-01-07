@@ -92,9 +92,9 @@ fi
 
 if $has_snap; then
     echo "Saving snap debug timings"
-    snap changes &> snap_changes
+    snap changes &> snap_changes || true
     snap debug timings --ensure=seed &> snap_debug_timings || true
-    snap list &> snap_list
+    snap list &> snap_list || true
 fi
 
 ls -l > directory-listing
