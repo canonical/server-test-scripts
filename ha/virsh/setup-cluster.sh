@@ -40,7 +40,8 @@ check_requirements() {
 
 create_service_vm() {
   ${CREATE_VM_SCRIPT} "${VM_SERVICES}" "$(pwd)"
-  sleep 60
+  sleep 180
+  virsh list
   get_vm_services_ip_addresses
   block_until_cloud_init_is_done "${IP_VM_SERVICES}"
 }
@@ -66,11 +67,11 @@ create_nodes() {
   for vm in "${VM01}" "${VM02}" "${VM03}"; do
     ${CREATE_VM_SCRIPT} "${vm}" "$(pwd)"
   done
+  sleep 180
   virsh list
 }
 
 get_nodes_ip_and_mac_addresses() {
-  sleep 30
   get_network_data_nic1
 
   # Get IP address in the second network interface. For some reason this is not
