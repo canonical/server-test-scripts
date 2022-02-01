@@ -87,7 +87,8 @@ test_network_connection() {
     install_container_packages "${container_client}" "bind9-dnsutils" || return 1
 
     # Use dig from the client to the server's IP
-    docker exec "${container_client}" dig "${DOCKER_PREFIX}_server:30053" > /dev/null
+    debug "Querying DNS server"
+    docker exec "${container_client}" dig "@${DOCKER_PREFIX}_server" -p 53 ubuntu.com > /dev/null
     assertTrue ${?}
 }
 
