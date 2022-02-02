@@ -56,11 +56,9 @@ test_local_connection() {
 
     wait_bind9_container_ready "${container}" || return 1
 
-    debug "Installing test dependencies locally"
-    install_container_packages "${container}" "lsof" || return 1
-
     debug "Checking for service on local port 53"
-    docker exec "${container}" lsof -i:53 | grep -q LISTEN
+    docker exec "${container}" ss -lnu -o '( sport = 53 )' | grep -q UNCONN
+    docker exec "${container}" ss -lnt -o '( sport = 53 )' | grep -q LISTEN
 
     assertTrue ${?}
 }
@@ -88,7 +86,7 @@ test_network_connection() {
 
     # Use dig from the client to the server's IP
     debug "Querying DNS server"
-    docker exec "${container_client}" dig "@${DOCKER_PREFIX}_server" -p 53 ubuntu.com > /dev/null
+    docker exec "${container_client}" dig "@${DOCKER_PREFIX}_server" ubuntu.com > /dev/null
     assertTrue ${?}
 }
 
