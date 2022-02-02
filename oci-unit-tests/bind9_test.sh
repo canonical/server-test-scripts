@@ -56,11 +56,9 @@ test_local_connection() {
 
     wait_bind9_container_ready "${container}" || return 1
 
-    debug "Installing test dependencies locally"
-    install_container_packages "${container}" "lsof" || return 1
-
     debug "Checking for service on local port 53"
-    docker exec "${container}" lsof -i:53 | grep -q LISTEN
+    docker exec "${container}" ss -lnu -o '( sport = 53 )' | grep -q UNCONN
+    docker exec "${container}" ss -lnt -o '( sport = 53 )' | grep -q LISTEN
 
     assertTrue ${?}
 }
