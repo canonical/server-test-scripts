@@ -86,7 +86,7 @@ test_network_connection() {
 
     # Use dig from the client to the server's IP
     debug "Querying DNS server"
-    docker exec "${container_client}" dig "@${DOCKER_PREFIX}_server" -p 53 ubuntu.com > /dev/null
+    docker exec "${container_client}" dig "@${DOCKER_PREFIX}_server" ubuntu.com > /dev/null
     assertTrue ${?}
 }
 
