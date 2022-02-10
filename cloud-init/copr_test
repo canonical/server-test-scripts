@@ -149,7 +149,10 @@ main() {
     name="copr-centos-${uuid%%-*}"
     repo="copr.repo"
 
-    start_container "images:centos/$version" "$name"
+    local image="images:centos/$version"
+    # CentOS >= 8 only exists as CentOS Stream
+    ((version >= 8)) && image+="-Stream"
+    start_container "$image" "$name"
 
     tee "$TEMP_D/$repo" <<EOF >/dev/null
 [group_cloud-init-cloud-init-dev]
@@ -170,6 +173,12 @@ EOF
 
     install_pkgs "$name" epel-release ||
         fail "failed to install epel-release"
+
+    # CentOS Stream needs EPEL Next on top of EPEL
+    if ((version >= 8)); then
+        install_pkgs "$name" epel-next-release ||
+            fail "failed to install epel-next-release"
+    fi
 
     install_pkgs "$name" cloud-init ||
         fail "failed: installing cloud-init"
