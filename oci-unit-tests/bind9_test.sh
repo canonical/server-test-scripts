@@ -60,7 +60,7 @@ test_local_connection() {
     docker exec "${container}" ss -lnu -o '( sport = 53 )' | grep -q UNCONN
     docker exec "${container}" ss -lnt -o '( sport = 53 )' | grep -q LISTEN
 
-    assertTrue ${?}
+    assertTrue "bind9 does not seem to be listening on port 53" ${?}
 }
 
 test_network_connection() {
@@ -86,8 +86,8 @@ test_network_connection() {
 
     # Use dig from the client to the server's IP
     debug "Querying DNS server"
-    docker exec "${container_client}" dig "@${DOCKER_PREFIX}_server" ubuntu.com > /dev/null
-    assertTrue ${?}
+    DIG_OUTPUT=$(docker exec "${container_client}" dig "@${DOCKER_PREFIX}_server" ubuntu.com)
+    assertTrue "${DIG_OUTPUT}" ${?}
 }
 
 test_manifest_exists() {

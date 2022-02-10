@@ -48,6 +48,14 @@ wait_grafana_container_ready() {
     wait_container_ready "${container}" "${log}"
 }
 
+check_login_page() {
+    local page_addr="${1}"
+    LOGIN_PAGE=$(curl -Ss http://"${page_addr}":"${LOCAL_PORT}"/login)
+    EXPECT="<title>Grafana</title>"
+    echo "${LOGIN_PAGE}" | grep -Fq "${EXPECT}"
+    assertTrue "${EXPECT} not found in login page:\n${LOGIN_PAGE}" $?
+}
+
 test_default_config() {
     debug "Creating all-defaults Grafana container"
     container=$(docker_run_server -p "$LOCAL_PORT:3000")
@@ -56,11 +64,10 @@ test_default_config() {
     wait_grafana_container_ready "${container}" || return 1
 
     docker exec "$container" pgrep grafana-server > /dev/null
-    assertTrue $?
+    assertTrue "Could not find processes for grafana-server" $?
 
     # Without Javascript the web UI doesn't do much. 
-    curl -Ss http://127.0.0.1:$LOCAL_PORT/login | grep -Fq "<title>Grafana</title>"
-    assertTrue $?
+    check_login_page "127.0.0.1"
 }
 
 test_default_config_ipv6() {
@@ -70,8 +77,7 @@ test_default_config_ipv6() {
     assertNotNull "Failed to start the container" "${container}" || return 1
     wait_grafana_container_ready "${container}" || return 1
 
-    curl -Ss "http://[::1]:$LOCAL_PORT/login" | grep -Fq "<title>Grafana</title>"
-    assertTrue $?
+    check_login_page "[::1]"
 }
 
 test_persistent_storage() {
@@ -84,8 +90,7 @@ test_persistent_storage() {
     assertNotNull "Failed to start the container" "${container}" || return 1
     wait_grafana_container_ready "${container}" || return 1
 
-    curl -Ss http://127.0.0.1:$LOCAL_PORT/login | grep -Fq "<title>Grafana</title>"
-    assertTrue $?
+    check_login_page "127.0.0.1"
 
     debug "Shutting down container"
     stop_container_sync "${container}"
@@ -97,8 +102,7 @@ test_persistent_storage() {
     container=$(docker_run_server --user "$uid" -p "$LOCAL_PORT:3000" -v "$grafana_scratch:/var/lib/grafana")
     wait_grafana_container_ready "${container}" || return 1
 
-    curl -Ss http://127.0.0.1:$LOCAL_PORT/login | grep -Fq "<title>Grafana</title>"
-    assertTrue $?
+    check_login_page "127.0.0.1"
 
     # Cleanup
     rm -rf "$grafana_scratch"
