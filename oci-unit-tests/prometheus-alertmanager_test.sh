@@ -80,7 +80,8 @@ EOF
 
     debug "Check if the alert was successfully fired"
     response=$(curl --silent --request POST "http://localhost:${ALERTMANAGER_PORT}/api/v1/alerts" --data "[$data]")
-    assertTrue echo "${response}" | grep success >/dev/null
+    echo "${response}" | grep -qF success
+    assertTrue "'success' not found in response:\n${response}" $?
 }
 
 test_manifest_exists() {
