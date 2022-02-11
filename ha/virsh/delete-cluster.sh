@@ -1,6 +1,6 @@
 #!/bin/bash
 
-: "${UBUNTU_SERIES:=impish}"
+: "${UBUNTU_SERIES:=jammy}"
 VM_PREFIX="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node"
 VM_SERVICES="services-${UBUNTU_SERIES}"
 HA_NETWORK="ha"

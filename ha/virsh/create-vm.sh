@@ -2,7 +2,7 @@
 
 set -eux -o pipefail
 
-: "${UBUNTU_SERIES:=impish}"
+: "${UBUNTU_SERIES:=jammy}"
 
 VM_NAME="${1}"
 WORK_DIR="${2:-$(pwd)}"

@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 
-UBUNTU_SERIES="${UBUNTU_SERIES:-impish}"
+UBUNTU_SERIES="${UBUNTU_SERIES:-jammy}"
 
 VM_SERVICES="services-${UBUNTU_SERIES}"
 IQN="iqn.$(date '+%Y-%m').com.test.storage"
