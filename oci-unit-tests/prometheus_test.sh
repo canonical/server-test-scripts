@@ -116,7 +116,7 @@ test_cli() {
     if echo "${out}" | grep "The Prometheus monitoring server" >/dev/null; then
         ret=0
     fi
-    assertTrue $ret
+    assertTrue "Unexpected help output:\n${out}" $ret
     rm -rf "${temp_dir}"
 }
 
@@ -167,7 +167,8 @@ EOF
 
     debug "Check if the alertmanager is configured"
     out=$(curl --silent "http://localhost:${PROM_PORT}/classic/status")
-    assertTrue echo "${out}" | grep "${alertmanager_url}" >/dev/null
+    echo "${out}" | grep -qF "${alertmanager_url}"
+    assertTrue "'${alertmanager_url}' not found in status page:\n${out}" $?
 }
 
 test_alerts_config() {
@@ -198,7 +199,8 @@ EOF
 
     debug "Check if the alert is active"
     out=$(curl --silent "http://localhost:${PROM_PORT}/classic/alerts")
-    assertTrue echo "${out}" | grep "${alert_name}" | grep active >/dev/null
+    echo "${out}" | grep "${alert_name}" | grep -qF active
+    assertTrue "Could not infer 'active' status from:\n${out}" $?
 }
 
 push_dummy_metric_data() {
