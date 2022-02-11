@@ -55,8 +55,8 @@ test_local_connection() {
     container=$(docker_run_server)
     assertNotNull "Failed to start the container" "${container}" || return 1
 
-    docker exec "$container" /usr/share/memcached/scripts/memcached-tool 127.0.0.1:11211 > /dev/null
-    assertTrue $?
+    mtool_output=$(docker exec "$container" /usr/share/memcached/scripts/memcached-tool 127.0.0.1:11211)
+    assertTrue "Unexpected memcached-tool response:\n${mtool_output}" $?
 }
 
 test_network_connection() {
@@ -68,8 +68,8 @@ test_network_connection() {
     container_client=$(suffix=client docker_run_server)
     assertNotNull "Failed to start the container" "${container_client}" || return 1
 
-    docker exec "$container_client" /usr/share/memcached/scripts/memcached-tool "${DOCKER_PREFIX}_server:11211" > /dev/null
-    assertTrue $?
+    mtool_output=$(docker exec "$container_client" /usr/share/memcached/scripts/memcached-tool "${DOCKER_PREFIX}_server:11211")
+    assertTrue "Unexpected memcached-tool response:\n${mtool_output}" $?
 }
 
 test_custom_flags() {
@@ -91,8 +91,8 @@ test_custom_flags() {
     )
     assertNotNull "Failed to start the container" "${container}" || return 1
 
-    docker exec "$container" /usr/share/memcached/scripts/memcached-tool 127.0.0.1:22122 > /dev/null
-    assertTrue $?
+    mtool_output=$(docker exec "$container" /usr/share/memcached/scripts/memcached-tool 127.0.0.1:22122)
+    assertTrue "Unexpected memcached-tool response:\n${mtool_output}" $?
 }
 
 test_libmemcached_compliance() {
@@ -105,14 +105,14 @@ test_libmemcached_compliance() {
     assertNotNull "Failed to start the container" "${container_client}" || return 1
     install_container_packages "${container_client}" "libmemcached-tools" || return 1
 
-    docker exec "$container_client" memcping --servers="${DOCKER_PREFIX}_server"
-    assertTrue $?
-    docker exec "$container_client" memccat --servers="${DOCKER_PREFIX}_server"
-    assertTrue $?
-    docker exec "$container_client" memcflush --servers="${DOCKER_PREFIX}_server"
-    assertTrue $?
-    docker exec "$container_client" memcslap --servers="${DOCKER_PREFIX}_server"
-    assertTrue $?
+    mping_output=$(docker exec "$container_client" memcping --servers="${DOCKER_PREFIX}_server")
+    assertTrue "Unexpected memcping response:\n${mping_output}" $?
+    mcat_output=$(docker exec "$container_client" memccat --servers="${DOCKER_PREFIX}_server")
+    assertTrue "Unexpected memccat response:\n${mcat_output}" $?
+    mflush_output=$(docker exec "$container_client" memcflush --servers="${DOCKER_PREFIX}_server")
+    assertTrue "Unexpected memcflush response:\n${mflush_output}" $?
+    mslap_output=$(docker exec "$container_client" memcslap --servers="${DOCKER_PREFIX}_server")
+    assertTrue "Unexpected memcslap response:\n${mslap_output}" $?
 }
 
 test_data_storage_and_retrieval() {
