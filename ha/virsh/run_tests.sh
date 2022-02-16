@@ -13,7 +13,9 @@ for file in $TESTS; do
   # Cleanup stale VMs
   ./delete-cluster.sh || exit 1
 
-  if [[ "$AGENT" == "fence-scsi" ]] || [[ "$AGENT" == "fence-mpath" ]]; then
+  if [[ "$AGENT" == "fence-scsi" ]]  || \
+     [[ "$AGENT" == "fence-mpath" ]] || \
+     [[ "$AGENT" == "fence-sbd" ]]   ; then
     ./setup-cluster.sh --iscsi
   else
     ./setup-cluster.sh
