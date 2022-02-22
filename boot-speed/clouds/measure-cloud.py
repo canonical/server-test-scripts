@@ -228,10 +228,12 @@ class LXDInstspec:
         else:
             release = self.release
 
+        tag = "bootspeed-" + self.release
+
         if self.is_vm:
-            lxd = pycloudlib.LXDVirtualMachine(tag="bootspeed")
+            lxd = pycloudlib.LXDVirtualMachine(tag=tag, timestamp_suffix=False)
         else:
-            lxd = pycloudlib.LXDContainer(tag="bootspeed")
+            lxd = pycloudlib.LXDContainer(tag=tag, timestamp_suffix=False)
 
         lxd.key_pair = pycloudlib.key.KeyPair(
             self.ssh_pubkey_path, self.ssh_privkey_path
@@ -246,13 +248,11 @@ class LXDInstspec:
             instance_data = Path(datadir, "instance_" + str(ninstance))
             instance_data.mkdir()
 
-            name = "bootspeed-" + str(int(dt.datetime.utcnow().timestamp()))
-
             print("Launching instance", ninstance + 1, "of", instances)
             instance = lxd.launch(
-                image_id=image, instance_type=self.inst_type, name=name
+                image_id=image, instance_type=self.inst_type, name=tag, ephemeral=True
             )
-            print("Instance launched (%s)" % name)
+            print("Instance launched (%s)" % tag)
 
             try:
                 measure_instance(instance, instance_data, reboots)
@@ -388,7 +388,7 @@ def measure_instance(instance, datadir, reboots=1):
 def gen_metadata(
     *, cloud, region, availability_zone="", inst_type, release, cloudid, serial
 ):
-    """ Returns the instance metadata as a dictionary """
+    """Returns the instance metadata as a dictionary"""
     date = job_timestamp.strftime("%Y%m%d%H%M%S")
     isodate = job_timestamp.isoformat()
 
@@ -410,7 +410,7 @@ def gen_metadata(
 
 
 def gen_archivename(metadata):
-    """ Generate a standardized measurement directory (and tarball) name """
+    """Generate a standardized measurement directory (and tarball) name"""
     date = metadata["date"]
     cloud = metadata["instance"]["cloud"]
     inst_type = metadata["instance"]["instance_type"]
