@@ -24,8 +24,14 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
-    --iscsi)
-      ISCSI=YES
+    --iscsi-shared-device)
+      ISCSI_SHARED_DEVICE=YES
+      ISCSI_TARGET_ONLY=NO
+      shift
+      ;;
+    --iscsi-target-only)
+      ISCSI_TARGET_ONLY=YES
+      ISCSI_SHARED_DEVICE=NO
       shift
       ;;
     *)
@@ -57,7 +63,7 @@ setup_iscsi_target() {
 }
 
 setup_service_vm() {
-  if [[ "$ISCSI" == "YES" ]]; then
+  if [[ "$ISCSI_SHARED_DEVICE" == "YES" ]] || [[ "$ISCSI_TARGET_ONLY" == "YES" ]]; then
     create_service_vm
     setup_iscsi_target
   fi
@@ -160,7 +166,7 @@ write_config_files() {
   write_hosts
   write_corosync_conf
 
-  if [[ "$ISCSI" == "YES" ]]; then
+  if [[ "$ISCSI_SHARED_DEVICE" == "YES" ]]; then
     write_iscsi_initiator_conf_files
   fi
 }
@@ -193,7 +199,7 @@ copy_config_files_to_all_nodes() {
   copy_to_all_nodes "${CONFIG_DIR}"/hosts
   copy_to_all_nodes "${CONFIG_DIR}"/corosync.conf
 
-  if [[ "$ISCSI" == "YES" ]]; then
+  if [[ "$ISCSI_SHARED_DEVICE" == "YES" ]]; then
     copy_to_node "${IP_VM01}" "${CONFIG_DIR}"/vm01_initiatorname.iscsi
     copy_to_node "${IP_VM02}" "${CONFIG_DIR}"/vm02_initiatorname.iscsi
     copy_to_node "${IP_VM03}" "${CONFIG_DIR}"/vm03_initiatorname.iscsi
@@ -207,13 +213,13 @@ wait_until_all_nodes_are_ready() {
 }
 
 install_extra_packages() {
-  if [[ "$ISCSI" == "YES" ]]; then
+  if [[ "$ISCSI_SHARED_DEVICE" == "YES" ]]; then
     run_in_all_nodes 'sudo apt-get install -y open-iscsi'
   fi
 }
 
 setup_config_files_in_all_nodes() {
-  if [[ "$ISCSI" == "YES" ]]; then
+  if [[ "$ISCSI_SHARED_DEVICE" == "YES" ]]; then
     run_command_in_node "${IP_VM01}" "sudo cp /home/ubuntu/vm01_initiatorname.iscsi /etc/iscsi/initiatorname.iscsi"
     run_command_in_node "${IP_VM02}" "sudo cp /home/ubuntu/vm02_initiatorname.iscsi /etc/iscsi/initiatorname.iscsi"
     run_command_in_node "${IP_VM03}" "sudo cp /home/ubuntu/vm03_initiatorname.iscsi /etc/iscsi/initiatorname.iscsi"
@@ -261,7 +267,7 @@ login_iscsi_target() {
 }
 
 configure_service_vm() {
-  if [[ "$ISCSI" == "YES" ]]; then
+  if [[ "$ISCSI_SHARED_DEVICE" == "YES" ]]; then
     login_iscsi_target
   fi
 }

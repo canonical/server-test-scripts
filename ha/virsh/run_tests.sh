@@ -17,7 +17,7 @@ for file in $TESTS; do
      [[ "$AGENT" == "fence-mpath" ]] || \
      [[ "$AGENT" == "fence-sbd" ]]   || \
      [[ "$AGENT" == "resource-iscsi-target" ]]  ; then
-    ./setup-cluster.sh --iscsi
+    ./setup-cluster.sh --iscsi-shared-device
   else
     ./setup-cluster.sh
   fi
