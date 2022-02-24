@@ -7,7 +7,8 @@ set -eux -o pipefail
 
 WORK_DIR="$(pwd)"
 CONFIG_DIR="${WORK_DIR}/config"
-ISCSI=NO
+ISCSI_TARGET_ONLY=NO
+ISCSI_SHARED_DEVICE=NO
 
 CREATE_VM_SCRIPT="$(pwd)/create-vm.sh"
 
