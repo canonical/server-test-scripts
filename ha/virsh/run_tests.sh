@@ -16,8 +16,10 @@ for file in $TESTS; do
   if [[ "$AGENT" == "fence-scsi" ]]  || \
      [[ "$AGENT" == "fence-mpath" ]] || \
      [[ "$AGENT" == "fence-sbd" ]]   || \
-     [[ "$AGENT" == "resource-iscsi-target" ]]  ; then
-    ./setup-cluster.sh --iscsi
+     [[ "$AGENT" == "resource-iscsi-target" ]] ; then
+    ./setup-cluster.sh --iscsi-shared-device
+  elif [[ "$AGENT" == "resource-iscsi-initiator" ]] ; then
+    ./setup-cluster.sh --iscsi-target-only
   else
     ./setup-cluster.sh
   fi
