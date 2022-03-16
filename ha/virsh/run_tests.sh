@@ -7,6 +7,10 @@ source /etc/profile.d/libvirt-uri.sh
 
 test_failed=0
 for file in $TESTS; do
+  if [[ "$file" == "fence_ipmilan_test.sh" ]]; then
+    continue
+  fi
+
   AGENT=$(echo "$file" | grep -oP '(?<=/).+(?=\_)' | tr _ -)
   export AGENT=$AGENT
 
