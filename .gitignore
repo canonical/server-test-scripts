@@ -2,3 +2,4 @@
 results.xml
 ha/virsh/config/
 ha/virsh/images/
+ha/virsh/virtualbmc.venv/

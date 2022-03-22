@@ -4,11 +4,11 @@ set -eux -o pipefail
 
 : "${UBUNTU_SERIES:=jammy}"
 
-VM_NAME="${1}"
-WORK_DIR="${2:-$(pwd)}"
-CONFIG_DIR="${3:-"${WORK_DIR}/config"}"
-IMAGES_DIR="${4:-"${WORK_DIR}/images"}"
-PUB_KEY_FILE="${5:-"/home/$(whoami)/.ssh/id_rsa.pub"}"
+VM_NAME="test"
+WORK_DIR=$(pwd)
+CONFIG_DIR="${WORK_DIR}/config"
+IMAGES_DIR="${WORK_DIR}/images"
+PUB_KEY_FILE="/home/$(whoami)/.ssh/id_rsa.pub"
 
 CLOUD_IMAGE_FILENAME="${UBUNTU_SERIES}-server-cloudimg-amd64.img"
 CLOUD_IMAGE_URL="https://cloud-images.ubuntu.com/${UBUNTU_SERIES}/current/${CLOUD_IMAGE_FILENAME}"
@@ -19,6 +19,40 @@ RAM=1024
 VCPU=1
 
 HA_NETWORK="ha"
+
+while [[ $# -gt 0 ]]; do
+  option="$1"
+  case $option in
+    --vm-name)
+      VM_NAME="$2"
+      shift
+      shift
+      ;;
+    --work-dir)
+      WORK_DIR="$2"
+      shift
+      shift
+      ;;
+    --config-dir)
+      CONFIG_DIR="$2"
+      shift
+      shift
+      ;;
+    --images-dir)
+      IMAGES_DIR="$2"
+      shift
+      shift
+      ;;
+    --pub-key)
+      PUB_KEY_FILE="$2"
+      shift
+      shift
+      ;;
+    *)
+      # Do nothing
+      ;;
+  esac
+done
 
 setup_workdir() {
   mkdir -p "${IMAGES_DIR}"/base \
