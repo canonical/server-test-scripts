@@ -36,9 +36,8 @@ get_tester_ip() {
 }
 
 setup_tester() {
-  # TODO: remove fence-agents once the fence_ipmilan is added to the -base package
   run_command_in_node "${IP_TESTER}" "sudo apt-get update && \
-	  sudo apt-get install -y ipmitool fence-agents"
+	  sudo apt-get install -y ipmitool fence-agents-base"
 }
 
 oneTimeSetUp() {
