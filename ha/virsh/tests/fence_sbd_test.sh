@@ -36,9 +36,8 @@ configure_sbd() {
 configure_fence_sbd() {
   configure_watchdog
   configure_sbd
-  # TODO: remove the installation of fence-agents-extra once fence_sbd is added to fence-agents-common
-  run_in_all_nodes "sudo apt-get install -y fence-agents-extra"
-  run_command_in_node "${IP_VM01}" "sudo crm configure primitive ${RESOURCE_NAME} stonith:external/sbd" 
+  run_command_in_node "${IP_VM01}" "sudo crm configure primitive ${RESOURCE_NAME} stonith:fence_sbd \
+	  params devices=${MPATH_DEVICE}"
 }
 
 test_fence_sbd_is_started() {
