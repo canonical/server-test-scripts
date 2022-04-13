@@ -354,8 +354,6 @@ def measure_instance(instance, datadir, reboots=1):
                 ssh_hammer(instance)
             else:
                 instance.restart(wait=True)
-                # LXD does not know how to wait
-                time.sleep(10)
 
         outstr = instance.execute("./bootspeed.sh 2>&1")
         print(outstr)
