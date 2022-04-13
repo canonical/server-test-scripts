@@ -231,6 +231,7 @@ class LXDInstspec:
         tag = "bootspeed-" + self.inst_type.replace(".", "") + "-" + self.release
 
         if self.is_vm:
+            tag += "-vm"
             lxd = pycloudlib.LXDVirtualMachine(tag=tag, timestamp_suffix=False)
         else:
             lxd = pycloudlib.LXDContainer(tag=tag, timestamp_suffix=False)
