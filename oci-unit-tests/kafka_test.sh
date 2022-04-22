@@ -12,6 +12,7 @@
 #  setUp() - run before each test
 #  tearDown() - run after each test
 
+readonly ZOOKEEPER_IMAGE="${ZOOKEEPER_IMAGE:-${DOCKER_REGISTRY}/${DOCKER_NAMESPACE}/zookeeper:${DOCKER_TAG}}"
 readonly ZOOKEEPER_PORT=2181
 readonly BROKER_PORT=9092
 
@@ -53,8 +54,7 @@ docker_run_zookeeper() {
      -d \
      -p "${ZOOKEEPER_PORT}":"${ZOOKEEPER_PORT}" \
      --name "${DOCKER_PREFIX}"_zookeeper_"${id}" \
-     "${DOCKER_IMAGE}" \
-     zookeeper-server-start.sh /etc/kafka/zookeeper.properties
+     "${ZOOKEEPER_IMAGE}"
 }
 
 # Helper function to execute kafka with some common arguments.
@@ -65,9 +65,19 @@ docker_run_broker() {
      -d \
      -p "${BROKER_PORT}":"${BROKER_PORT}" \
      --name "${DOCKER_PREFIX}"_kafka_"${id}" \
-     "${DOCKER_IMAGE}" \
-     kafka-server-start.sh /etc/kafka/server.properties --override \
-     zookeeper.connect="${DOCKER_PREFIX}"_zookeeper_"${id}":"${ZOOKEEPER_PORT}"
+     -e ZOOKEEPER_HOST="${DOCKER_PREFIX}"_zookeeper_"${id}" \
+     "${DOCKER_IMAGE}"
+}
+
+# Helper function to start a client container.
+docker_run_client() {
+    docker run \
+     --network "$DOCKER_NETWORK" \
+     --rm \
+     -d \
+     --name "${DOCKER_PREFIX}"_kafka_client_"${id}" \
+     --entrypoint=/usr/bin/sleep \
+     "${DOCKER_IMAGE}" 1000
 }
 
 wait_zookeeper_container_ready() {
@@ -136,7 +146,7 @@ test_producer_consumer() {
     wait_kafka_container_ready "${kafka_container}" || return 1
 
     debug "Starting client container"
-    client_container=$(run_container_service sleep 1000)
+    client_container=$(docker_run_client)
     assertNotNull "Failed to start client container" "${client_container}" || return 1
 
     debug "Creating new topic"
@@ -170,13 +180,19 @@ test_producer_consumer() {
 }
 
 test_manifest_exists() {
-    local container
+    debug "Instantiating kafka setup"
+    zookeeper_container=$(docker_run_zookeeper)
+    assertNotNull "Failed to start the zookeeper container" "${zookeeper_container}" || return 1
+    wait_zookeeper_container_ready "${zookeeper_container}" || return 1
+    kafka_container=$(docker_run_broker)
+    assertNotNull "Failed to start the kafka container" "${kafka_container}" || return 1
+    wait_kafka_container_ready "${kafka_container}" || return 1
 
-    debug "Testing that the manifest file is available in the image"
-    container=$(docker_run_zookeeper)
-
-    check_manifest_exists "${container}"
-    assertTrue "Manifest file(s) do(es) not exist in image" ${?}
+    debug "Testing that the manifest file is available in the images"
+    check_manifest_exists "${zookeeper_container}"
+    assertTrue "Manifest file(s) do(es) not exist in zookeeper image" ${?}
+    check_manifest_exists "${kafka_container}"
+    assertTrue "Manifest file(s) do(es) not exist in kafka image" ${?}
 }
 
 load_shunit2
