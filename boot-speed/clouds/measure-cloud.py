@@ -350,6 +350,7 @@ def measure_instance(instance, datadir, reboots=1):
                 # to make sure the instance goes down before trying to
                 # connecto to it again.
                 instance.shutdown(wait=True)
+                time.sleep(5)
                 instance.start(wait=False)
                 ssh_hammer(instance)
             else:
