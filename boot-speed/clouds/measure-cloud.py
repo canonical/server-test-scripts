@@ -297,7 +297,7 @@ def ssh_hammer(instance):
     while time.time() < timeout_start + timeout_delta:
         instip = instance.ip
         if not instip:
-            time.sleep(0.2)
+            time.sleep(0.5)
             continue
 
         try:
@@ -353,6 +353,7 @@ def measure_instance(instance, datadir, reboots=1):
                 time.sleep(5)
                 instance.start(wait=False)
                 ssh_hammer(instance)
+                time.sleep(5)
             else:
                 instance.restart(wait=True)
 
