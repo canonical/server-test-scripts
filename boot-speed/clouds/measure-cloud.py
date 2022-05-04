@@ -163,10 +163,7 @@ class EC2Instspec:
             instance_data.mkdir()
 
             # This tag name will be inherited by the launched instance.
-            # We want it to be unique and to contain an easily parsable
-            # timestamp (UTC seconds since epoch), which we will use to
-            # detemine if an instance is stale and should be terminated.
-            tag = "bootspeed-" + str(int(dt.datetime.utcnow().timestamp()))
+            tag = "bootspeed-" + self.inst_type.replace(".", "") + "-" + self.release
             ec2.tag = tag
 
             print("Launching instance", ninstance + 1, "of", instances, "tag:", ec2.tag)
