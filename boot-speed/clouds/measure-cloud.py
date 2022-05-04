@@ -163,7 +163,9 @@ class EC2Instspec:
             instance_data.mkdir()
 
             # This tag name will be inherited by the launched instance.
-            tag = "bootspeed-" + self.inst_type.replace(".", "") + "-" + self.release
+            tag = "-".join(
+                ["bootspeed", self.cloud, self.inst_type.replace(".", ""), self.release]
+            )
             ec2.tag = tag
 
             print("Launching instance", ninstance + 1, "of", instances, "tag:", ec2.tag)
@@ -225,10 +227,11 @@ class LXDInstspec:
         else:
             release = self.release
 
-        tag = "bootspeed-" + self.inst_type.replace(".", "") + "-" + self.release
+        tag = "-".join(
+            ["bootspeed", self.cloud, self.inst_type.replace(".", ""), self.release]
+        )
 
         if self.is_vm:
-            tag += "-vm"
             lxd = pycloudlib.LXDVirtualMachine(tag=tag, timestamp_suffix=False)
         else:
             lxd = pycloudlib.LXDContainer(tag=tag, timestamp_suffix=False)
