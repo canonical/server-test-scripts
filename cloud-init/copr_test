@@ -21,6 +21,8 @@ Usage: ${0##*/} [ options ] CentOS version
       -h | --help     this usage information
       -k | --keep     keep container after tests
       -p | --project  COPR project to use (default: cloud-init-dev)
+      -n | --name     Container name
+           --vm       Use a LXD VM instead of a container
 EOF
 }
 
@@ -46,13 +48,22 @@ inside() {
 }
 
 start_container() {
-    local src="$1" name="$2"
+    local src="$1" name="$2" use_vm="$3"
     debug 1 "starting container $name from '$src'"
-    lxc launch "$src" "$name" || {
+    launch_flags=()
+    [ "$use_vm" == true ] && launch_flags+=(--vm)
+    lxc launch "$src" "$name" "${launch_flags[@]}" || {
         errorrc "Failed to start container '$name' from '$src'";
         return
     }
     CONTAINER=$name
+
+    local system_up=false
+    for i in {0..30}; do
+        [ "$i" -gt 1 ] && sleep 5
+        inside "$name" true 2>/dev/null && system_up=true && break
+    done
+    [ $system_up == true ] || { errorrc "exec command inside $name failed."; return; }
 
     local out="" ret=""
     debug 1 "waiting for networking"
@@ -111,8 +122,8 @@ delete_container() {
 }
 
 main() {
-    local short_opts="g:hkp:v"
-    local long_opts="group:,help,keep,project:,verbose"
+    local short_opts="g:hkp:vn:"
+    local long_opts="group:,help,keep,project:,verbose,name:,vm"
     local getopt_out=""
     getopt_out=$(getopt --name "${0##*/}" \
         --options "${short_opts}" --long "${long_opts}" -- "$@") &&
@@ -121,6 +132,8 @@ main() {
 
     local cur=""
     local group="cloud-init" project="cloud-init-dev"
+    local name=""
+    local use_vm=false
 
     while [ $# -ne 0 ]; do
         cur="${1:-}";
@@ -130,7 +143,9 @@ main() {
             -h|--help) Usage; exit 0;;
             -k|--keep) KEEP=true;;
             -p|--project) project="$next";;
+            -n|--name) name="$next";;
             -v|--verbose) VERBOSITY=$((${VERBOSITY}+1));;
+               --vm) use_vm=true;;
             --) shift; break;;
         esac
         shift;
@@ -144,15 +159,15 @@ main() {
     trap cleanup EXIT
 
     # program starts here
-    local uuid="" name=""
+    local uuid=""
     uuid=$(uuidgen -t) || { error "no uuidgen"; return 1; }
-    name="copr-centos-${uuid%%-*}"
+    name=${name:-"copr-centos-${uuid%%-*}"}
     repo="copr.repo"
 
     local image="images:centos/$version"
     # CentOS >= 8 only exists as CentOS Stream
     ((version >= 8)) && image+="-Stream"
-    start_container "$image" "$name"
+    start_container "$image" "$name" "$use_vm"
 
     tee "$TEMP_D/$repo" <<EOF >/dev/null
 [group_cloud-init-cloud-init-dev]
