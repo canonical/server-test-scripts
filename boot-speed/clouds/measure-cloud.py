@@ -48,6 +48,7 @@ class EC2Instspec:
     def __init__(
         self,
         *,
+        name,
         release,
         inst_type,
         region,
@@ -62,6 +63,7 @@ class EC2Instspec:
         # we're always passing all the arguments to __init__, even if they
         # are None. And they can't be set as the argparse default values,
         # as different coulds need different defaults.
+        self.name = name
         self.region = "us-east-1"
         self.inst_type = inst_type
         self.subnetid = ec2_subnetid
@@ -76,6 +78,13 @@ class EC2Instspec:
 
         if region:
             self.region = region
+
+        if name:
+            self.name = name
+        else:
+            self.name = "-".join(
+                ["bootspeed", self.cloud, self.inst_type.replace(".", ""), self.release]
+            )
 
     def debian_sid_daily_image(self, arch):
         # https://noah.meyerhans.us/2020/03/04/daily-vm-image-builds-are-available-from-the-cloud-team/
@@ -121,7 +130,7 @@ class EC2Instspec:
         else:
             release = self.release
 
-        ec2 = pycloudlib.EC2(tag="bootspeed", region=self.region)
+        ec2 = pycloudlib.EC2(tag=self.name, region=self.region)
 
         if not self.ssh_pubkey_path:
             self.ssh_pubkey_path = ec2.key_pair.public_key_path
@@ -161,12 +170,6 @@ class EC2Instspec:
         for ninstance in range(instances):
             instance_data = Path(datadir, "instance_" + str(ninstance))
             instance_data.mkdir()
-
-            # This tag name will be inherited by the launched instance.
-            tag = "-".join(
-                ["bootspeed", self.cloud, self.inst_type.replace(".", ""), self.release]
-            )
-            ec2.tag = tag
 
             print("Launching instance", ninstance + 1, "of", instances, "tag:", ec2.tag)
             instance = ec2.launch(
@@ -208,11 +211,19 @@ class LXDInstspec:
     cloud = "lxd"
     is_vm = False
 
-    def __init__(self, *, release, inst_type, ssh_pubkey_path, ssh_privkey_path):
+    def __init__(self, *, name, release, inst_type, ssh_pubkey_path, ssh_privkey_path):
+        self.name = name
         self.inst_type = inst_type
         self.release = release
         self.ssh_pubkey_path = ssh_pubkey_path
         self.ssh_privkey_path = ssh_privkey_path
+
+        if name:
+            self.name = name
+        else:
+            self.name = "-".join(
+                ["bootspeed", self.cloud, self.inst_type.replace(".", ""), self.release]
+            )
 
     def measure(self, datadir, instances=1, reboots=1):
         """
@@ -227,14 +238,10 @@ class LXDInstspec:
         else:
             release = self.release
 
-        tag = "-".join(
-            ["bootspeed", self.cloud, self.inst_type.replace(".", ""), self.release]
-        )
-
         if self.is_vm:
-            lxd = pycloudlib.LXDVirtualMachine(tag=tag, timestamp_suffix=False)
+            lxd = pycloudlib.LXDVirtualMachine(tag=self.name, timestamp_suffix=False)
         else:
-            lxd = pycloudlib.LXDContainer(tag=tag, timestamp_suffix=False)
+            lxd = pycloudlib.LXDContainer(tag=self.name, timestamp_suffix=False)
 
         lxd.key_pair = pycloudlib.key.KeyPair(
             self.ssh_pubkey_path, self.ssh_privkey_path
@@ -251,9 +258,12 @@ class LXDInstspec:
 
             print("Launching instance", ninstance + 1, "of", instances)
             instance = lxd.launch(
-                image_id=image, instance_type=self.inst_type, name=tag, ephemeral=True
+                image_id=image,
+                instance_type=self.inst_type,
+                name=self.name,
+                ephemeral=True,
             )
-            print("Instance launched (%s)" % tag)
+            print("Instance launched (%s)" % self.name)
 
             try:
                 measure_instance(instance, instance_data, reboots)
@@ -433,6 +443,7 @@ def main():
 
     if args.cloud == "ec2":
         instspec = EC2Instspec(
+            name=args.name,
             release=args.release,
             inst_type=args.inst_type,
             region=args.region,
@@ -445,6 +456,7 @@ def main():
         )
     elif args.cloud == "lxd":
         instspec = LXDInstspec(
+            name=args.name,
             release=args.release,
             inst_type=args.inst_type,
             ssh_pubkey_path=args.ssh_pubkey_path,
@@ -452,6 +464,7 @@ def main():
         )
     elif args.cloud == "kvm":
         instspec = KVMInstspec(
+            name=args.name,
             release=args.release,
             inst_type=args.inst_type,
             ssh_pubkey_path=args.ssh_pubkey_path,
@@ -477,6 +490,7 @@ def main():
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument("-n", "--name", help="Instance name", default=None)
     parser.add_argument(
         "-c", "--cloud", help="Cloud to measure", choices=known_clouds, required=True
     )
