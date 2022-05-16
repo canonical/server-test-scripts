@@ -173,7 +173,7 @@ test_producer_consumer() {
 
     debug "Consuming test message"
     docker exec "${client_container}" kafka-console-consumer.sh \
-      --max-messages 1 --timeout-ms 5000 --topic quickstart-events \
+      --max-messages 1 --timeout-ms 20000 --topic quickstart-events \
       --from-beginning --bootstrap-server "${DOCKER_PREFIX}"_kafka_"${id}":"${BROKER_PORT}" \
       2>&1 | grep -qF 'oci test message'
     assertTrue "Could not consume message. Was the message produced?" $?
