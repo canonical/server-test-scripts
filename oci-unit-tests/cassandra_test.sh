@@ -37,7 +37,7 @@ oneTimeSetUp() {
         docker rmi "${UPSTREAM_CASSANDRA_IMAGE}" > /dev/null 2>&1
     else
         debug "Building cqlsh image locally. This may take a while"
-        docker build --build-arg CQLSH_VERSION="${CQLSH_VERSION}" \
+        docker build --build-arg https_proxy --build-arg no_proxy --build-arg CQLSH_VERSION="${CQLSH_VERSION}" \
          -t "${CQLSH_DOCKER_IMAGE}" ./cassandra_test_data
     fi
 }
