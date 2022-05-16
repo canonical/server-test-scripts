@@ -46,7 +46,7 @@ check_requirements() {
 }
 
 create_service_vm() {
-  ${CREATE_VM_SCRIPT} --vm-name "${VM_SERVICES}" --work-dir "$(pwd)"
+  ${CREATE_VM_SCRIPT} --vm-name "${VM_SERVICES}" --network-name "${HA_NETWORK}" --work-dir "$(pwd)"
   sleep 180
   virsh list
   get_vm_services_ip_addresses
@@ -72,7 +72,7 @@ setup_service_vm() {
 
 create_nodes() {
   for vm in "${VM01}" "${VM02}" "${VM03}"; do
-    ${CREATE_VM_SCRIPT} --vm-name "${vm}" --work-dir "$(pwd)"
+    ${CREATE_VM_SCRIPT} --vm-name "${vm}" --network-name "${HA_NETWORK}" --work-dir "$(pwd)"
   done
   sleep 180
   virsh list

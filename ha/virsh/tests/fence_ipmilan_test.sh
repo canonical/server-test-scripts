@@ -27,7 +27,7 @@ setup_vbmc() {
 
 create_vm() {
   name="${1}"
-  "${CREATE_VM_SCRIPT}" --vm-name "${name}"
+  "${CREATE_VM_SCRIPT}" --vm-name "${name}" --network-name "${HA_NETWORK}"
 }
 
 get_tester_ip() {

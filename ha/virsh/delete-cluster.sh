@@ -3,7 +3,8 @@
 : "${UBUNTU_SERIES:=jammy}"
 VM_PREFIX="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node"
 VM_SERVICES="services-${UBUNTU_SERIES}"
-HA_NETWORK="ha"
+HA_NETWORK="ha-${UBUNTU_SERIES::1}-${AGENT}"
+HA_NETWORK=${HA_NETWORK::15}
 
 # Remove all cluster nodes
 virsh list --state-running --name | grep "^$VM_PREFIX" | xargs -L 1 --no-run-if-empty virsh destroy
