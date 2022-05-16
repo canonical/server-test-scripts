@@ -76,6 +76,8 @@ stop_container_sync() {
             return 1
         fi
     done
+
+    sleep 2
 }
 
 # $1: container id
