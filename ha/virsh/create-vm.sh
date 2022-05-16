@@ -28,6 +28,11 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
+    --network-name)
+      HA_NETWORK="$2"
+      shift
+      shift
+      ;;
     --work-dir)
       WORK_DIR="$2"
       shift

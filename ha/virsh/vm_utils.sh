@@ -14,6 +14,10 @@ VM01="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node01"
 VM02="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node02"
 VM03="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node03"
 
+# Interface names can only be 15 chars long.
+HA_NETWORK="ha-${UBUNTU_SERIES::1}-${AGENT}"
+HA_NETWORK=${HA_NETWORK::15}
+
 get_network_data_nic1() {
   IP_VM01=$(virsh domifaddr "${VM01}" | grep ipv4 | xargs | cut -d ' ' -f4 | cut -d '/' -f1)
   MAC_VM01=$(virsh domifaddr "${VM01}" | grep ipv4 | xargs | cut -d ' ' -f2)
