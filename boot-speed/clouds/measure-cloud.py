@@ -355,7 +355,7 @@ def measure_instance(instance, datadir, reboots=1):
         print("Measuring boot %d" % nboot)
 
         if nboot > 0:
-            instance.restart(wait=False)
+            instance.restart(wait=True)
             ssh_hammer(instance)
 
         outstr = instance.execute("./bootspeed.sh 2>&1")
