@@ -146,6 +146,9 @@ class EC2Instspec:
         ][0]
 
         arch = inst_specs["ProcessorInfo"]["SupportedArchitectures"][0]
+        if arch == "i386":
+            arch = "x86_64"
+
         image_username = "ubuntu"
 
         if release.startswith("debian-"):
