@@ -145,10 +145,7 @@ class EC2Instspec:
             "InstanceTypes"
         ][0]
 
-        arch = "amd64"
-        if "arm64" in inst_specs["ProcessorInfo"]["SupportedArchitectures"]:
-            arch = "arm64"
-
+        arch = inst_specs["ProcessorInfo"]["SupportedArchitectures"][0]
         image_username = "ubuntu"
 
         if release.startswith("debian-"):
