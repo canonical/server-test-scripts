@@ -119,8 +119,8 @@ test_persistent_db() {
     wait_cassandra_container_ready "${container}" || return 1
     docker_run_client -e "CREATE KEYSPACE persistentkeyspace WITH REPLICATION = {'class':'SimpleStrategy','replication_factor' : 1};"
     docker_run_client -k persistentkeyspace -e "CREATE TABLE oci(id int primary key, name varchar);"
-    docker_run_client -k persistentkeyspace -e "INSERT INTO oci (id, name) VALUES (1, 'ubuntu:impish');"
-    docker_run_client -k persistentkeyspace -e "SELECT * FROM oci;" | grep -qF 'ubuntu:impish'
+    docker_run_client -k persistentkeyspace -e "INSERT INTO oci (id, name) VALUES (1, 'ubuntu:jammy');"
+    docker_run_client -k persistentkeyspace -e "SELECT * FROM oci;" | grep -qF 'ubuntu:jammy'
     assertTrue "Failed to fetch data from DB" $?
     # stop container, which deletes it because it was launched with --rm
     stop_container_sync "${container}"
@@ -128,7 +128,7 @@ test_persistent_db() {
     debug "Launching new container with same volume"
     container=$(docker_run_server -v "${volume}":/var/lib/cassandra)
     wait_cassandra_container_ready "${container}" || return 1
-    docker_run_client -k persistentkeyspace -e "SELECT * FROM oci;" | grep -qF 'ubuntu:impish'
+    docker_run_client -k persistentkeyspace -e "SELECT * FROM oci;" | grep -qF 'ubuntu:jammy'
     assertTrue "Data was not persisted" $?
     # stop container, which deletes it because it was launched with --rm
     # then we remove the volume and verify the data is no longer there
@@ -137,7 +137,7 @@ test_persistent_db() {
     volume=$(docker volume create)
     container=$(docker_run_server -v "${volume}":/var/lib/cassandra)
     wait_cassandra_container_ready "${container}" || return 1
-    docker_run_client -k persistentkeyspace -e "SELECT * FROM oci;" | grep -qF 'ubuntu:impish'
+    docker_run_client -k persistentkeyspace -e "SELECT * FROM oci;" | grep -qF 'ubuntu:jammy'
     assertFalse "Data was persisted when it shouldn't" $?
 }
 

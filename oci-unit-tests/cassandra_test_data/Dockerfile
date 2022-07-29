@@ -1,4 +1,4 @@
-FROM ubuntu:impish
+FROM ubuntu:jammy
 ARG CQLSH_VERSION=4.0.1
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y && \
 	DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
