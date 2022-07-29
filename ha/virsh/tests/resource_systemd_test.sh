@@ -6,7 +6,7 @@
 . "$(dirname "$0")/../vm_utils.sh"
 
 setup_systemd_service() {
-  run_in_all_nodes "DEBIAN_FRONTEND=noninteractive sudo apt-get install -y netcat >/dev/null"
+  run_in_all_nodes "DEBIAN_FRONTEND=noninteractive sudo apt-get install -y netcat-openbsd >/dev/null"
   run_in_all_nodes "cat > /home/ubuntu/gethostname.service <<EOF
 [Unit]
 Description=foo
