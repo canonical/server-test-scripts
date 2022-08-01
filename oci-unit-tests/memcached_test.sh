@@ -54,7 +54,7 @@ test_local_connection() {
     debug "Creating all-defaults memcached container"
     container=$(docker_run_server)
     assertNotNull "Failed to start the container" "${container}" || return 1
-
+    sleep 5
     mtool_output=$(docker exec "$container" /usr/share/memcached/scripts/memcached-tool 127.0.0.1:11211)
     assertTrue "Unexpected memcached-tool response:\n${mtool_output}" $?
 }
@@ -67,6 +67,8 @@ test_network_connection() {
     debug "Creating all-defaults memcached container (client)"
     container_client=$(suffix=client docker_run_server)
     assertNotNull "Failed to start the container" "${container_client}" || return 1
+
+    sleep 5
 
     mtool_output=$(docker exec "$container_client" /usr/share/memcached/scripts/memcached-tool "${DOCKER_PREFIX}_server:11211")
     assertTrue "Unexpected memcached-tool response:\n${mtool_output}" $?
@@ -90,7 +92,7 @@ test_custom_flags() {
         --disable-dumping \
     )
     assertNotNull "Failed to start the container" "${container}" || return 1
-
+    sleep 5
     mtool_output=$(docker exec "$container" /usr/share/memcached/scripts/memcached-tool 127.0.0.1:22122)
     assertTrue "Unexpected memcached-tool response:\n${mtool_output}" $?
 }
@@ -103,6 +105,7 @@ test_libmemcached_compliance() {
     debug "Creating memcached container with libmemcached-tools"
     container_client=$(suffix=client docker_run_server)
     assertNotNull "Failed to start the container" "${container_client}" || return 1
+    sleep 5
     install_container_packages "${container_client}" "libmemcached-tools" || return 1
 
     mping_output=$(docker exec "$container_client" memcping --servers="${DOCKER_PREFIX}_server")
@@ -124,6 +127,7 @@ test_data_storage_and_retrieval() {
     container_client=$(suffix=client docker_run_server)
     assertNotNull "Failed to start the container" "${container_client}" || return 1
 
+    sleep 5
     debug "Installing libmemcached-tools"
     install_container_packages "${container_client}" "libmemcached-tools"
 
