@@ -14,10 +14,6 @@
 
 readonly UPSTREAM_CASSANDRA_IMAGE="docker.io/cassandra:latest"
 readonly CQLSH_DOCKER_IMAGE="cassandra-cqlsh:test"
-readonly CQLSH_VERSION="${CQLSH_VERSION:-4.0.5}"
-# We build the cqlsh image locally because upstream does not ship a s390x image
-# See https://github.com/canonical/server-test-scripts/pull/130
-readonly USE_UPSTREAM_CASSANDRA_IMAGE=false
 
 oneTimeSetUp() {
     id=$$
@@ -30,16 +26,10 @@ oneTimeSetUp() {
 
     docker network create "$DOCKER_NETWORK" > /dev/null 2>&1
 
-    if "${USE_UPSTREAM_CASSANDRA_IMAGE}"; then
-        debug "Pulling image with cqlsh"
-        docker pull --quiet "${UPSTREAM_CASSANDRA_IMAGE}" > /dev/null
-        docker tag "${UPSTREAM_CASSANDRA_IMAGE}" "${CQLSH_DOCKER_IMAGE}"
-        docker rmi "${UPSTREAM_CASSANDRA_IMAGE}" > /dev/null 2>&1
-    else
-        debug "Building cqlsh image locally. This may take a while"
-        docker build --build-arg https_proxy --build-arg no_proxy --build-arg CQLSH_VERSION="${CQLSH_VERSION}" \
-         -t "${CQLSH_DOCKER_IMAGE}" ./cassandra_test_data
-    fi
+    debug "Pulling image with cqlsh"
+    docker pull --quiet "${UPSTREAM_CASSANDRA_IMAGE}" > /dev/null
+    docker tag "${UPSTREAM_CASSANDRA_IMAGE}" "${CQLSH_DOCKER_IMAGE}"
+    docker rmi "${UPSTREAM_CASSANDRA_IMAGE}" > /dev/null 2>&1
 }
 
 oneTimeTearDown() {
