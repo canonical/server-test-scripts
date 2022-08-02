@@ -34,15 +34,14 @@ test_web_hook_call() {
   # the webhook is configured to send a request to localhost port 5001
   response=$(timeout 20s nc -l 0.0.0.0 5001)
 
-  echo $response | grep User-Agent | grep Alertmanager > /dev/null
-  assertTrue $?
+  assertTrue "User-Agent contains Alertmanager" "echo $response | grep User-Agent | grep -q Alertmanager"
 
-  echo $response | grep status | grep firing > /dev/null
-  assertTrue $?
+  assertTrue "status is firing" "echo $response | grep status | grep -q firing"
 
   # check for my_testing_alert created in the previous test
   echo $response | grep alertname | grep my_testing_alert > /dev/null
   assertTrue $?
+  assertTrue "alertname is my_testing_alert" "echo $response | grep alertname | grep -q my_testing_alert"
 }
 
 load_shunit2
