@@ -14,6 +14,10 @@ VM01="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node01"
 VM02="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node02"
 VM03="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node03"
 
+HACLUSTER_USER="hacluster"
+HACLUSTER_PASSWD="dummy12345"
+CLUSTER_NAME="test-cluster"
+
 # Interface names can only be 15 chars long.
 HA_NETWORK="ha-${UBUNTU_SERIES::1}-${AGENT}"
 HA_NETWORK=${HA_NETWORK::15}
@@ -96,7 +100,7 @@ copy_to_node() {
 
 get_name_node_running_resource() {
   RES_NAME="${1}"
-  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status | grep ${RES_NAME}")
+  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status | grep ${RES_NAME}")
   node_running_resource=$(echo "${cluster_status}" | rev | cut -d ' ' -f 1 | rev)
 }
 

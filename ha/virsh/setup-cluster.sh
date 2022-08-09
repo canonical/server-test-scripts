@@ -109,54 +109,6 @@ ${IP_VM03} ${VM03}
 EOF
 }
 
-write_corosync_conf() {
-  cat > "${CONFIG_DIR}"/corosync.conf <<EOF
-totem {
-        version: 2
-        secauth: off
-        cluster_name: testcluster
-        transport: udp
-}
-
-nodelist {
-        node {
-                ring0_addr: ${IP_VM01}
-                name: ${VM01}
-                nodeid: 1
-        }
-        node {
-                ring0_addr: ${IP_VM02}
-                name: ${VM02}
-                nodeid: 2
-        }
-        node {
-                ring0_addr: ${IP_VM03}
-                name: ${VM03}
-                nodeid: 3
-        }
-}
-
-quorum {
-        provider: corosync_votequorum
-        two_node: 0
-}
-
-qb {
-        ipc_type: native
-}
-
-logging {
-
-        fileline: on
-        to_stderr: on
-        to_logfile: yes
-        logfile: /var/log/corosync/corosync.log
-        to_syslog: no
-        debug: off
-}
-EOF
-}
-
 write_iscsi_initiator_conf_files() {
   echo "InitiatorName=${IQN}:${VM01_ISCSI_INITIATOR}" > "${CONFIG_DIR}"/vm01_initiatorname.iscsi
   echo "InitiatorName=${IQN}:${VM02_ISCSI_INITIATOR}" > "${CONFIG_DIR}"/vm02_initiatorname.iscsi
@@ -165,7 +117,6 @@ write_iscsi_initiator_conf_files() {
 
 write_config_files() {
   write_hosts
-  write_corosync_conf
 
   if [[ "$ISCSI_SHARED_DEVICE" == "YES" ]]; then
     write_iscsi_initiator_conf_files
@@ -198,7 +149,6 @@ copy_ssh_key_to_all_nodes() {
 
 copy_config_files_to_all_nodes() {
   copy_to_all_nodes "${CONFIG_DIR}"/hosts
-  copy_to_all_nodes "${CONFIG_DIR}"/corosync.conf
 
   if [[ "$ISCSI_SHARED_DEVICE" == "YES" ]]; then
     copy_to_node "${IP_VM01}" "${CONFIG_DIR}"/vm01_initiatorname.iscsi
@@ -229,8 +179,15 @@ setup_config_files_in_all_nodes() {
   fi
 
   run_in_all_nodes 'sudo cp /home/ubuntu/hosts /etc/'
-  run_in_all_nodes 'sudo cp /home/ubuntu/corosync.conf /etc/corosync/'
-  run_in_all_nodes 'sudo systemctl restart corosync'
+}
+
+setup_cluster() {
+  run_in_all_nodes "echo '${HACLUSTER_USER}:${HACLUSTER_PASSWD}' | sudo chpasswd"
+  run_command_in_node "${IP_VM01}" "sudo pcs host auth -u ${HACLUSTER_USER} -p ${HACLUSTER_PASSWD} ${VM01} ${VM02} ${VM03}"
+  # The following is needed because by default a single node cluster is created in all nodes
+  run_in_all_nodes "sudo pcs cluster destroy"
+  run_command_in_node "${IP_VM01}" "sudo pcs cluster setup ${CLUSTER_NAME} --start ${VM01} ${VM02} ${VM03}"
+  run_in_all_nodes "sudo systemctl enable corosync pacemaker"
 }
 
 login_iscsi_target() {
@@ -275,7 +232,7 @@ configure_service_vm() {
 
 check_if_all_nodes_are_online() {
   sleep 30
-  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status")
+  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs cluster status")
   nodes_online=$(echo "${cluster_status}" | grep -A1 "Node List" | grep Online)
 
   if [[ "${nodes_online}" == *"${VM01}"* ]] && \
@@ -299,5 +256,6 @@ copy_config_files_to_all_nodes
 wait_until_all_nodes_are_ready
 install_extra_packages
 setup_config_files_in_all_nodes
+setup_cluster
 configure_service_vm
 check_if_all_nodes_are_online

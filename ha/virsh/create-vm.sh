@@ -108,7 +108,7 @@ apt:
     proposed.list:
       source: "deb http://archive.ubuntu.com/ubuntu ${UBUNTU_SERIES}-proposed main universe"
 package_update: true
-packages: ['corosync', 'pacemaker', 'pacemaker-cli-utils', 'crmsh', 'resource-agents-base', 'fence-agents-base']
+packages: ['corosync', 'pacemaker', 'pacemaker-cli-utils', 'pcs', 'resource-agents-base', 'fence-agents-base']
 EOF
 }
 

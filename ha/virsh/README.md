@@ -1,7 +1,7 @@
 # Testbed setup
 
 The testbed is composed of a 3-node cluster with a Corosync/Pacemaker setup.
-The scripts provided by this repository were tested only with Ubuntu Hirsute.
+The scripts provided by this repository were tested only with Ubuntu Jammy.
 
 ## Setting up
 
@@ -22,7 +22,7 @@ file of each node. By default, the script will try to use
 
 The setup takes some time but when it is done you will be ready to ssh into the
 nodes and the Corosync/Pacemaker cluster will be all set. You can check the
-cluster status running `sudo crm status`, all the nodes should be online.
+cluster status running `sudo pcs status`, all the nodes should be online.
 
 All the virtual machines created using these scripts can be managed using
 `virsh` or `virt-manager`.
