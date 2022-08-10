@@ -13,15 +13,15 @@ oneTimeSetUp() {
 }
 
 configure_cluster_properties() {
-  run_command_in_node "${IP_VM01}" "sudo crm configure property stonith-enabled=on"
-  run_command_in_node "${IP_VM01}" "sudo crm configure property stonith-action=reboot"
-  run_command_in_node "${IP_VM01}" "sudo crm configure property no-quorum-policy=stop"
-  run_command_in_node "${IP_VM01}" "sudo crm configure property have-watchdog=false"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set stonith-enabled=true"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set stonith-action=reboot"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set no-quorum-policy=stop"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set have-watchdog=false"
 }
 
 configure_fence_scsi() {
-  run_command_in_node "${IP_VM01}" "sudo crm configure primitive ${RESOURCE_NAME} stonith:fence_scsi \
-	  params pcmk_host_list=\"${VM01} ${VM02} ${VM03}\" devices=${SCSI_DEVICE} \
+  run_command_in_node "${IP_VM01}" "sudo pcs stonith create ${RESOURCE_NAME} fence_scsi \
+	  pcmk_host_list=\"${VM01} ${VM02} ${VM03}\" devices=${SCSI_DEVICE} \
 	  meta provides=unfencing"
 }
 
@@ -30,7 +30,7 @@ test_fence_scsi_is_started() {
   configure_fence_scsi
 
   sleep 15
-  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status")
+  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started
   assertTrue $?
 }
@@ -50,7 +50,7 @@ test_fence_node_running_the_resource() {
 
   # Check if the node got offline
   sleep 30
-  cluster_status=$(run_command_in_node "${IP_TARGET}" "sudo crm status")
+  cluster_status=$(run_command_in_node "${IP_TARGET}" "sudo pcs status")
   echo "${cluster_status}" | grep "${VM_RESOURCE}" | grep -i offline
   assertTrue $?
 
@@ -59,7 +59,7 @@ test_fence_node_running_the_resource() {
   assertTrue $?
 
   # Check if the resource is still correctly running in another node
-  cluster_status=$(run_command_in_node "${IP_TARGET}" "sudo crm status")
+  cluster_status=$(run_command_in_node "${IP_TARGET}" "sudo pcs status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started
   assertTrue $?
 }
