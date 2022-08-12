@@ -29,21 +29,19 @@ oneTimeSetUp() {
 }
 
 configure_cluster_properties() {
-  run_command_in_node "${IP_VM01}" "sudo crm configure property stonith-enabled=off"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set stonith-enabled=false"
 }
 
 configure_resource() {
-  run_command_in_node "${IP_VM01}" "sudo crm configure primitive ${RESOURCE_NAME} iscsi \
-	  params target=${TARGET} portal=${PORTAL}"
+  run_command_in_node "${IP_VM01}" "sudo pcs resource create ${RESOURCE_NAME} ocf:heartbeat:iscsi \
+	  target=${TARGET} portal=${PORTAL} --wait"
 }
 
 test_iscsi_initiator_resource_is_started() {
   configure_cluster_properties
   configure_resource
 
-  # Wait for changes to be applied and check if the resource is started
-  sleep 5
-  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status")
+  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started
   assertTrue "Could not infer ${RESOURCE_NAME} readiness from status output:\n${cluster_status}" $?
 }
@@ -69,11 +67,10 @@ test_move_resource() {
   find_node_to_move_resource "${RESOURCE_NAME}"
 
   # Move resource to another node
-  run_command_in_node "${IP_VM01}" "sudo crm resource move ${RESOURCE_NAME} ${VM_TARGET}"
-  sleep 10
+  run_command_in_node "${IP_VM01}" "sudo pcs resource move ${RESOURCE_NAME} ${VM_TARGET} --wait"
 
   # Check if resource is started in the target node
-  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status")
+  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started | grep "${VM_TARGET}"
   assertTrue "Could not infer ${RESOURCE_NAME} location correctness from the status info:\n${cluster_status}" $?
 
