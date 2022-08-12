@@ -30,21 +30,19 @@ oneTimeSetUp() {
 }
 
 configure_cluster_properties() {
-  run_command_in_node "${IP_VM01}" "sudo crm configure property stonith-enabled=off"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set stonith-enabled=false"
 }
 
 configure_systemd_resource() {
   NAME="${1}"
-  run_command_in_node "${IP_VM01}" "sudo crm configure primitive ${NAME} systemd:gethostname"
+  run_command_in_node "${IP_VM01}" "sudo pcs resource create ${NAME} systemd:gethostname --wait"
 }
 
 test_systemd_resource_is_started() {
   configure_cluster_properties
   configure_systemd_resource "${RESOURCE_NAME}"
 
-  # Wait for the systemd service to be started
-  sleep 5
-  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status")
+  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started
   assertTrue $?
 }
@@ -61,11 +59,10 @@ test_move_resource() {
   find_node_to_move_resource "${RESOURCE_NAME}"
 
   # Move resource to another node
-  run_command_in_node "${IP_VM01}" "sudo crm resource move ${RESOURCE_NAME} ${VM_TARGET}"
-  sleep 5
+  run_command_in_node "${IP_VM01}" "sudo pcs resource move ${RESOURCE_NAME} ${VM_TARGET} --wait"
 
   # Check if the resource is started in the target node
-  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status")
+  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started | grep "${VM_TARGET}"
   assertTrue $?
 
