@@ -29,22 +29,21 @@ oneTimeSetUp() {
 }
 
 configure_cluster_properties() {
-  run_command_in_node "${IP_VM01}" "sudo crm configure property stonith-enabled=off"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set stonith-enabled=false"
 }
 
 configure_lvm_activate_resource() {
   NAME="${1}"
   VOLGROUP="${2}"
-  run_command_in_node "${IP_VM01}" "sudo crm configure primitive ${NAME} ocf:heartbeat:LVM-activate \
-	  vgname=${VOLGROUP} vg_access_mode=system_id"
+  run_command_in_node "${IP_VM01}" "sudo pcs resource create ${NAME} ocf:heartbeat:LVM-activate \
+	  vgname=${VOLGROUP} vg_access_mode=system_id --wait"
 }
 
 test_lvm_activate_is_started() {
   configure_cluster_properties
   configure_lvm_activate_resource "${RESOURCE_NAME}" "${VG}"
 
-  run_command_in_node "${IP_VM01}" "sudo crm cluster wait_for_startup"
-  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status")
+  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started
   assertTrue $?
 }
@@ -66,9 +65,8 @@ test_move_resource() {
   find_node_to_move_resource "${RESOURCE_NAME}"
 
   # Move resource to another VM
-  run_command_in_node "${IP_VM01}" "sudo crm resource move ${RESOURCE_NAME} ${VM_TARGET}"
-  sleep 3
-  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status")
+  run_command_in_node "${IP_VM01}" "sudo pcs resource move ${RESOURCE_NAME} ${VM_TARGET} --wait"
+  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started
   assertTrue $?
 
