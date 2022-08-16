@@ -100,8 +100,8 @@ copy_to_node() {
 
 get_name_node_running_resource() {
   RES_NAME="${1}"
-  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status | grep ${RES_NAME}")
-  node_running_resource=$(echo "${cluster_status}" | rev | cut -d ' ' -f 1 | rev)
+  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs resource status ${RES_NAME} | grep ${RES_NAME}")
+  node_running_resource=$(echo "${cluster_status}" | sed -r 's,.*Started (.*)$,\1,')
 }
 
 find_node_running_resource() {
