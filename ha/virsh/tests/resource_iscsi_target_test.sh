@@ -31,7 +31,7 @@ configure_resources() {
 	 implementation=lio-t \
 	 iqn=\"${TARGET}\" \
 	 --group ${RESOURCE_GROUP} \
-	 --wait"
+	 --wait=60"
  run_command_in_node "${IP_VM01}" "sudo pcs resource create ${LUN_RESOURCE_NAME} \
 	 ocf:heartbeat:iSCSILogicalUnit \
 	 implementation=lio-t \
@@ -39,7 +39,7 @@ configure_resources() {
 	 path=\"${DEVICE}\" \
 	 lun=${LUN} \
 	 --group ${RESOURCE_GROUP} \
-	 --wait"
+	 --wait=60"
 }
 
 test_iscsi_target_resources_are_started() {
@@ -86,7 +86,7 @@ test_move_resource() {
   find_node_to_move_resource "${TARGET_RESOURCE_NAME}"
 
   # Move resource to another node
-  run_command_in_node "${IP_VM01}" "sudo pcs resource move ${TARGET_RESOURCE_NAME} ${VM_TARGET} --wait"
+  run_command_in_node "${IP_VM01}" "sudo pcs resource move ${TARGET_RESOURCE_NAME} ${VM_TARGET} --wait=60"
 
   # Check if both resources are started in the target node
   cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status")

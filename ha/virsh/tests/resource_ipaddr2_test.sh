@@ -22,7 +22,7 @@ configure_ipaddr2_resource() {
   IP="${2}"
   MASK="${3}"
   run_command_in_node "${IP_VM01}" "sudo pcs resource create ${NAME} ocf:heartbeat:IPaddr2 \
-	  ip=${IP} cidr_netmask=${MASK} op monitor interval=30s --wait"
+	  ip=${IP} cidr_netmask=${MASK} op monitor interval=30s --wait=60"
 }
 
 test_ipaddr2_is_started() {
@@ -47,7 +47,7 @@ test_move_resource() {
   find_node_to_move_resource "${RESOURCE_NAME}"
 
   # Move resource to another VM
-  run_command_in_node "${IP_VM01}" "sudo pcs resource move ${RESOURCE_NAME} ${VM_TARGET} --wait"
+  run_command_in_node "${IP_VM01}" "sudo pcs resource move ${RESOURCE_NAME} ${VM_TARGET} --wait=60"
   cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started
   assertTrue $?

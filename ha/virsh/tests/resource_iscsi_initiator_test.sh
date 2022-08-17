@@ -34,7 +34,7 @@ configure_cluster_properties() {
 
 configure_resource() {
   run_command_in_node "${IP_VM01}" "sudo pcs resource create ${RESOURCE_NAME} ocf:heartbeat:iscsi \
-	  target=${TARGET} portal=${PORTAL} --wait"
+	  target=${TARGET} portal=${PORTAL} --wait=60"
 }
 
 test_iscsi_initiator_resource_is_started() {
@@ -67,7 +67,7 @@ test_move_resource() {
   find_node_to_move_resource "${RESOURCE_NAME}"
 
   # Move resource to another node
-  run_command_in_node "${IP_VM01}" "sudo pcs resource move ${RESOURCE_NAME} ${VM_TARGET} --wait"
+  run_command_in_node "${IP_VM01}" "sudo pcs resource move ${RESOURCE_NAME} ${VM_TARGET} --wait=60"
 
   # Check if resource is started in the target node
   cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status")

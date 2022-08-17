@@ -35,7 +35,7 @@ configure_cluster_properties() {
 
 configure_systemd_resource() {
   NAME="${1}"
-  run_command_in_node "${IP_VM01}" "sudo pcs resource create ${NAME} systemd:gethostname --wait"
+  run_command_in_node "${IP_VM01}" "sudo pcs resource create ${NAME} systemd:gethostname --wait=60"
 }
 
 test_systemd_resource_is_started() {
@@ -59,7 +59,7 @@ test_move_resource() {
   find_node_to_move_resource "${RESOURCE_NAME}"
 
   # Move resource to another node
-  run_command_in_node "${IP_VM01}" "sudo pcs resource move ${RESOURCE_NAME} ${VM_TARGET} --wait"
+  run_command_in_node "${IP_VM01}" "sudo pcs resource move ${RESOURCE_NAME} ${VM_TARGET} --wait=60"
 
   # Check if the resource is started in the target node
   cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status")

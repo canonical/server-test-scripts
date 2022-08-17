@@ -36,7 +36,7 @@ configure_lvm_activate_resource() {
   NAME="${1}"
   VOLGROUP="${2}"
   run_command_in_node "${IP_VM01}" "sudo pcs resource create ${NAME} ocf:heartbeat:LVM-activate \
-	  vgname=${VOLGROUP} vg_access_mode=system_id --wait"
+	  vgname=${VOLGROUP} vg_access_mode=system_id --wait=60"
 }
 
 test_lvm_activate_is_started() {
@@ -65,7 +65,7 @@ test_move_resource() {
   find_node_to_move_resource "${RESOURCE_NAME}"
 
   # Move resource to another VM
-  run_command_in_node "${IP_VM01}" "sudo pcs resource move ${RESOURCE_NAME} ${VM_TARGET} --wait"
+  run_command_in_node "${IP_VM01}" "sudo pcs resource move ${RESOURCE_NAME} ${VM_TARGET} --wait=60"
   cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started
   assertTrue $?
