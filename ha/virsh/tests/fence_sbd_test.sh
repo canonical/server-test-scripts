@@ -13,11 +13,11 @@ oneTimeSetUp() {
 }
 
 configure_cluster_properties() {
-  run_command_in_node "${IP_VM01}" "sudo crm configure property stonith-enabled=true"
-  run_command_in_node "${IP_VM01}" "sudo crm configure property stonith-timeout=30"
-  run_command_in_node "${IP_VM01}" "sudo crm configure property stonith-action=reboot"
-  run_command_in_node "${IP_VM01}" "sudo crm configure property no-quorum-policy=stop"
-  run_command_in_node "${IP_VM01}" "sudo crm configure property have-watchdog=true"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set stonith-enabled=true"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set stonith-timeout=30"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set stonith-action=reboot"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set no-quorum-policy=stop"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set have-watchdog=true"
 }
 
 configure_watchdog() {
@@ -27,17 +27,20 @@ configure_watchdog() {
 }
 
 configure_sbd() {
+  run_command_in_node "${IP_VM01}" "sudo pcs cluster stop --all"
   run_in_all_nodes "sudo apt-get install -y sbd"
+  run_in_all_nodes "sudo systemctl enable sbd"
   run_in_all_nodes "sudo sed -i '/^# *SBD_DEVICE=/cSBD_DEVICE=\"${MPATH_DEVICE}\"' /etc/default/sbd"
   run_command_in_node "${IP_VM01}" "sudo sbd -d ${MPATH_DEVICE} create"
-  run_in_all_nodes "sudo crm cluster restart"
+  configure_watchdog
+  run_command_in_node "${IP_VM01}" "sudo pcs cluster start --all"
+  sleep 10
 }
 
 configure_fence_sbd() {
-  configure_watchdog
   configure_sbd
-  run_command_in_node "${IP_VM01}" "sudo crm configure primitive ${RESOURCE_NAME} stonith:fence_sbd \
-	  params devices=${MPATH_DEVICE}"
+  run_command_in_node "${IP_VM01}" "sudo pcs stonith create ${RESOURCE_NAME} fence_sbd \
+	  devices=${MPATH_DEVICE}"
 }
 
 test_fence_sbd_is_started() {
@@ -45,7 +48,7 @@ test_fence_sbd_is_started() {
   configure_fence_sbd
 
   sleep 15
-  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status")
+  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started
   assertTrue $?
 }
@@ -65,8 +68,8 @@ test_fence_node_running_the_resource() {
   run_command_in_node "${IP_RESOURCE}" "sudo iptables -A INPUT -j DROP"
 
   # Check if the node got offline
-  sleep 30
-  cluster_status=$(run_command_in_node "${IP_TARGET}" "sudo crm status")
+  sleep 20
+  cluster_status=$(run_command_in_node "${IP_TARGET}" "sudo pcs status")
   echo "${cluster_status}" | grep "${VM_RESOURCE}" | grep -i offline
   assertTrue $?
 
@@ -76,7 +79,7 @@ test_fence_node_running_the_resource() {
   assertTrue $?
 
   # Check if the resource is still correctly running in another node
-  cluster_status=$(run_command_in_node "${IP_TARGET}" "sudo crm status")
+  cluster_status=$(run_command_in_node "${IP_TARGET}" "sudo pcs status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started
   assertTrue $?
 }

@@ -14,23 +14,22 @@ oneTimeSetUp() {
 }
 
 configure_cluster_properties() {
-  run_command_in_node "${IP_VM01}" "sudo crm configure property stonith-enabled=off"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set stonith-enabled=false"
 }
 
 configure_ipaddr2_resource() {
   NAME="${1}"
   IP="${2}"
   MASK="${3}"
-  run_command_in_node "${IP_VM01}" "sudo crm configure primitive ${NAME} ocf:heartbeat:IPaddr2 \
-	  ip=${IP} cidr_netmask=${MASK} op monitor interval=30s"
+  run_command_in_node "${IP_VM01}" "sudo pcs resource create ${NAME} ocf:heartbeat:IPaddr2 \
+	  ip=${IP} cidr_netmask=${MASK} op monitor interval=30s --wait=60"
 }
 
 test_ipaddr2_is_started() {
   configure_cluster_properties
   configure_ipaddr2_resource "${RESOURCE_NAME}" "${FLOATING_IP}" "${NETMASK}"
 
-  run_command_in_node "${IP_VM01}" "sudo crm cluster wait_for_startup"
-  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status")
+  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started
   assertTrue $?
 }
@@ -48,8 +47,8 @@ test_move_resource() {
   find_node_to_move_resource "${RESOURCE_NAME}"
 
   # Move resource to another VM
-  run_command_in_node "${IP_VM01}" "sudo crm resource move ${RESOURCE_NAME} ${VM_TARGET}"
-  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status")
+  run_command_in_node "${IP_VM01}" "sudo pcs resource move ${RESOURCE_NAME} ${VM_TARGET} --wait=60"
+  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started
   assertTrue $?
 

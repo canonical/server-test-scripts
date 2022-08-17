@@ -17,7 +17,7 @@ if virsh list --name | grep ${VM_SERVICES}; then
 fi
 
 # Remove the HA specific network
-if virsh net-list --name | grep ${HA_NETWORK}; then
+if virsh net-list --name --all | grep ${HA_NETWORK}; then
   virsh net-destroy "${HA_NETWORK}"
   virsh net-undefine "${HA_NETWORK}"
 fi

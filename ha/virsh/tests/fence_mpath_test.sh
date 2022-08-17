@@ -16,10 +16,10 @@ oneTimeSetUp() {
 }
 
 configure_cluster_properties() {
-  run_command_in_node "${IP_VM01}" "sudo crm configure property stonith-enabled=on"
-  run_command_in_node "${IP_VM01}" "sudo crm configure property stonith-action=reboot"
-  run_command_in_node "${IP_VM01}" "sudo crm configure property no-quorum-policy=stop"
-  run_command_in_node "${IP_VM01}" "sudo crm configure property have-watchdog=false"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set stonith-enabled=on"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set stonith-action=reboot"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set no-quorum-policy=stop"
+  run_command_in_node "${IP_VM01}" "sudo pcs property set have-watchdog=false"
 }
 
 add_res_key_to_multipath_config() {
@@ -31,8 +31,7 @@ add_res_key_to_multipath_config() {
 
 configure_fence_mpath() {
   add_res_key_to_multipath_config
-  run_command_in_node "${IP_VM01}" "sudo crm configure primitive ${RESOURCE_NAME} stonith:fence_mpath \
-	  params \
+  run_command_in_node "${IP_VM01}" "sudo pcs stonith create ${RESOURCE_NAME} fence_mpath \
 	  pcmk_host_map=\"${VM01}:${NODE1_RES_KEY};${VM02}:${NODE2_RES_KEY};${VM03}:${NODE3_RES_KEY}\" \
 	  pcmk_host_argument=key \
 	  pcmk_monitor_action=metadata \
@@ -46,7 +45,7 @@ test_fence_mpath_is_started() {
   configure_fence_mpath
 
   sleep 15
-  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo crm status")
+  cluster_status=$(run_command_in_node "${IP_VM01}" "sudo pcs status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started
   assertTrue $?
 }
@@ -66,7 +65,7 @@ test_fence_node_running_the_resource() {
 
   # Check if the node got offline
   sleep 30
-  cluster_status=$(run_command_in_node "${IP_TARGET}" "sudo crm status")
+  cluster_status=$(run_command_in_node "${IP_TARGET}" "sudo pcs status")
   echo "${cluster_status}" | grep "${VM_RESOURCE}" | grep -i offline
   assertTrue $?
 
@@ -75,7 +74,7 @@ test_fence_node_running_the_resource() {
   assertTrue $?
 
   # Check if the resource is still correctly running in another node
-  cluster_status=$(run_command_in_node "${IP_TARGET}" "sudo crm status")
+  cluster_status=$(run_command_in_node "${IP_TARGET}" "sudo pcs status")
   echo "${cluster_status}" | grep "${RESOURCE_NAME}" | grep Started
   assertTrue $?
 }
