@@ -155,7 +155,7 @@ EOF
 }
 
 define_ha_network() {
-  if ! virsh net-list --name  | grep "${HA_NETWORK}"; then
+  if ! virsh net-list --name --all | grep "${HA_NETWORK}"; then
     create_ha_network
   fi
 }
