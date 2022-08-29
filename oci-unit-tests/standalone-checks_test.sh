@@ -28,7 +28,7 @@ oneTimeSetUp()
 
     UTILSDIR="${UTILSDIR}/utils"
 
-    if ! git clone -q --depth 1 https://git.launchpad.net/~canonical-server/ubuntu-docker-images/+git/utils "${UTILSDIR}"; then
+    if ! git clone -q --depth 1 https://git.launchpad.net/~ubuntu-docker-images/ubuntu-docker-images/+git/utils "${UTILSDIR}"; then
         echo "E: Failed to clone 'utils' repository.  Aborting." > /dev/stderr
         exit 1
     fi
