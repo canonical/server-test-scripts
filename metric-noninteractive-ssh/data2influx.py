@@ -28,7 +28,7 @@ def influx_connect():
 def parse_measurement(fname):
     """Parse raw data and extract measurement."""
 
-    timestamp = re.search(r"results-([0-9]+).json", fname).group(1)
+    timestamp = re.search(r"results-(.+)\.json", fname).group(1)
 
     with open(fname, "r", encoding="utf-8") as rawdataf:
         rawdata = json.load(rawdataf)
