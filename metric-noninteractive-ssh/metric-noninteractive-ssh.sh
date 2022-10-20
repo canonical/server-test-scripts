@@ -2,8 +2,17 @@
 
 set -eux
 
+# ISO-8601 time format with final Z for the UTC designator.
+# See: https://en.wikipedia.org/wiki/ISO_8601#Coordinated_Universal_Time_(UTC)
+# InfluxDB likes this format.
+timestamp=$(date --utc '+%Y-%m-%dT%H:%M:%SZ')
+
+WHAT=${WHAT-container}
+CPU=${CPU-1}
+MEM=${MEM-1}
+INSTTYPE="c$CPU-m$MEM"
 RELEASE=${RELEASE-$(distro-info --devel)}
-VMNAME=${VMNAME-metric-noninteractive-ssh-$RELEASE}
+VMNAME=${VMNAME-metric-ssh-$RELEASE-$WHAT-$INSTTYPE}
 
 cleanup() {
   if lxc info "$VMNAME" >/dev/null 2>&1; then
@@ -32,7 +41,9 @@ Cexec() {
 }
 
 setup_container() {
-  lxc launch "ubuntu-minimal-daily:$RELEASE" "$VMNAME"
+  [ "$WHAT" = vm ] && vmflag=--vm || vmflag=""
+  # shellcheck disable=SC2086
+  lxc launch "ubuntu-minimal-daily:$RELEASE" "$VMNAME" $vmflag
   cexec cloud-init status --wait >/dev/null
 
   # Starting from Kinetic sshd is socket activated, which will slow
@@ -50,9 +61,12 @@ setup_container() {
 
 
 do_measurement() {
-  cexec hyperfine --style=basic --min-runs=10 --max-runs=100 --export-json=results.json \
+  cexec hyperfine --style=basic --runs=1 --export-json=results-first.json \
     "ssh -o StrictHostKeyChecking=accept-new localhost true"
-  lxc file pull "$VMNAME/home/ubuntu/results.json" results.json
+  cexec hyperfine --style=basic --warmup 10 --runs=50 --export-json=results.json \
+    "ssh -o StrictHostKeyChecking=accept-new localhost true"
+  lxc file pull "$VMNAME/home/ubuntu/results-first.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-first.json"
+  lxc file pull "$VMNAME/home/ubuntu/results.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp.json"
 }
 
 cleanup
