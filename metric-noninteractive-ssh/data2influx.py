@@ -28,19 +28,35 @@ def influx_connect():
 def parse_measurement(fname):
     """Parse raw data and extract measurement."""
 
-    timestamp = re.search(r"results-(.+)\.json", fname).group(1)
+    fname_tokens = re.search(r"results-(\w+)-(\w+)-(\w+)-(\w+)-(.+)\.json", fname)
+    release = fname_tokens.group(1)
+    what = fname_tokens.group(2)
+    cpu = int(fname_tokens.group(3)[1:])
+    mem = int(fname_tokens.group(4)[1:])
+    timestamp = fname_tokens.group(5)
 
     with open(fname, "r", encoding="utf-8") as rawdataf:
         rawdata = json.load(rawdataf)
 
+    with open(fname.replace(".json", "-first.json"), "r", encoding="utf-8") as rawdataf:
+        rawdata_first = json.load(rawdataf)
+
     rawdata = rawdata["results"][0]
+    rawdata_first = rawdata_first["results"][0]
 
     data = []
 
     point = {
         "time": timestamp,
         "measurement": "ssh_noninteractive",
+        "tags": {
+            "release": release,
+            "what": what,
+            "cpu": cpu,
+            "mem": mem,
+        },
         "fields": {
+            "first": rawdata_first["times"][0],
             "mean": rawdata["mean"],
             "stddev": rawdata["stddev"],
             "median": rawdata["median"],
