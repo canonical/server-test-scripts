@@ -89,7 +89,7 @@ do_measurement() {
   cexec hyperfine --style=basic --warmup 10 --runs=50 --export-json=results-warm.json \
     "ssh -o StrictHostKeyChecking=accept-new localhost true"
   lxc file pull "$INSTNAME/home/ubuntu/results-first.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-first.json"
-  lxc file pull "$INSTNAME/home/ubuntu/results.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-warm.json"
+  lxc file pull "$INSTNAME/home/ubuntu/results-warm.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-warm.json"
 }
 
 cleanup
