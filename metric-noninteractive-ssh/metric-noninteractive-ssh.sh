@@ -81,10 +81,10 @@ setup_container() {
 do_measurement() {
   cexec hyperfine --style=basic --runs=1 --export-json=results-first.json \
     "ssh -o StrictHostKeyChecking=accept-new localhost true"
-  cexec hyperfine --style=basic --warmup 10 --runs=50 --export-json=results.json \
+  cexec hyperfine --style=basic --warmup 10 --runs=50 --export-json=results-warm.json \
     "ssh -o StrictHostKeyChecking=accept-new localhost true"
   lxc file pull "$VMNAME/home/ubuntu/results-first.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-first.json"
-  lxc file pull "$VMNAME/home/ubuntu/results.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp.json"
+  lxc file pull "$VMNAME/home/ubuntu/results.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-warm.json"
 }
 
 cleanup

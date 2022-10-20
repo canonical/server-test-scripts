@@ -38,7 +38,7 @@ def parse_measurement(fname):
     with open(fname, "r", encoding="utf-8") as rawdataf:
         rawdata = json.load(rawdataf)
 
-    with open(fname.replace(".json", "-first.json"), "r", encoding="utf-8") as rawdataf:
+    with open(fname.replace("warm", "first"), "r", encoding="utf-8") as rawdataf:
         rawdata_first = json.load(rawdataf)
 
     rawdata = rawdata["results"][0]
