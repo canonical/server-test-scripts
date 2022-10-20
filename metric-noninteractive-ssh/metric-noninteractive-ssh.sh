@@ -12,12 +12,12 @@ CPU=${CPU-1}
 MEM=${MEM-1}
 INSTTYPE="c$CPU-m$MEM"
 RELEASE=${RELEASE-$(distro-info --devel)}
-VMNAME=${VMNAME-metric-ssh-$RELEASE-$WHAT-$INSTTYPE}
+INSTNAME=${INSTNAME-metric-ssh-$RELEASE-$WHAT-$INSTTYPE}
 
 cleanup() {
-  if lxc info "$VMNAME" >/dev/null 2>&1; then
-    echo "Cleaning up: $VMNAME"
-    lxc delete "$VMNAME" --force
+  if lxc info "$INSTNAME" >/dev/null 2>&1; then
+    echo "Cleaning up: $INSTNAME"
+    lxc delete "$INSTNAME" --force
   fi
 }
 
@@ -32,21 +32,21 @@ setup_lxd_minimal_remote() {
 cexec() {
   # This assumes that in the official LXD images
   # user 'ubuntu' always has UID 1000.
-  lxc exec --user=1000 --cwd=/home/ubuntu "$VMNAME" -- "$@"
+  lxc exec --user=1000 --cwd=/home/ubuntu "$INSTNAME" -- "$@"
 }
 
 Cexec() {
   # capital C => root
-  lxc exec "$VMNAME" -- "$@"
+  lxc exec "$INSTNAME" -- "$@"
 }
 
 setup_container() {
   [ "$WHAT" = vm ] && vmflag=--vm || vmflag=""
   # shellcheck disable=SC2086
-  lxc launch "ubuntu-minimal-daily:$RELEASE" "$VMNAME" $vmflag
+  lxc launch "ubuntu-minimal-daily:$RELEASE" "$INSTNAME" $vmflag
 
   # Wait for instance to be able to accept commands
-  retry -d 2 -t 90 lxc exec "$VMNAME" true
+  retry -d 2 -t 90 lxc exec "$INSTNAME" true
 
   # Wait for cloud-init to finish
   cexec cloud-init status --wait >/dev/null
@@ -88,8 +88,8 @@ do_measurement() {
     "ssh -o StrictHostKeyChecking=accept-new localhost true"
   cexec hyperfine --style=basic --warmup 10 --runs=50 --export-json=results-warm.json \
     "ssh -o StrictHostKeyChecking=accept-new localhost true"
-  lxc file pull "$VMNAME/home/ubuntu/results-first.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-first.json"
-  lxc file pull "$VMNAME/home/ubuntu/results.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-warm.json"
+  lxc file pull "$INSTNAME/home/ubuntu/results-first.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-first.json"
+  lxc file pull "$INSTNAME/home/ubuntu/results.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-warm.json"
 }
 
 cleanup
