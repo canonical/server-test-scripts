@@ -44,6 +44,11 @@ setup_container() {
   [ "$WHAT" = vm ] && vmflag=--vm || vmflag=""
   # shellcheck disable=SC2086
   lxc launch "ubuntu-minimal-daily:$RELEASE" "$VMNAME" $vmflag
+
+  # Wait for instance to be able to accept commands
+  retry -d 2 -t 90 lxc exec "$VMNAME" true
+
+  # Wait for cloud-init to finish
   cexec cloud-init status --wait >/dev/null
 
   # Wait until load is load is settled
