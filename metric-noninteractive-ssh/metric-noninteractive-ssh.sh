@@ -52,10 +52,6 @@ setup_container() {
   # Run as root as the ubuntu (uid 1000) user may not be ready yet.
   Cexec cloud-init status --wait >/dev/null
 
-  # Starting from Kinetic sshd is socket activated, which will slow
-  # down the very fist login. Start ssh.service manually to avoid this.
-  Cexec systemctl start ssh
-
   # We'll use hyperfine to run the measurement
   Cexec apt-get -q update
   Cexec apt-get -qy install hyperfine
