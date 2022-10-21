@@ -52,24 +52,6 @@ setup_container() {
   # Run as root as the ubuntu (uid 1000) user may not be ready yet.
   Cexec cloud-init status --wait >/dev/null
 
-  # Wait until load is load is settled
-  load_settled=false
-  for _ in $(seq 1 10); do
-    loadavg1=$(cexec cut -d ' ' -f 1 /proc/loadavg)
-    loadavg5=$(cexec cut -d ' ' -f 2 /proc/loadavg)
-    loadreldiff=$(echo "($loadavg1-$loadavg5)/$loadavg5" | bc -l)
-    absloadreldirr=$(echo "if ($loadreldiff < 0) {-($loadreldiff)} else {$loadreldiff}" | bc -l)
-    if [ "$(echo "$absloadreldirr < 0.1" | bc -l)" = 1 ]; then
-      load_settled=true
-      break
-    fi
-    sleep 10
-  done
-
-  if [ $load_settled != true ]; then
-    echo "WARNING: load didn't settle!"
-  fi
-
   # Starting from Kinetic sshd is socket activated, which will slow
   # down the very fist login. Start ssh.service manually to avoid this.
   Cexec systemctl start ssh
@@ -83,6 +65,25 @@ setup_container() {
   cexec cp /home/ubuntu/.ssh/id_rsa.pub /home/ubuntu/.ssh/authorized_keys
 }
 
+wait_load_settled() {
+  # Wait until load is load is settled
+  load_settled=false
+  for _ in $(seq 1 60); do
+    loadavg1=$(cexec cut -d ' ' -f 1 /proc/loadavg)
+    loadavg5=$(cexec cut -d ' ' -f 2 /proc/loadavg)
+    loadreldiff=$(echo "($loadavg1-$loadavg5)/$loadavg5" | bc -l)
+    absloadreldirr=$(echo "if ($loadreldiff < 0) {-($loadreldiff)} else {$loadreldiff}" | bc -l)
+    if [ "$(echo "$absloadreldirr < 0.07" | bc -l)" = 1 ]; then
+      load_settled=true
+      break
+    fi
+    sleep 10
+  done
+
+  if [ $load_settled != true ]; then
+    echo "WARNING: load didn't settle!"
+  fi
+}
 
 do_measurement() {
   # Measure the very first ssh login time.
@@ -103,5 +104,6 @@ do_measurement() {
 cleanup
 setup_lxd_minimal_remote
 setup_container
+wait_load_settled
 do_measurement
 cleanup
