@@ -88,10 +88,17 @@ setup_container() {
 
 
 do_measurement() {
-  cexec hyperfine --style=basic --runs=1 --export-json=results-first.json \
+  # Measure the very first ssh login time.
+  # The hyperfine version in Jammy requires at least two runs.
+  # Not a problem: we'll keep only the first one when parsing the measurement.
+  cexec hyperfine --style=basic --runs=2 --export-json=results-first.json \
     "ssh -o StrictHostKeyChecking=accept-new localhost true"
+
+  # Repeated mesasurement
   cexec hyperfine --style=basic --warmup 10 --runs=50 --export-json=results-warm.json \
     "ssh -o StrictHostKeyChecking=accept-new localhost true"
+
+  # Retrieve measurement results
   lxc file pull "$INSTNAME/home/ubuntu/results-first.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-first.json"
   lxc file pull "$INSTNAME/home/ubuntu/results-warm.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-warm.json"
 }
