@@ -47,13 +47,10 @@ setup_container() {
 
   # Wait for instance to be able to accept commands
   retry -d 2 -t 90 lxc exec "$INSTNAME" true
-  # Sleep a bit. I tried hard to avoid this, but no matter what if I try
-  # to execute commands too early in a LXD VM they will fail in strange
-  # ways, e.g. Error: fork/exec /usr/bin/systemctl: no such file or directory.
-  sleep 5
 
   # Wait for cloud-init to finish
-  cexec cloud-init status --wait >/dev/null
+  # Run as root as the ubuntu (uid 1000) user may not be ready yet.
+  Cexec cloud-init status --wait >/dev/null
 
   # Wait until load is load is settled
   load_settled=false
