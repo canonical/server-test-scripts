@@ -43,7 +43,7 @@ Cexec() {
 setup_container() {
   [ "$WHAT" = vm ] && vmflag=--vm || vmflag=""
   # shellcheck disable=SC2086
-  lxc launch "ubuntu-minimal-daily:$RELEASE" "$INSTNAME" $vmflag
+  lxc launch "ubuntu-minimal-daily:$RELEASE" "$INSTNAME" --ephemeral $vmflag
 
   # Wait for instance to be able to accept commands
   retry -d 2 -t 90 lxc exec "$INSTNAME" true
