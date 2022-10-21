@@ -48,6 +48,9 @@ setup_container() {
   # Wait for instance to be able to accept commands
   retry -d 2 -t 90 lxc exec "$INSTNAME" true
 
+  # Wait for system to be operational from systemd's point of view.
+  cexec systemctl is-system-running --wait 
+
   # Wait for cloud-init to finish
   cexec cloud-init status --wait >/dev/null
 
