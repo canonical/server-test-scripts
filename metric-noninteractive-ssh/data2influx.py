@@ -28,7 +28,7 @@ def influx_connect():
 def parse_measurement(fname):
     """Parse raw data and extract measurement."""
 
-    fname_tokens = re.search(r"results-(\w+)-(\w+)-(\w+)-(\w+)-(.+)\.json", fname)
+    fname_tokens = re.search(r"results-(\w+)-(\w+)-(\w+)-(\w+)-(.+)-warm\.json", fname)
     release = fname_tokens.group(1)
     what = fname_tokens.group(2)
     cpu = int(fname_tokens.group(3)[1:])
