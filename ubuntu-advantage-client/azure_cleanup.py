@@ -129,7 +129,7 @@ def clean_azure(
                     resource_group_name = resource_group.name
                     print('# deleted resource group: {} with tag {}'.format(
                         resource_group_name, tag_value))
-                    result = resource_client.resource_groups.delete(
+                    result = resource_client.resource_groups.begin_delete(
                         resource_group_name=resource_group_name
                     )
 
