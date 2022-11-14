@@ -7,7 +7,7 @@ import datetime
 import json
 from subprocess import run, PIPE
 
-DEFAULT_NAME_PREFIX = "ubuntu-behave-test"
+DEFAULT_NAME_PREFIX = "upro-behave"
 
 
 def get_parser():
