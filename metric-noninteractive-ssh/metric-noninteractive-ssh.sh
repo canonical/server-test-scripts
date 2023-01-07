@@ -17,7 +17,7 @@ INSTNAME=${INSTNAME-metric-ssh-$RELEASE-$WHAT-$INSTTYPE}
 cleanup() {
   if lxc info "$INSTNAME" >/dev/null 2>&1; then
     echo "Cleaning up: $INSTNAME"
-    lxc delete "$INSTNAME" --force
+    retry -t 3 lxc delete "$INSTNAME" --force
   fi
 }
 
