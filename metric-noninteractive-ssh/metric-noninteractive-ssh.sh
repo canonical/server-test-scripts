@@ -17,7 +17,7 @@ INSTNAME=${INSTNAME-metric-ssh-$RELEASE-$WHAT-$INSTTYPE}
 cleanup() {
   if lxc info "$INSTNAME" >/dev/null 2>&1; then
     echo "Cleaning up: $INSTNAME"
-    retry -t 3 lxc delete "$INSTNAME" --force
+    retry -t 3 -- lxc delete "$INSTNAME" --force
   fi
 }
 
@@ -46,7 +46,7 @@ setup_container() {
   lxc launch "ubuntu-minimal-daily:$RELEASE" "$INSTNAME" --ephemeral $vmflag
 
   # Wait for instance to be able to accept commands
-  retry -d 2 -t 90 lxc exec "$INSTNAME" true
+  retry -d 2 -t 90 -- lxc exec "$INSTNAME" true
 
   # Wait for cloud-init to finish
   # Run as root as the ubuntu (uid 1000) user may not be ready yet.
