@@ -192,8 +192,6 @@ class EC2Instspec:
                     self.availability_zone = instance.availability_zone
             finally:
                 print("Deleting the instance.")
-                instance.shutdown()
-                time.sleep(10)
                 instance.delete(wait=False)
 
         metadata = gen_metadata(
@@ -271,8 +269,6 @@ class LXDInstspec:
                 measure_instance(instance, instance_data, reboots)
             finally:
                 print("Deleting the instance.")
-                instance.shutdown()
-                time.sleep(10)
                 instance.delete()
 
         # On LXD we can consider the machine the measurement is run on as the
