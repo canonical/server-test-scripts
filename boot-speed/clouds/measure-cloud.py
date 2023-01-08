@@ -253,7 +253,7 @@ class LXDInstspec:
         print("Daily image for", release, "is", image)
         print("Image serial:", serial)
 
-        @retry(stop_max_attempt_number=3, wait_fixed=5000)
+        @retry(stop_max_attempt_number=5, wait_fixed=10000)
         def retry_delete(instance):
             instance.delete()
 
