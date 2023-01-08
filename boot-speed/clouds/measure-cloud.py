@@ -22,6 +22,7 @@ import tempfile
 import time
 
 from pathlib import Path
+from retrying import retry
 from socket import timeout
 
 import distro_info
@@ -252,6 +253,10 @@ class LXDInstspec:
         print("Daily image for", release, "is", image)
         print("Image serial:", serial)
 
+        @retry(stop_max_attempt_number=3, wait_fixed=5000)
+        def retry_delete(instance):
+            instance.delete()
+
         for ninstance in range(instances):
             instance_data = Path(datadir, "instance_" + str(ninstance))
             instance_data.mkdir()
@@ -269,7 +274,7 @@ class LXDInstspec:
                 measure_instance(instance, instance_data, reboots)
             finally:
                 print("Deleting the instance.")
-                instance.delete()
+                retry_delete(instance)
 
         # On LXD we can consider the machine the measurement is run on as the
         # 'region'; platform.node() returns its hostname.
