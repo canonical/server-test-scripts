@@ -16,7 +16,6 @@ configure_cluster_properties() {
   run_command_in_node "${IP_VM01}" "sudo pcs property set stonith-enabled=true"
   run_command_in_node "${IP_VM01}" "sudo pcs property set stonith-action=reboot"
   run_command_in_node "${IP_VM01}" "sudo pcs property set no-quorum-policy=stop"
-  run_command_in_node "${IP_VM01}" "sudo pcs property set have-watchdog=false"
 }
 
 configure_fence_scsi() {
