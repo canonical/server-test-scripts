@@ -36,7 +36,7 @@ configure_lvm_activate_resource() {
   NAME="${1}"
   VOLGROUP="${2}"
   run_command_in_node "${IP_VM01}" "sudo pcs resource create ${NAME} ocf:heartbeat:LVM-activate \
-	  vgname=${VOLGROUP} vg_access_mode=system_id --wait=60"
+	  vgname=${VOLGROUP} vg_access_mode=system_id --wait=120"
 }
 
 test_lvm_activate_is_started() {
