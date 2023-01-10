@@ -23,6 +23,11 @@ setup_vbmc() {
   source virtualbmc.venv/bin/activate
   pip install -U pip
   pip install virtualbmc
+
+  # Make sure there's no lingering vbmcd process
+  pkill vbmcd 2>/dev/null || true
+  while (pkill -0 vbmcd); do sleep 1; done
+
   vbmcd
 }
 
