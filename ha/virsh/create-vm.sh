@@ -166,7 +166,6 @@ launch_vm() {
 	--name "${VM_NAME}" \
   	--ram ${RAM} \
   	--vcpus=${VCPU} \
-  	--os-type linux \
 	--os-variant ubuntu18.04 \
 	--disk path="${IMAGES_DIR}"/"${VM_NAME}"/"${VM_NAME}".qcow2,device=disk \
 	--disk path="${IMAGES_DIR}"/"${VM_NAME}"/"${VM_NAME}"-seed.qcow2,device=disk \
