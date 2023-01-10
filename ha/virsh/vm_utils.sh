@@ -2,7 +2,7 @@
 
 UBUNTU_SERIES="${UBUNTU_SERIES:-jammy}"
 
-VM_SERVICES="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-services"
+VM_SERVICES="ha-agent-virsh-${UBUNTU_SERIES::1}-${AGENT}-services"
 IQN="iqn.$(date '+%Y-%m').com.test.storage"
 
 VM_SERVICES_ISCSI_TARGET="target01"
@@ -10,9 +10,9 @@ VM01_ISCSI_INITIATOR="initiator01"
 VM02_ISCSI_INITIATOR="initiator02"
 VM03_ISCSI_INITIATOR="initiator03"
 
-VM01="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node01"
-VM02="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node02"
-VM03="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node03"
+VM01="ha-agent-virsh-${UBUNTU_SERIES::1}-${AGENT}-node01"
+VM02="ha-agent-virsh-${UBUNTU_SERIES::1}-${AGENT}-node02"
+VM03="ha-agent-virsh-${UBUNTU_SERIES::1}-${AGENT}-node03"
 
 HACLUSTER_USER="hacluster"
 HACLUSTER_PASSWD="dummy12345"

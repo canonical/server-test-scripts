@@ -1,7 +1,7 @@
 #!/bin/bash
 
 : "${UBUNTU_SERIES:=jammy}"
-VM_PREFIX="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}"
+VM_PREFIX="ha-agent-virsh-${UBUNTU_SERIES::1}-${AGENT}"
 HA_NETWORK="ha-${UBUNTU_SERIES::1}-${AGENT}"
 HA_NETWORK=${HA_NETWORK::15}
 
