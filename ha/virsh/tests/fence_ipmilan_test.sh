@@ -65,6 +65,8 @@ oneTimeSetUp() {
   # shellcheck disable=SC2086,SC2116
   PREFIX=$(echo ${IP_TESTER%.*})
   readonly IP_HOST="${PREFIX}.1"
+
+  sleep 10
 }
 
 oneTimeTearDown() {
