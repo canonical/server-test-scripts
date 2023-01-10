@@ -41,8 +41,8 @@ setup_tester() {
 }
 
 oneTimeSetUp() {
-  readonly TESTER="ipmi-tester"
-  readonly SIMULATOR="ipmi-simulator"
+  readonly TESTER="ha-agent-virsh-${UBUNTU_SERIES::1}-${AGENT}-tester"
+  readonly SIMULATOR="ha-agent-virsh-${UBUNTU_SERIES::1}-${AGENT}-simulator"
   readonly PORT=6230
   readonly USER="admin"
   readonly PASSWD="password"
