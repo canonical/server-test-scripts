@@ -8,12 +8,13 @@
 CREATE_VM_SCRIPT="$(pwd)/create-vm.sh"
 
 setup_vbmc() {
+  # Drop this if we upgrade to 24.04 or backport python3-virtualbmc.
   if [ ! -d "$(pwd)/virtualbmc.venv" ]; then
     NEEDED_PKGS="python3-venv python3-dev libvirt-dev gcc"
     for pkg in ${NEEDED_PKGS}; do
       if ! dpkg -l "${pkg}"; then
         echo "[E] ${pkg} is not installed."
-	exit 5
+        exit 5
       fi
     done
     python3 -m venv virtualbmc.venv
