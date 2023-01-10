@@ -1,18 +1,13 @@
 #!/bin/bash
 
 : "${UBUNTU_SERIES:=jammy}"
-VM_PREFIX="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-node"
-VM_SERVICES="services-${UBUNTU_SERIES}"
+VM_PREFIX="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}"
 HA_NETWORK="ha-${UBUNTU_SERIES::1}-${AGENT}"
 HA_NETWORK=${HA_NETWORK::15}
 
-# Remove all cluster nodes
+# Remove all nodes
 virsh list --state-running --name | grep "^$VM_PREFIX" | xargs -L 1 --no-run-if-empty virsh destroy
 virsh list --state-shutoff --name | grep "^$VM_PREFIX" | xargs -L 1 --no-run-if-empty virsh undefine --remove-all-storage
-
-# Remove VM running external services if it exists
-virsh list --state-running --name | grep "^$VM_SERVICES" | xargs -L 1 --no-run-if-empty virsh destroy
-virsh list --state-shutoff --name | grep "^$VM_SERVICES" | xargs -L 1 --no-run-if-empty virsh undefine --remove-all-storage
 
 # Remove the HA specific network
 if virsh net-list --name --all | grep ${HA_NETWORK}; then

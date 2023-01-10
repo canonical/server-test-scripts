@@ -2,7 +2,7 @@
 
 UBUNTU_SERIES="${UBUNTU_SERIES:-jammy}"
 
-VM_SERVICES="services-${UBUNTU_SERIES}"
+VM_SERVICES="ha-agent-virsh-${UBUNTU_SERIES}-${AGENT}-services"
 IQN="iqn.$(date '+%Y-%m').com.test.storage"
 
 VM_SERVICES_ISCSI_TARGET="target01"
