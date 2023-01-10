@@ -11,10 +11,8 @@ virsh list --state-running --name | grep "^$VM_PREFIX" | xargs -L 1 --no-run-if-
 virsh list --state-shutoff --name | grep "^$VM_PREFIX" | xargs -L 1 --no-run-if-empty virsh undefine --remove-all-storage
 
 # Remove VM running external services if it exists
-if virsh list --name | grep ${VM_SERVICES}; then
-  virsh destroy ${VM_SERVICES}
-  virsh undefine --remove-all-storage ${VM_SERVICES}
-fi
+virsh list --state-running --name | grep "^$VM_SERVICES" | xargs -L 1 --no-run-if-empty virsh destroy
+virsh list --state-shutoff --name | grep "^$VM_SERVICES" | xargs -L 1 --no-run-if-empty virsh undefine --remove-all-storage
 
 # Remove the HA specific network
 if virsh net-list --name --all | grep ${HA_NETWORK}; then
