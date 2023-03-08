@@ -107,8 +107,8 @@ do_measurement_vmstat() {
   # Check idle memory and cpu consumption after just booting
   resultfile="results-vmstat-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp.txt"
   # Not much has happened yet, no strong need to push harder for discard
-  sync
-  echo 3 > /proc/sys/vm/drop_caches
+  sudo sync
+  echo 3 | sudo tee /proc/sys/vm/drop_caches
   sleep 5s
   # We gather 3m avg + since boot
   cexec sudo vmstat --one-header --wide --unit m 180 2 > "${resultfile}"
