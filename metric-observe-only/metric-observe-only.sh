@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -eux
 
@@ -52,9 +52,14 @@ setup_container() {
   # Run as root as the ubuntu (uid 1000) user may not be ready yet.
   Cexec cloud-init status --wait >/dev/null
 
-  # We'll use hyperfine to run the measurement
   Cexec apt-get -q update
+  # We'll use hyperfine to run the measurement
   Cexec apt-get -qy install hyperfine
+  # We'll use dstat for slightly advanced stats
+  Cexec apt-get -qy install dstat
+
+  # Silence known spikes
+  Cexec apt-get remove unattended-upgrades
 
   # Setup passwordless ssh authentication
   cexec ssh-keygen -q -t rsa -f /home/ubuntu/.ssh/id_rsa -N ''
@@ -100,18 +105,14 @@ do_measurement_ssh() {
 do_measurement_processcount() {
   # Check how many processes are active after just booting
   resultfile="results-processcount-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp.txt"
-  cexec ps -e --no-headers > "${resultfile}"
+  Cexec ps -e --no-headers > "${resultfile}"
 }
 
-do_measurement_vmstat() {
+do_measurement_cpustat() {
   # Check idle memory and cpu consumption after just booting
-  resultfile="results-vmstat-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp.txt"
-  # Not much has happened yet, no strong need to push harder for discard
-  sudo sync
-  echo 3 | sudo tee /proc/sys/vm/drop_caches
-  sleep 5s
+  resultfile="results-cpustat-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp.txt"
   # We gather 3m avg + since boot
-  cexec sudo vmstat --one-header --wide --unit m 180 2 > "${resultfile}"
+  Cexec vmstat --one-header --wide --unit m 180 2 > "${resultfile}"
 }
 
 
@@ -119,8 +120,12 @@ cleanup
 setup_lxd_minimal_remote
 setup_container
 wait_load_settled
+# Evict all caches after load settled
+Cexec sync
+Cexec dd of=/proc/sys/vm/drop_caches <<<'3'
+sleep 5s
 
-do_measurement_vmstat
+do_measurement_cpustat
 do_measurement_processcount
 do_measurement_ssh
 

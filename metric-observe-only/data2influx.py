@@ -71,7 +71,7 @@ def parse_ssh_measurement(fname, point):
     }
 
 
-def parse_vmstat_measurement(fname, point):
+def parse_cpustat_measurement(fname, point):
     """Parse raw data of vmstat output and extract measurement."""
 
     with open(fname, "r", encoding="utf-8") as rawdataf:
@@ -84,10 +84,6 @@ def parse_vmstat_measurement(fname, point):
         return
 
     point["fields"] = {
-            "swpd":  vmstat_avg[2],
-            "free":  vmstat_avg[3],
-            "buff":  vmstat_avg[4],
-            "cache": vmstat_avg[5],
             "user":  vmstat_avg[12],
             "sys":   vmstat_avg[13],
             "idle":  vmstat_avg[14],
@@ -121,8 +117,8 @@ def main(fname, metrictype, dryrun):
         parse_ssh_measurement(fname, point)
     elif metrictype == "processcount":
         parse_processcount_measurement(fname, point)
-    elif metrictype == "vmstat":
-        parse_vmstat_measurement(fname, point)
+    elif metrictype == "cpustat":
+        parse_cpustat_measurement(fname, point)
     else:
         data = None
         print(f"WARNING: unknown metric type {metrictype}!")
