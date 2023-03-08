@@ -170,15 +170,15 @@ def main(fname, metrictype, dryrun):
 
     if metrictype == "ssh_noninteractive":
         parse_ssh_measurement(fname, point)
-    elif metrictype == "processcount":
+    elif metrictype == "metric_processcount":
         parse_processcount_measurement(fname, point)
-    elif metrictype == "cpustat":
+    elif metrictype == "metric_cpustat":
         parse_cpustat_measurement(fname, point)
-    elif metrictype == "meminfo":
+    elif metrictype == "metric_meminfo":
         parse_meminfo_measurement(fname, point)
-    elif metrictype == "ports":
+    elif metrictype == "metric_ports":
         parse_ports_measurement(fname, point)
-    elif metrictype == "disk":
+    elif metrictype == "metric_disk":
         parse_disk_measurement(fname, point)
     else:
         data = None
