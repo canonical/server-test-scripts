@@ -103,11 +103,24 @@ do_measurement_processcount() {
   cexec ps -e --no-headers > "${resultfile}"
 }
 
+do_measurement_vmstat() {
+  # Check idle memory and cpu consumption after just booting
+  resultfile="results-vmstat-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp.txt"
+  # Not much has happened yet, no strong need to push harder for discard
+  sync
+  echo 3 > /proc/sys/vm/drop_caches
+  sleep 5s
+  # We gather 3m avg + since boot
+  cexec sudo vmstat --one-header --wide --unit m 180 2 > "${resultfile}"
+}
+
+
 cleanup
 setup_lxd_minimal_remote
 setup_container
 wait_load_settled
 
+do_measurement_vmstat
 do_measurement_processcount
 do_measurement_ssh
 
