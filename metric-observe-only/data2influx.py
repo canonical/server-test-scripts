@@ -108,7 +108,7 @@ def main(fname, metrictype, dryrun):
     tokens = filename_to_tokens(fname)
     point = {
         "time": tokens["timestamp"],
-        "measurement": "processcount",
+        "measurement": metrictype,
         "tags": {
             "release": tokens["release"],
             "what": tokens["what"],
