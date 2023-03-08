@@ -115,6 +115,21 @@ do_measurement_cpustat() {
   Cexec vmstat --one-header --wide --unit m 180 2 > "${resultfile}"
 }
 
+do_measurement_meminfo() {
+  # Check idle memory and cpu consumption after just booting
+  resultfile="results-meminfo-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp.txt"
+  Cexec cat /proc/meminfo > "${resultfile}"
+}
+
+do_measurement_ports() {
+  resultfile="results-ports-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp.txt"
+  Cexec ss -lntup > "${resultfile}"
+}
+
+do_measurement_disk() {
+  resultfile="results-disk-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp.txt"
+  Cexec df / --block-size=1M > "${resultfile}"
+}
 
 cleanup
 setup_lxd_minimal_remote
@@ -126,7 +141,10 @@ Cexec dd of=/proc/sys/vm/drop_caches <<<'3'
 sleep 5s
 
 do_measurement_cpustat
+do_measurement_meminfo
+do_measurement_ports
 do_measurement_processcount
+do_measurement_disk
 do_measurement_ssh
 
 cleanup

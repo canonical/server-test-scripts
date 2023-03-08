@@ -45,7 +45,7 @@ def parse_processcount_measurement(fname, point):
     with open(fname, "r", encoding="utf-8") as processlist:
         count = len(processlist.readlines())
 
-    point["fields"] = {"count": count}
+    point["fields"] = {"proccount": count}
 
 
 def parse_ssh_measurement(fname, point):
@@ -97,6 +97,61 @@ def parse_cpustat_measurement(fname, point):
     }
 
 
+def parse_disk_measurement(fname, point):
+    """Parse raw data of vmstat output and extract measurement."""
+
+    with open(fname, "r", encoding="utf-8") as rawdataf:
+        disk_lines = rawdataf.readlines()
+        disk_entry = disk_lines[1].split()
+
+    if len(disk_entry) != 6:
+        print("WARNING: df output in unexpected format!")
+        return
+
+    point["fields"] = {
+            "usedmb": disk_entry[2],
+    }
+
+
+def parse_ports_measurement(fname, point):
+    """Parse raw port data of ss output and extract measurement."""
+
+    with open(fname, "r", encoding="utf-8") as portlist:
+        # minus header
+        count = len(portlist.readlines()) - 1
+
+    point["fields"] = {"portcount": count}
+
+
+def parse_meminfo_measurement(fname, point):
+    """Parse raw data of meminfo output and extract measurement."""
+
+    meminfo = {}
+    with open(fname, "r", encoding="utf-8") as rawdataf:
+        meminfo_lines = rawdataf.readlines()
+        for line in meminfo_lines:
+            lineinfo = line.split()
+            meminfo[lineinfo[0]] = lineinfo[1]
+
+    point["fields"] = {
+        # Track these
+        "MemFree": meminfo["MemFree:"],
+        "MemAvailable": meminfo["MemAvailable:"],
+        "Mlocked": meminfo["Mlocked:"],
+        # For quick sanity checks
+        "AnonPages": meminfo["AnonPages:"],
+        "Mapped": meminfo["Mapped:"],
+        "Shmem": meminfo["Shmem:"],
+        "MemTotal": meminfo["MemTotal:"],
+        "SwapTotal": meminfo["SwapTotal:"],
+        "SwapFree": meminfo["SwapFree:"],
+        "Dirty": meminfo["Dirty:"],
+        "Buffers": meminfo["Buffers:"],
+        "Cached": meminfo["Cached:"],
+        "KReclaimable": meminfo["KReclaimable:"],
+    }
+
+
 def main(fname, metrictype, dryrun):
     """Take raw measurement, parse it, feed it to InfluxDB."""
 
@@ -119,6 +174,12 @@ def main(fname, metrictype, dryrun):
         parse_processcount_measurement(fname, point)
     elif metrictype == "cpustat":
         parse_cpustat_measurement(fname, point)
+    elif metrictype == "meminfo":
+        parse_meminfo_measurement(fname, point)
+    elif metrictype == "ports":
+        parse_ports_measurement(fname, point)
+    elif metrictype == "disk":
+        parse_disk_measurement(fname, point)
     else:
         data = None
         print(f"WARNING: unknown metric type {metrictype}!")
