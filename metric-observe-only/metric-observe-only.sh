@@ -12,7 +12,7 @@ CPU=${CPU-1}
 MEM=${MEM-1}
 INSTTYPE="c$CPU-m$MEM"
 RELEASE=${RELEASE-$(distro-info --devel)}
-INSTNAME=${INSTNAME-metric-ssh-$RELEASE-$WHAT-$INSTTYPE}
+INSTNAME=${INSTNAME-metric-observe-only-$RELEASE-$WHAT-$INSTTYPE}
 
 cleanup() {
   if lxc info "$INSTNAME" >/dev/null 2>&1; then
@@ -81,7 +81,7 @@ wait_load_settled() {
   fi
 }
 
-do_measurement() {
+do_measurement_ssh() {
   # Measure the very first ssh login time.
   # The hyperfine version in Jammy requires at least two runs.
   # Not a problem: we'll keep only the first one when parsing the measurement.
@@ -93,13 +93,22 @@ do_measurement() {
     "ssh -o StrictHostKeyChecking=accept-new localhost true"
 
   # Retrieve measurement results
-  lxc file pull "$INSTNAME/home/ubuntu/results-first.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-first.json"
-  lxc file pull "$INSTNAME/home/ubuntu/results-warm.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-warm.json"
+  lxc file pull "$INSTNAME/home/ubuntu/results-first.json" "results-ssh-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-first.json"
+  lxc file pull "$INSTNAME/home/ubuntu/results-warm.json" "results-ssh-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-warm.json"
+}
+
+do_measurement_processcount() {
+  # Check how many processes are active after just booting
+  resultfile="results-processcount-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp.txt"
+  cexec ps -e --no-headers > "${resultfile}"
 }
 
 cleanup
 setup_lxd_minimal_remote
 setup_container
 wait_load_settled
-do_measurement
+
+do_measurement_processcount
+do_measurement_ssh
+
 cleanup

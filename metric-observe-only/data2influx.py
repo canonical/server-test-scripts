@@ -25,20 +25,56 @@ def influx_connect():
     return InfluxDBClient(hostname, port, username, password, database)
 
 
-def parse_measurement(fname):
-    """Parse raw data and extract measurement."""
+def filename_to_tokens(fname):
+    """Converts a filename following an agreed pattern to tokens"""
+    rstr = r"results-[a-z]*-(\w+)-(\w+)-(\w+)-(\w+)-(.+)(?:-warm\.json|.txt)"
+    fname_tokens = re.search(rstr, fname)
+    tokens = {
+            "release": fname_tokens.group(1),
+            "what": fname_tokens.group(2),
+            "cpu": int(fname_tokens.group(3)[1:]),
+            "mem": int(fname_tokens.group(4)[1:]),
+            "timestamp": fname_tokens.group(5),
+            }
+    return tokens
 
-    fname_tokens = re.search(r"results-(\w+)-(\w+)-(\w+)-(\w+)-(.+)-warm\.json", fname)
-    release = fname_tokens.group(1)
-    what = fname_tokens.group(2)
-    cpu = int(fname_tokens.group(3)[1:])
-    mem = int(fname_tokens.group(4)[1:])
-    timestamp = fname_tokens.group(5)
+
+def parse_processcount_measurement(fname):
+    """Parse raw data of processcount and extract measurement."""
+    tokens = filename_to_tokens(fname)
+
+    with open(fname, "r", encoding="utf-8") as processlist:
+        count = len(processlist.readlines())
+
+    data = []
+
+    point = {
+        "time": tokens["timestamp"],
+        "measurement": "processcount",
+        "tags": {
+            "release": tokens["release"],
+            "what": tokens["what"],
+            "cpu": tokens["cpu"],
+            "mem": tokens["mem"],
+        },
+        "fields": {
+            "count": count,
+        },
+    }
+
+    data.append(point)
+    return data
+
+
+def parse_ssh_measurement(fname):
+    """Parse raw data of ssh login speed and extract measurement."""
+    tokens = filename_to_tokens(fname)
 
     with open(fname, "r", encoding="utf-8") as rawdataf:
         rawdata = json.load(rawdataf)
 
-    with open(fname.replace("warm", "first"), "r", encoding="utf-8") as rawdataf:
+    fname_first = fname.replace("warm", "first")
+    with open(fname_first, "r", encoding="utf-8") as rawdataf:
         rawdata_first = json.load(rawdataf)
 
     rawdata = rawdata["results"][0]
@@ -47,13 +83,13 @@ def parse_measurement(fname):
     data = []
 
     point = {
-        "time": timestamp,
+        "time": tokens["timestamp"],
         "measurement": "ssh_noninteractive",
         "tags": {
-            "release": release,
-            "what": what,
-            "cpu": cpu,
-            "mem": mem,
+            "release": tokens["release"],
+            "what": tokens["what"],
+            "cpu": tokens["cpu"],
+            "mem": tokens["mem"],
         },
         "fields": {
             "first": rawdata_first["times"][0],
@@ -70,10 +106,16 @@ def parse_measurement(fname):
     return data
 
 
-def main(fname, dryrun):
+def main(fname, metrictype, dryrun):
     """Take raw measurement, parse it, feed it to InfluxDB."""
 
-    data = parse_measurement(fname)
+    if metrictype == "ssh_noninteractive":
+        data = parse_ssh_measurement(fname)
+    elif metrictype == "processcount":
+        data = parse_processcount_measurement(fname)
+    else:
+        data = None
+        print(f"WARNING: unknown metric type {metrictype}!")
 
     if len(data) > 0:
         print(data)
@@ -90,5 +132,7 @@ if __name__ == "__main__":
     PARSER = argparse.ArgumentParser()
     PARSER.add_argument("--dryrun", action="store_true")
     PARSER.add_argument("-f", "--fname", help="Input file name", required=True)
+    PARSER.add_argument("-t", "--metrictype", help="Metric type to parse",
+                        required=True)
     ARGS = PARSER.parse_args()
-    main(ARGS.fname, ARGS.dryrun)
+    main(ARGS.fname, ARGS.metrictype, ARGS.dryrun)
