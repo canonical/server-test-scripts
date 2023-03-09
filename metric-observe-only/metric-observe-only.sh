@@ -59,7 +59,7 @@ setup_container() {
   Cexec apt-get -qy install dstat
 
   # Silence known spikes
-  Cexec apt-get remove unattended-upgrades
+  Cexec apt-get -qy remove unattended-upgrades
 
   # Setup passwordless ssh authentication
   cexec ssh-keygen -q -t rsa -f /home/ubuntu/.ssh/id_rsa -N ''
