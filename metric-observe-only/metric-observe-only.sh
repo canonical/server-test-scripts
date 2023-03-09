@@ -37,7 +37,7 @@ cexec() {
 
 Cexec() {
   # capital C => root
-  lxc exec "$INSTNAME" -- "$@"
+  lxc exec "$INSTNAME" --env=DEBIAN_FRONTEND=noninteractive -- "$@"
 }
 
 setup_container() {
@@ -135,7 +135,7 @@ do_install_services() {
   # This isn't very advanced, it installs various services in their default
   # configuration to recheck if any of them changed their default behavior
   # or footprint.
-  Cexec DEBIAN_FRONTEND=noninteractive apt-get -qy install \
+  Cexec apt-get -qy install \
       postgresql-all mysql-server \
       libvirt-daemon-system containerd runc \
       nfs-kernel-server samba \
