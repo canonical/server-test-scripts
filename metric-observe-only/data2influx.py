@@ -27,7 +27,8 @@ def influx_connect():
 
 def filename_to_tokens(fname):
     """Converts a filename following an agreed pattern to tokens"""
-    rstr = r"results-[a-z]*-(\w+)-(\w+)-(\w+)-(\w+)-(.+)(?:-warm\.json|.txt)"
+    rstr = (r"results-[a-z]*-(\w+)-(\w+)-(\w+)-(\w+)-(.+)"
+            r"-(\w+)\.(txt|json)")
     fname_tokens = re.search(rstr, fname)
     tokens = {
             "release": fname_tokens.group(1),
@@ -35,6 +36,7 @@ def filename_to_tokens(fname):
             "cpu": int(fname_tokens.group(3)[1:]),
             "mem": int(fname_tokens.group(4)[1:]),
             "timestamp": fname_tokens.group(5),
+            "stage": fname_tokens.group(6)
             }
     return tokens
 
@@ -167,6 +169,17 @@ def main(fname, metrictype, dryrun):
             "mem": tokens["mem"],
         }
     }
+
+    # all tests might have stages, ssh_noninteractive was created before
+    # the need to express those in tags and we need to keep the databse
+    # format stable.
+    # ssh_noninteractive has stages (first & warm) but maps both results
+    # into one data point, all others get the stage as a tag to filter
+    # later (anything before the filename suffix will be the stage).
+    # That allows adding arbitrary stages later without changing the format
+    # or the parsing.
+    if metrictype != "ssh_noninteractive":
+        point["tags"]["stage"] = tokens["stage"]
 
     if metrictype == "ssh_noninteractive":
         parse_ssh_measurement(fname, point)
