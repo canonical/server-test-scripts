@@ -104,31 +104,47 @@ do_measurement_ssh() {
 
 do_measurement_processcount() {
   # Check how many processes are active after just booting
-  resultfile="results-processcount-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp.txt"
+  resultfile="results-processcount-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-$STAGE.txt"
   Cexec ps -e --no-headers > "${resultfile}"
 }
 
 do_measurement_cpustat() {
   # Check idle memory and cpu consumption after just booting
-  resultfile="results-cpustat-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp.txt"
+  resultfile="results-cpustat-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-$STAGE.txt"
   # We gather 3m avg + since boot
   Cexec vmstat --one-header --wide --unit m 180 2 > "${resultfile}"
 }
 
 do_measurement_meminfo() {
   # Check idle memory and cpu consumption after just booting
-  resultfile="results-meminfo-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp.txt"
+  resultfile="results-meminfo-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-$STAGE.txt"
   Cexec cat /proc/meminfo > "${resultfile}"
 }
 
 do_measurement_ports() {
-  resultfile="results-ports-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp.txt"
+  resultfile="results-ports-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-$STAGE.txt"
   Cexec ss -lntup > "${resultfile}"
 }
 
 do_measurement_disk() {
-  resultfile="results-disk-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp.txt"
+  resultfile="results-disk-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-$STAGE.txt"
   Cexec df / --block-size=1M > "${resultfile}"
+}
+
+do_install_services() {
+  # This isn't very advanced, it installs various services in their default
+  # configuration to recheck if any of them changed their default behavior
+  # or footprint.
+  Cexec DEBIAN_FRONTEND=noninteractive apt-get -qy install \
+      postgresql-all mysql-server \
+      libvirt-daemon-system containerd runc \
+      nfs-kernel-server samba \
+      slapd krb5-kdc sssd \
+      haproxy pacemaker \
+      memcached \
+      nginx apache2 squid python3-django \
+      dovecot-imapd dovecot-pop3d postfix \
+      openvpn strongswan
 }
 
 cleanup
@@ -140,6 +156,17 @@ Cexec sync
 Cexec dd of=/proc/sys/vm/drop_caches <<<'3'
 sleep 5s
 
+STAGE="early"
+do_measurement_cpustat
+do_measurement_meminfo
+do_measurement_ports
+do_measurement_processcount
+do_measurement_disk
+do_measurement_ssh
+
+do_install_services
+
+STAGE="loaded"
 do_measurement_cpustat
 do_measurement_meminfo
 do_measurement_ports
