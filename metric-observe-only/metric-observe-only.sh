@@ -165,6 +165,11 @@ do_measurement_disk
 do_measurement_ssh
 
 do_install_services
+wait_load_settled
+# Evict all caches after load settled
+Cexec sync
+Cexec dd of=/proc/sys/vm/drop_caches <<<'3'
+sleep 5s
 
 STAGE="loaded"
 do_measurement_cpustat
