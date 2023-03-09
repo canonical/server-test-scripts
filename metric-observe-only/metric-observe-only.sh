@@ -142,6 +142,7 @@ do_install_services() {
       slapd krb5-kdc sssd \
       haproxy pacemaker \
       memcached \
+      chrony \
       nginx apache2 squid python3-django \
       dovecot-imapd dovecot-pop3d postfix \
       openvpn strongswan
