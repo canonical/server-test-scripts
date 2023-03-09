@@ -186,10 +186,6 @@ def main(fname, metrictype, dryrun):
 
     if "fields" in point:
         data.append(point)
-    else:
-        print("WARNING: point does not include fields")
-
-    if len(data) > 0:
         print(data)
 
         if not dryrun:
@@ -197,7 +193,7 @@ def main(fname, metrictype, dryrun):
             client.write_points(data)
 
     else:
-        print(f"WARNING: no measurements found in {fname}!")
+        print(f"WARNING: no measurements found in {fname} => {point}!")
 
 
 if __name__ == "__main__":
