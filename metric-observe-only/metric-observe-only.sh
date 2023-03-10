@@ -55,8 +55,6 @@ setup_container() {
   Cexec apt-get -q update
   # We'll use hyperfine to run the measurement
   Cexec apt-get -qy install hyperfine
-  # We'll use dstat for slightly advanced stats
-  Cexec apt-get -qy install dstat
 
   # Silence known spikes
   Cexec apt-get -qy remove unattended-upgrades
