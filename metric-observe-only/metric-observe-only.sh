@@ -57,7 +57,7 @@ setup_container() {
   Cexec apt-get -qy install hyperfine
 
   # Silence known spikes
-  Cexec apt-get -qy remove unattended-upgrades
+  Cexec systemctl mask --now unattended-upgrades.service
 
   # Setup passwordless ssh authentication
   cexec ssh-keygen -q -t rsa -f /home/ubuntu/.ssh/id_rsa -N ''
