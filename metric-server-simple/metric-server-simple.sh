@@ -84,7 +84,7 @@ wait_load_settled() {
   fi
 }
 
-do_measurement_ssh() {
+do_measurement_ssh_noninteractive() {
   # Measure the very first ssh login time.
   # The hyperfine version in Jammy requires at least two runs.
   # Not a problem: we'll keep only the first one when parsing the measurement.
@@ -161,7 +161,7 @@ do_measurement_meminfo
 do_measurement_ports
 do_measurement_processcount
 do_measurement_disk
-do_measurement_ssh
+do_measurement_ssh_noninteractive
 
 do_install_services
 wait_load_settled
@@ -176,6 +176,5 @@ do_measurement_meminfo
 do_measurement_ports
 do_measurement_processcount
 do_measurement_disk
-do_measurement_ssh
 
 cleanup
