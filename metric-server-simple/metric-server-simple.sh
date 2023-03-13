@@ -84,6 +84,16 @@ wait_load_settled() {
   fi
 }
 
+get_result_filename() {
+    measurement=${1-measurementnotset}
+    stage=${2-stagenotset}
+    if [ "${stage}" = "stagenotset" ]; then
+        stage="${STAGE}"
+    fi
+    result_filename="results-${measurement}-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-${stage}.json"
+    echo "${result_filename}"
+}
+
 do_measurement_ssh_noninteractive() {
   # Measure the very first ssh login time.
   # The hyperfine version in Jammy requires at least two runs.
@@ -96,36 +106,36 @@ do_measurement_ssh_noninteractive() {
     "ssh -o StrictHostKeyChecking=accept-new localhost true"
 
   # Retrieve measurement results
-  lxc file pull "$INSTNAME/home/ubuntu/results-first.json" "results-ssh-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-first.json"
-  lxc file pull "$INSTNAME/home/ubuntu/results-warm.json" "results-ssh-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-warm.json"
+  lxc file pull "$INSTNAME/home/ubuntu/results-first.json" "$(get_result_filename ssh first)"
+  lxc file pull "$INSTNAME/home/ubuntu/results-warm.json" "$(get_result_filename ssh warm)"
 }
 
 do_measurement_processcount() {
   # Check how many processes are active after just booting
-  resultfile="results-processcount-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-$STAGE.txt"
+  resultfile=$(get_result_filename "processcount")
   Cexec ps -e --no-headers > "${resultfile}"
 }
 
 do_measurement_cpustat() {
   # Check idle memory and cpu consumption after just booting
-  resultfile="results-cpustat-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-$STAGE.txt"
+  resultfile=$(get_result_filename "cpustat")
   # We gather 3m avg + since boot
   Cexec vmstat --one-header --wide --unit m 180 2 > "${resultfile}"
 }
 
 do_measurement_meminfo() {
   # Check idle memory and cpu consumption after just booting
-  resultfile="results-meminfo-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-$STAGE.txt"
+  resultfile=$(get_result_filename "meminfo")
   Cexec cat /proc/meminfo > "${resultfile}"
 }
 
 do_measurement_ports() {
-  resultfile="results-ports-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-$STAGE.txt"
+  resultfile=$(get_result_filename "ports")
   Cexec ss -lntup > "${resultfile}"
 }
 
 do_measurement_disk() {
-  resultfile="results-disk-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-$STAGE.txt"
+  resultfile=$(get_result_filename "disk")
   Cexec df / --block-size=1M > "${resultfile}"
 }
 
