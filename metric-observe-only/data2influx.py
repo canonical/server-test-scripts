@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parse the ssh noninteractive login time data and populate the InfluxDB."""
+"""Parse various metrics of spec US013 and populate the InfluxDB."""
 
 import argparse
 import json
