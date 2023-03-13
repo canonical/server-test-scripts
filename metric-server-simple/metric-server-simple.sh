@@ -87,11 +87,12 @@ wait_load_settled() {
 
 get_result_filename() {
     measurement=${1-measurementnotset}
-    stage=${2-stagenotset}
+    suffix=${2-suffixnotset}
+    stage=${3-stagenotset}
     if [ "${stage}" = "stagenotset" ]; then
         stage="${STAGE}"
     fi
-    result_filename="results-${measurement}-$MACHINEID-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-${stage}.json"
+    result_filename="results-${measurement}-$MACHINEID-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-${stage}.${suffix}"
     echo "${result_filename}"
 }
 
@@ -107,36 +108,36 @@ do_measurement_ssh_noninteractive() {
     "ssh -o StrictHostKeyChecking=accept-new localhost true"
 
   # Retrieve measurement results
-  lxc file pull "$INSTNAME/home/ubuntu/results-first.json" "$(get_result_filename ssh first)"
-  lxc file pull "$INSTNAME/home/ubuntu/results-warm.json" "$(get_result_filename ssh warm)"
+  lxc file pull "$INSTNAME/home/ubuntu/results-first.json" "$(get_result_filename ssh json first)"
+  lxc file pull "$INSTNAME/home/ubuntu/results-warm.json" "$(get_result_filename ssh json warm)"
 }
 
 do_measurement_processcount() {
   # Check how many processes are active after just booting
-  resultfile=$(get_result_filename "processcount")
+  resultfile=$(get_result_filename "processcount" "txt")
   Cexec ps -e --no-headers > "${resultfile}"
 }
 
 do_measurement_cpustat() {
   # Check idle memory and cpu consumption after just booting
-  resultfile=$(get_result_filename "cpustat")
+  resultfile=$(get_result_filename "cpustat" "txt")
   # We gather 3m avg + since boot
   Cexec vmstat --one-header --wide --unit m 180 2 > "${resultfile}"
 }
 
 do_measurement_meminfo() {
   # Check idle memory and cpu consumption after just booting
-  resultfile=$(get_result_filename "meminfo")
+  resultfile=$(get_result_filename "meminfo" "txt")
   Cexec cat /proc/meminfo > "${resultfile}"
 }
 
 do_measurement_ports() {
-  resultfile=$(get_result_filename "ports")
+  resultfile=$(get_result_filename "ports" "txt")
   Cexec ss -lntup > "${resultfile}"
 }
 
 do_measurement_disk() {
-  resultfile=$(get_result_filename "disk")
+  resultfile=$(get_result_filename "disk" "txt")
   Cexec df / --block-size=1M > "${resultfile}"
 }
 
