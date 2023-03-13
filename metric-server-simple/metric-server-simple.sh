@@ -12,7 +12,7 @@ CPU=${CPU-1}
 MEM=${MEM-1}
 INSTTYPE="c$CPU-m$MEM"
 RELEASE=${RELEASE-$(distro-info --devel)}
-INSTNAME=${INSTNAME-metric-observe-only-$RELEASE-$WHAT-$INSTTYPE}
+INSTNAME=${INSTNAME-metric-server-simple-$RELEASE-$WHAT-$INSTTYPE}
 
 cleanup() {
   if lxc info "$INSTNAME" >/dev/null 2>&1; then
