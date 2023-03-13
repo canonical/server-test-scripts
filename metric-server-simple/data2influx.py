@@ -31,9 +31,9 @@ def filename_to_tokens(fname):
             r"-(\w+)\.(txt|json)")
     fname_tokens = re.search(rstr, fname)
     tokens = {
-            "release": fname_tokens.group(1),
-            "what": fname_tokens.group(2),
-            "machineid": fname_tokens.group(3),
+            "machineid": fname_tokens.group(1),
+            "release": fname_tokens.group(2),
+            "what": fname_tokens.group(3),
             "cpu": int(fname_tokens.group(4)[1:]),
             "mem": int(fname_tokens.group(5)[1:]),
             "timestamp": fname_tokens.group(6),
