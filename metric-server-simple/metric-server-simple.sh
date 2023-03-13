@@ -12,6 +12,7 @@ CPU=${CPU-1}
 MEM=${MEM-1}
 INSTTYPE="c$CPU-m$MEM"
 RELEASE=${RELEASE-$(distro-info --devel)}
+MACHINEID=$(cat /etc/machine-id)
 INSTNAME=${INSTNAME-metric-server-simple-$RELEASE-$WHAT-$INSTTYPE}
 
 cleanup() {
@@ -90,7 +91,7 @@ get_result_filename() {
     if [ "${stage}" = "stagenotset" ]; then
         stage="${STAGE}"
     fi
-    result_filename="results-${measurement}-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-${stage}.json"
+    result_filename="results-${measurement}-$MACHINEID-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-${stage}.json"
     echo "${result_filename}"
 }
 

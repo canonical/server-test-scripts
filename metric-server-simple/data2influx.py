@@ -27,16 +27,17 @@ def influx_connect():
 
 def filename_to_tokens(fname):
     """Converts a filename following an agreed pattern to tokens"""
-    rstr = (r"results-[a-z]*-(\w+)-(\w+)-(\w+)-(\w+)-(.+)"
+    rstr = (r"results-[a-z]*-(\w+)-(\w+)-(\w+)-(\w+)-(\w+)-(.+)"
             r"-(\w+)\.(txt|json)")
     fname_tokens = re.search(rstr, fname)
     tokens = {
             "release": fname_tokens.group(1),
             "what": fname_tokens.group(2),
-            "cpu": int(fname_tokens.group(3)[1:]),
-            "mem": int(fname_tokens.group(4)[1:]),
-            "timestamp": fname_tokens.group(5),
-            "stage": fname_tokens.group(6)
+            "machineid": fname_tokens.group(3),
+            "cpu": int(fname_tokens.group(4)[1:]),
+            "mem": int(fname_tokens.group(5)[1:]),
+            "timestamp": fname_tokens.group(6),
+            "stage": fname_tokens.group(7)
             }
     return tokens
 
@@ -180,6 +181,7 @@ def main(fname, metrictype, dryrun):
     # or the parsing.
     if metrictype != "ssh_noninteractive":
         point["tags"]["stage"] = tokens["stage"]
+        point["tags"]["machineid"] = tokens["machineid"]
 
     if metrictype == "ssh_noninteractive":
         parse_ssh_measurement(fname, point)
