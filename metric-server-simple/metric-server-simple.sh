@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -eux
 
@@ -12,7 +12,8 @@ CPU=${CPU-1}
 MEM=${MEM-1}
 INSTTYPE="c$CPU-m$MEM"
 RELEASE=${RELEASE-$(distro-info --devel)}
-INSTNAME=${INSTNAME-metric-ssh-$RELEASE-$WHAT-$INSTTYPE}
+MACHINEID=$(cat /etc/machine-id)
+INSTNAME=${INSTNAME-metric-server-simple-$RELEASE-$WHAT-$INSTTYPE}
 
 cleanup() {
   if lxc info "$INSTNAME" >/dev/null 2>&1; then
@@ -37,7 +38,7 @@ cexec() {
 
 Cexec() {
   # capital C => root
-  lxc exec "$INSTNAME" -- "$@"
+  lxc exec "$INSTNAME" --env=DEBIAN_FRONTEND=noninteractive -- "$@"
 }
 
 setup_container() {
@@ -52,9 +53,12 @@ setup_container() {
   # Run as root as the ubuntu (uid 1000) user may not be ready yet.
   Cexec cloud-init status --wait >/dev/null
 
-  # We'll use hyperfine to run the measurement
   Cexec apt-get -q update
+  # We'll use hyperfine to run the measurement
   Cexec apt-get -qy install hyperfine
+
+  # Silence known spikes
+  Cexec systemctl mask --now unattended-upgrades.service
 
   # Setup passwordless ssh authentication
   cexec ssh-keygen -q -t rsa -f /home/ubuntu/.ssh/id_rsa -N ''
@@ -81,7 +85,18 @@ wait_load_settled() {
   fi
 }
 
-do_measurement() {
+get_result_filename() {
+    measurement=${1-measurementnotset}
+    suffix=${2-suffixnotset}
+    stage=${3-stagenotset}
+    if [ "${stage}" = "stagenotset" ]; then
+        stage="${STAGE}"
+    fi
+    result_filename="results-${measurement}-$MACHINEID-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-${stage}.${suffix}"
+    echo "${result_filename}"
+}
+
+do_measurement_ssh_noninteractive() {
   # Measure the very first ssh login time.
   # The hyperfine version in Jammy requires at least two runs.
   # Not a problem: we'll keep only the first one when parsing the measurement.
@@ -93,13 +108,85 @@ do_measurement() {
     "ssh -o StrictHostKeyChecking=accept-new localhost true"
 
   # Retrieve measurement results
-  lxc file pull "$INSTNAME/home/ubuntu/results-first.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-first.json"
-  lxc file pull "$INSTNAME/home/ubuntu/results-warm.json" "results-$RELEASE-$WHAT-c$CPU-m$MEM-$timestamp-warm.json"
+  lxc file pull "$INSTNAME/home/ubuntu/results-first.json" "$(get_result_filename ssh json first)"
+  lxc file pull "$INSTNAME/home/ubuntu/results-warm.json" "$(get_result_filename ssh json warm)"
+}
+
+do_measurement_processcount() {
+  # Check how many processes are active after just booting
+  resultfile=$(get_result_filename "processcount" "txt")
+  Cexec ps -e --no-headers > "${resultfile}"
+}
+
+do_measurement_cpustat() {
+  # Check idle memory and cpu consumption after just booting
+  resultfile=$(get_result_filename "cpustat" "txt")
+  # We gather 3m avg + since boot
+  Cexec vmstat --one-header --wide --unit m 180 2 > "${resultfile}"
+}
+
+do_measurement_meminfo() {
+  # Check idle memory and cpu consumption after just booting
+  resultfile=$(get_result_filename "meminfo" "txt")
+  Cexec cat /proc/meminfo > "${resultfile}"
+}
+
+do_measurement_ports() {
+  resultfile=$(get_result_filename "ports" "txt")
+  Cexec ss -lntup > "${resultfile}"
+}
+
+do_measurement_disk() {
+  resultfile=$(get_result_filename "disk" "txt")
+  Cexec df / --block-size=1M > "${resultfile}"
+}
+
+do_install_services() {
+  # This isn't very advanced, it installs various services in their default
+  # configuration to recheck if any of them changed their default behavior
+  # or footprint.
+  Cexec apt-get -qy install \
+      postgresql-all mysql-server \
+      libvirt-daemon-system containerd runc \
+      nfs-kernel-server samba \
+      slapd krb5-kdc sssd \
+      haproxy pacemaker \
+      memcached \
+      chrony \
+      nginx apache2 squid python3-django \
+      dovecot-imapd dovecot-pop3d postfix \
+      openvpn strongswan
 }
 
 cleanup
 setup_lxd_minimal_remote
 setup_container
 wait_load_settled
-do_measurement
+# Evict all caches after load settled
+Cexec sync
+Cexec dd of=/proc/sys/vm/drop_caches <<<'3'
+sleep 5s
+
+STAGE="early"
+do_measurement_cpustat
+do_measurement_meminfo
+do_measurement_ports
+do_measurement_processcount
+do_measurement_disk
+do_measurement_ssh_noninteractive
+
+do_install_services
+wait_load_settled
+# Evict all caches after load settled
+Cexec sync
+Cexec dd of=/proc/sys/vm/drop_caches <<<'3'
+sleep 5s
+
+STAGE="loaded"
+do_measurement_cpustat
+do_measurement_meminfo
+do_measurement_ports
+do_measurement_processcount
+do_measurement_disk
+
 cleanup
