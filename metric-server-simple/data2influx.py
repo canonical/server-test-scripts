@@ -48,7 +48,7 @@ def parse_processcount_measurement(fname, point):
     with open(fname, "r", encoding="utf-8") as processlist:
         count = len(processlist.readlines())
 
-    point["fields"] = {"proccount": count}
+    point["fields"] = {"proccount": int(count)}
 
 
 def parse_ssh_measurement(fname, point):
@@ -87,16 +87,16 @@ def parse_cpustat_measurement(fname, point):
         return
 
     point["fields"] = {
-            "user":  vmstat_avg[12],
-            "sys":   vmstat_avg[13],
-            "idle":  vmstat_avg[14],
-            "wait":  vmstat_avg[15],
-            "steal": vmstat_avg[16],
-            "boot_usr":   vmstat_boot[12],
-            "boot_sys":   vmstat_boot[13],
-            "boot_idle":  vmstat_boot[14],
-            "boot_wait":  vmstat_boot[15],
-            "boot_steal": vmstat_boot[16],
+            "user":  int(vmstat_avg[12]),
+            "sys":   int(vmstat_avg[13]),
+            "idle":  int(vmstat_avg[14]),
+            "wait":  int(vmstat_avg[15]),
+            "steal": int(vmstat_avg[16]),
+            "boot_usr":   int(vmstat_boot[12]),
+            "boot_sys":   int(vmstat_boot[13]),
+            "boot_idle":  int(vmstat_boot[14]),
+            "boot_wait":  int(vmstat_boot[15]),
+            "boot_steal": int(vmstat_boot[16]),
     }
 
 
@@ -112,7 +112,7 @@ def parse_disk_measurement(fname, point):
         return
 
     point["fields"] = {
-            "usedmb": disk_entry[2],
+            "usedmb": int(disk_entry[2]),
     }
 
 
@@ -123,7 +123,7 @@ def parse_ports_measurement(fname, point):
         # minus header
         count = len(portlist.readlines()) - 1
 
-    point["fields"] = {"portcount": count}
+    point["fields"] = {"portcount": int(count)}
 
 
 def parse_meminfo_measurement(fname, point):
@@ -138,20 +138,20 @@ def parse_meminfo_measurement(fname, point):
 
     point["fields"] = {
         # Track these
-        "MemFree": meminfo["MemFree:"],
-        "MemAvailable": meminfo["MemAvailable:"],
-        "Mlocked": meminfo["Mlocked:"],
+        "MemFree": int(meminfo["MemFree:"]),
+        "MemAvailable": int(meminfo["MemAvailable:"]),
+        "Mlocked": int(meminfo["Mlocked:"]),
         # For quick sanity checks
-        "AnonPages": meminfo["AnonPages:"],
-        "Mapped": meminfo["Mapped:"],
-        "Shmem": meminfo["Shmem:"],
-        "MemTotal": meminfo["MemTotal:"],
-        "SwapTotal": meminfo["SwapTotal:"],
-        "SwapFree": meminfo["SwapFree:"],
-        "Dirty": meminfo["Dirty:"],
-        "Buffers": meminfo["Buffers:"],
-        "Cached": meminfo["Cached:"],
-        "KReclaimable": meminfo["KReclaimable:"],
+        "AnonPages": int(meminfo["AnonPages:"]),
+        "Mapped": int(meminfo["Mapped:"]),
+        "Shmem": int(meminfo["Shmem:"]),
+        "MemTotal": int(meminfo["MemTotal:"]),
+        "SwapTotal": int(meminfo["SwapTotal:"]),
+        "SwapFree": int(meminfo["SwapFree:"]),
+        "Dirty": int(meminfo["Dirty:"]),
+        "Buffers": int(meminfo["Buffers:"]),
+        "Cached": int(meminfo["Cached:"]),
+        "KReclaimable": int(meminfo["KReclaimable:"]),
     }
 
 
