@@ -45,10 +45,32 @@ def filename_to_tokens(fname):
 def parse_processcount_measurement(fname, point):
     """Parse raw data of processcount and extract measurement."""
 
-    with open(fname, "r", encoding="utf-8") as processlist:
-        count = len(processlist.readlines())
+    count = {"kworker": 0,
+             "scsi_": 0,
+             "systemd": 0,
+             "rcu_": 0,
+             "ext4lazyinit": 0}
+    count_others = 0
 
-    point["fields"] = {"proccount": int(count)}
+    with open(fname, "r", encoding="utf-8") as processlist:
+        lines = processlist.readlines()
+        for line in lines:
+            counted = False
+            for prefix in count:
+                try:
+                    if line.split()[3].startswith(prefix):
+                        count[prefix] += 1
+                        counted = True
+                        break
+                except IndexError:
+                    break
+            if not counted:
+                count_others += 1
+
+    point["fields"] = {}
+    for prefix, prefixcount in count.items():
+        point["fields"][prefix] = prefixcount
+    point["fields"]["proccount"] = count_others
 
 
 def parse_ssh_measurement(fname, point):
