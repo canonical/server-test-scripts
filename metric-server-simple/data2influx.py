@@ -148,6 +148,16 @@ def parse_ports_measurement(fname, point):
     point["fields"] = {"portcount": int(count)}
 
 
+def parse_packages_measurement(fname, point):
+    """Parse raw package data of dpkg -l and extract measurement."""
+
+    with open(fname, "r", encoding="utf-8") as pkglist:
+        # minus header
+        count = len(pkglist.readlines()) - 5
+
+    point["fields"] = {"pkgcount": int(count)}
+
+
 def parse_meminfo_measurement(fname, point):
     """Parse raw data of meminfo output and extract measurement."""
 
@@ -217,6 +227,8 @@ def main(fname, metrictype, dryrun):
         parse_ports_measurement(fname, point)
     elif metrictype == "metric_disk":
         parse_disk_measurement(fname, point)
+    elif metrictype == "metric_packages":
+        parse_packages_measurement(fname, point)
     else:
         data = None
         print(f"WARNING: unknown metric type {metrictype}!")

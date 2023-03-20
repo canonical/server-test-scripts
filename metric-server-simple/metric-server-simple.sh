@@ -139,6 +139,21 @@ do_measurement_ports() {
 do_measurement_disk() {
   resultfile=$(get_result_filename "disk" "txt")
   Cexec df / --block-size=1M > "${resultfile}"
+
+  # Not parsed (yet), but great for later debugging of differences
+  resultfile=$(get_result_filename "diskdetail" "txt")
+  Cexec du  / --max-depth=2 >> "${resultfile}"
+}
+
+do_measurement_package() {
+  resultfile=$(get_result_filename "packages" "txt")
+  Cexec dpkg -l > "${resultfile}"
+
+  # Not parsed (yet), but great for later debugging of differences
+  resultfile=$(get_result_filename "packagesizes" "txt")
+  # This is intentional expanded by dpkg-query
+  # shellcheck disable=SC2016
+  Cexec dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n > "${resultfile}"
 }
 
 do_install_services() {
