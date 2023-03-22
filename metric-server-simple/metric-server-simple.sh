@@ -142,7 +142,7 @@ do_measurement_disk() {
 
   # Not parsed (yet), but great for later debugging of differences
   resultfile=$(get_result_filename "diskdetail" "txt")
-  Cexec du  / --max-depth=2 >> "${resultfile}"
+  Cexec du  / --exclude /dev --exclude /proc --exclude /sys --max-depth=2 >> "${resultfile}"
 }
 
 do_measurement_package() {
