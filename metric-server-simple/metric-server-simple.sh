@@ -12,7 +12,7 @@ CPU=${CPU-1}
 MEM=${MEM-1}
 INSTTYPE="c$CPU-m$MEM"
 RELEASE=${RELEASE-$(distro-info --devel)}
-MACHINEID=$(cat /etc/machine-id)
+MACHINEID="unset"
 INSTNAME=${INSTNAME-metric-server-simple-$RELEASE-$WHAT-$INSTTYPE}
 
 cleanup() {
@@ -63,6 +63,9 @@ setup_container() {
   # Setup passwordless ssh authentication
   cexec ssh-keygen -q -t rsa -f /home/ubuntu/.ssh/id_rsa -N ''
   cexec cp /home/ubuntu/.ssh/id_rsa.pub /home/ubuntu/.ssh/authorized_keys
+
+  # Get the guests machine id
+  MACHINEID=$(cat /etc/machine-id)
 }
 
 wait_load_settled() {
