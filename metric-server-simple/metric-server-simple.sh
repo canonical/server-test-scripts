@@ -188,6 +188,7 @@ do_measurement_meminfo
 do_measurement_ports
 do_measurement_processcount
 do_measurement_disk
+do_measurement_package
 do_measurement_ssh_noninteractive
 
 do_install_services
@@ -203,5 +204,6 @@ do_measurement_meminfo
 do_measurement_ports
 do_measurement_processcount
 do_measurement_disk
+do_measurement_package
 
 cleanup
