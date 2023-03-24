@@ -53,10 +53,6 @@ setup_container() {
   # Run as root as the ubuntu (uid 1000) user may not be ready yet.
   Cexec cloud-init status --wait >/dev/null
 
-  Cexec apt-get -q update
-  # We'll use hyperfine to run the measurement
-  Cexec apt-get -qy install hyperfine
-
   # Silence known spikes
   Cexec systemctl mask --now unattended-upgrades.service
 
@@ -66,6 +62,12 @@ setup_container() {
 
   # Get the guests machine id
   MACHINEID=$(cat /etc/machine-id)
+}
+
+install_dependencies() {
+  Cexec apt-get -q update
+  # We'll use hyperfine to run the measurement
+  Cexec apt-get -qy install hyperfine
 }
 
 wait_load_settled() {
@@ -192,6 +194,8 @@ do_measurement_ports
 do_measurement_processcount
 do_measurement_disk
 do_measurement_package
+
+install_dependencies
 do_measurement_ssh_noninteractive
 
 do_install_services
