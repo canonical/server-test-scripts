@@ -70,7 +70,17 @@ def clean_gcp(credentials_path, project_id, tag, before_date, region, zone):
             instance["creationTimestamp"].split("T")[0], "%Y-%M-%d"
         )
 
-        if tag in instance['name'] and created_at < before_date:
+        # If the machine is running for more than 2 days, we should
+        # delete it, regardless of the name tag
+        if created_at < before_date - datetime.timedelta(days=2):
+            print("Deleting instance {} ...".format(
+                instance['name']))
+            instance = gce.get_instance(
+                instance_id=instance['name']
+            )
+
+            instance.delete()
+        elif tag in instance['name'] and created_at < before_date:
             print("Deleting instance {} ...".format(
                 instance['name']))
             instance = gce.get_instance(
@@ -86,7 +96,7 @@ if __name__ == '__main__':
 
     if args.before_date:
         before_date = datetime.datetime.strptime(
-                    args.before_date, "%m/%d/%Y"
+            args.before_date, "%m/%d/%Y"
         )
     else:
         before_date = datetime.datetime.today() - datetime.timedelta(days=1)
