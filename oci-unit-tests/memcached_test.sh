@@ -110,7 +110,16 @@ test_libmemcached_compliance() {
 
     mping_output=$(docker exec "$container_client" memcping --servers="${DOCKER_PREFIX}_server")
     assertTrue "Unexpected memcping response:\n${mping_output}" $?
-    mcat_output=$(docker exec "$container_client" memccat --servers="${DOCKER_PREFIX}_server")
+    mcat_output=$(docker exec "$container_client" memccat --servers="${DOCKER_PREFIX}_server" "")
+    if [ $? -ne 0 ]; then
+      # Before libmemcached 1.1.0 the  memccat CLI would not crash in case a
+      # key was not provided, but would crash if an empty key was passed. This
+      # behavior was changed to crashing when not providing a key and not
+      # crashing when an empty key is provided since 1.1.0. Therefore, we test
+      # both cases to ensure this test is compliant to all supported
+      # libmemcached versions.
+      mcat_output=$(docker exec "$container_client" memccat --servers="${DOCKER_PREFIX}_server")
+    fi
     assertTrue "Unexpected memccat response:\n${mcat_output}" $?
     mflush_output=$(docker exec "$container_client" memcflush --servers="${DOCKER_PREFIX}_server")
     assertTrue "Unexpected memcflush response:\n${mflush_output}" $?
