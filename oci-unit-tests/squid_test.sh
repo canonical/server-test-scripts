@@ -42,7 +42,7 @@ tearDown() {
         stop_container_sync "${webserver}"
     fi
     if [ -n "${volume}" ]; then
-        docker volume rm "${volume}" > /dev/null 2>&1
+        docker volume rm -f "${volume}" > /dev/null 2>&1
     fi
 }
 
