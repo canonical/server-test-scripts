@@ -32,7 +32,7 @@ parser.add_argument("--subscriber", action='store_true',
                     help="do not report all, but only subscribed bugs")
 args = parser.parse_args()
 
-launchpad = Launchpad.login_with(
+launchpad = Launchpad.login_anonymously(
     "lp-subscribed-bugs", "production", version="devel"
 )
 person = launchpad.people[args.person]
