@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+# pylint: disable=C0103
+"""Helper to fetch LP bug info and push it to a Google spreadsheet"""
+#
+# Have to enable Google API, Google Drive API and Google Sheet API
+# https://docs.gspread.org/en/latest/oauth2.html#for-end-users-using-oauth-client-id
+#
+
+import logging
+
+from argparse import ArgumentParser
+
+import gspread
+
+from launchpadlib.launchpad import Launchpad
+
+# Thanks cjwatson for the pointers
+
+parser = ArgumentParser()
+parser.add_argument("person",
+                    help="The LP team or person subscribed to the bugs")
+parser.add_argument("spreadsheet",
+                    help="The name of the spreadsheet to push to")
+parser.add_argument("--service-account",
+                    default=False,
+                    const=True,
+                    nargs='?',
+                    help="Set this if using a service account. You can pass a"
+                         " file name to be used over the default credential"
+                         " location.")
+parser.add_argument("--subscriber", action='store_true',
+                    help="do not report all, but only subscribed bugs")
+args = parser.parse_args()
+
+launchpad = Launchpad.login_anonymously(
+    "lp-subscribed-bugs", "production", version="devel"
+)
+person = launchpad.people[args.person]
+
+if args.service_account:
+    if isinstance(args.service_account, str):
+        gc = gspread.service_account(filename=args.service_account)
+    else:
+        gc = gspread.service_account()
+else:
+    gc = gspread.oauth()
+
+sh = gc.open(args.spreadsheet)
+
+SHEET = sh.sheet1
+
+HEADERS = ['ID',
+           'Created',
+           'title',
+           'status',
+           'last updated',
+           'package',
+           'release']
+DATAROOT = "A2"
+DATAEND = "G"
+
+logging.basicConfig(
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    level=logging.INFO,
+    datefmt='%H:%M:%S')
+
+
+def get_bug_list(lpperson):
+    """Gets the list of bugs associated to that person/team"""
+    bug_entries = []
+    if args.subscriber:
+        taskiterator = lpperson.searchTasks(bug_subscriber=lpperson)
+    else:
+        taskiterator = lpperson.searchTasks()
+
+    reported = []
+    for task in taskiterator:
+        bug = task.bug
+        bugnumber = bug.id
+        # Only report each bug once, not per src & task
+        if bugnumber not in reported:
+            reported.append(bugnumber)
+        else:
+            continue
+
+        name = task.bug_target_name
+        package = name.split()[0]
+        if "(" in name and ")" in name:
+            release = name[name.index('(')+1:name.index(')')]
+        else:
+            release = ""
+
+        created = (
+            f"{bug.date_created.year}-"
+            f"{bug.date_created.month}-"
+            f"{bug.date_created.day}"
+        )
+        last_updated = (
+            f"{bug.date_last_updated.year}-"
+            f"{bug.date_last_updated.month}-"
+            f"{bug.date_last_updated.day}"
+        )
+
+        bug_entries.append([bugnumber,
+                            created,
+                            bug.title,
+                            task.status,
+                            last_updated,
+                            package,
+                            release])
+        if len(bug_entries) % 100 == 0:
+            logging.info("Gathered %s entries", len(bug_entries))
+
+    return bug_entries
+
+
+logging.info("Fetch data from Launchpad")
+bug_list = get_bug_list(person)
+
+logging.info("Clear sheet and set headers")
+SHEET.clear()
+SHEET.update("A1:G1", [HEADERS])
+
+logging.info("Push to Google spreadsheet")
+RANGE = f"{DATAROOT}:{DATAEND}{len(bug_list)+1}"
+SHEET.update(RANGE, bug_list)
+logging.info("Done")
