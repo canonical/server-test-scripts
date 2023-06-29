@@ -48,6 +48,16 @@ class InstallFlavor(Enum):
     LIVE_SERVER = "live-server"
 
 
+class UbuntuRelease(Enum):
+    mantic = "23.10"
+    lunar = "23.04"
+    kinetic = "22.10"
+    jammy = "22.04"
+    focal = "20.04"
+    bionic = "18.04"
+    xenial = "16.04"
+
+
 def retry(exception, retry_sleeps):
     """Decorator to retry on exception for retry_sleeps.
 
@@ -166,7 +176,7 @@ def cloud_localds(
 def create_qemu_disk(tmpdir: Path, vm_name: str, size: str):
     img_path = tmpdir.joinpath(f"{vm_name}.img")
     if img_path.exists():
-        logging.debug("Reusing %s", path)
+        logging.debug("Reusing %s", img_path)
     else:
         subprocess.run(["truncate", "-s", size, img_path])
     return img_path
@@ -179,12 +189,16 @@ def get_release_iso(
     arch: Optional[str] = "amd64",
     local_images_dir: Optional[str] = "/srv/iso",
 ) -> Path:
-    base_name = f"{release}-{flavor.value}-{arch}"
     if flavor == InstallFlavor.LIVE_SERVER:
         flavor_subdir = "ubuntu-server/"
     else:
         flavor_subdir = ""
-    iso_base_url = f"https://cdimage.ubuntu.com/{flavor_subdir}daily-live/pending/"
+    if release == "mantic":
+        base_name = f"{release}-{flavor.value}-{arch}"
+        iso_base_url = f"https://cdimage.ubuntu.com/{flavor_subdir}daily-live/pending/"
+    else:
+        base_name = f"ubuntu-{UbuntuRelease[release].value}-{flavor.value}-{arch}"
+        iso_base_url = f"https://releases.ubuntu.com/{release}/"
     manifest_url = f"{iso_base_url}{base_name}.manifest"
     iso_url = f"{iso_base_url}{base_name}.iso"
     iso_path = Path(f"{local_images_dir}/{release}/{base_name}.iso")
@@ -213,7 +227,7 @@ def get_release_iso(
                 if idx % print_step == 0:
                     print(
                         f"{idx/print_step * 4}%"
-                        f" of {total_len/1024/1024/1000:.2f} downloaded",
+                        f" of {total_len/1024/1024/1000:.2f}GB downloaded",
                         flush=True,
                     )
                 stream.write(chunk)
@@ -264,13 +278,13 @@ def launch_kvm(
     tmpdir: Path,
     ram_size: str,
     disk_img_path: Path,
+    ssh_port: int,
+    private_key: Path,
+    username: str = "ubuntu",
     iso_path: Optional[Path] = None,
     seed_path: Optional[Path] = None,
     kernel_cmdline: Optional[str] = "",
     cmdline: Optional[list] = None,
-    ssh_port: Optional[int] = None,
-    username: Optional[str] = "ubuntu",
-    private_key: Optional[Path] = None,
 ) -> KVMInstance:
     """use qemu-kvm to setup and launch a test VM with optional kernel params"""
     cmd = [
@@ -287,19 +301,19 @@ def launch_kvm(
         "-D",
         str(tmpdir.joinpath("qemu.log")),
     ]
-    if ssh_port:
-        logging.info(
-            f"KVM boot {vm_name}: ssh -i {private_key} {username}@localhost -p {ssh_port}"
-        )
-        cmd += [
-            "-net",
-            f"user,hostfwd=tcp::{ssh_port}-:22",
-        ]
+    logging.info(
+        f"KVM boot {vm_name}: ssh -i {private_key} {username}@localhost -p {ssh_port}"
+    )
+    cmd += [
+        "-net",
+        f"user,hostfwd=tcp::{ssh_port}-:22",
+    ]
     if iso_path:
         cmd += ["-cdrom", str(iso_path)]
     if seed_path:
         cmd += ["-drive", f"file={seed_path},format=raw,if=ide"]
     if kernel_cmdline:
+        assert iso_path is not None
         # Mount and extract kernel and initrd from iso
         (kernel_path, initrd_path) = extract_kernel_initrd_from_iso(tmpdir, iso_path)
         cmd += [
@@ -415,7 +429,7 @@ def main(args):
         disk_img_path = create_qemu_disk(tdir, vm_name, "20G")
         iso_path = get_release_iso(
             "ubuntu",
-            "lunar",
+            args.series,
             image_type,
             "amd64",
             local_images_dir=args.local_images_dir,
@@ -429,9 +443,9 @@ def main(args):
             seed_path=seed_path,
             disk_img_path=disk_img_path,
             ssh_port=ssh_port,
-            kernel_cmdline="console=ttyS0 autoinstall",
             username="ephemeral",
             private_key=private_key,
+            kernel_cmdline="console=ttyS0 autoinstall",
         )
         vm_name = vm_name.replace("ephemeral", "firstboot")
         kvm2 = launch_kvm(
@@ -440,9 +454,9 @@ def main(args):
             ram_size=ram_size,
             disk_img_path=disk_img_path,
             ssh_port=ssh_port,
-            cmdline=["-daemonize"],
             username="ubuntu",
             private_key=private_key,
+            cmdline=["-daemonize"],
         )
         time.sleep(30)
         ci_status = kvm2.wait_for_cloud_init()
@@ -452,7 +466,14 @@ def main(args):
         with open("ephemeral-cloud-init.log", "w") as stream:
             stream.write(ephemeral_boot_log)
         print("===== Validate first boot state =====")
-        assert ci_status["errors"] == [], "Unexpected errors:" + " ".join(errors)
+        status_long = str(kvm2.execute(["cloud-init", "status", "--long"]))
+        assert "boot_status_code: disabled-by-marker-file" in status_long
+        assert "target-test" in str(kvm2.execute(["hostname"]))
+        disabled_file = kvm2.get_file("/etc/cloud/cloud-init.disabled")
+        assert "Disabled by Ubuntu live installer" in disabled_file
+        assert ci_status["errors"] == [], "Unexpected errors:" + " ".join(
+            ci_status["errors"]
+        )
         first_boot_log = kvm2.get_file("/var/log/cloud-init.log")
         with open("first-boot-cloud-init.log", "w") as stream:
             stream.write(first_boot_log)
@@ -481,11 +502,14 @@ def main(args):
                 "write_files",
             ]
         ) == sorted(userdata.keys())
-
+        print(
+            "SUCCESS: cloud-init disabled on first boot, user-data honored,"
+            " no errors found in logs"
+        )
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(prog=sys.argv[1:])
+    parser = argparse.ArgumentParser(prog=sys.argv[0])
     parser.add_argument(
         "--local-images-dir",
         action="store",
@@ -499,6 +523,14 @@ if __name__ == "__main__":
         default="server",
         choices=["desktop", "server"],
         help="Image type: desktop or server. Default: server",
+    )
+    parser.add_argument(
+        "-s",
+        "--series",
+        action="store",
+        default="mantic",
+        choices=list(UbuntuRelease.__members__.keys()),
+        help="Image series",
     )
     args = parser.parse_args()
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
