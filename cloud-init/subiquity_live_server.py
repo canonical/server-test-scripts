@@ -238,16 +238,20 @@ def extract_kernel_initrd_from_iso(tmpdir: Path, iso_path: Path) -> Tuple[Path, 
     """Mount iso_path in tmpdir and extract vmlinuz and initrd to tmpdir."""
     mnt_path = tmpdir.joinpath("mnt")
     mnt_path.mkdir()
-    cmd = f"mount {iso_path} -o loop {mnt_path}"
+    try:
+        subprocess.check_call("command -v bsdtar", shell=True)
+    except Exception:
+        raise RuntimeError(
+            "Could not find bsdtar: sudo apt install libarchive-tools"
+        )
+    cmd = f"bsdtar -x -f {iso_path} casper"
     logging.info(f"Running: {cmd}")
     kernel_path = tmpdir.joinpath("vmlinuz")
     initrd_path = tmpdir.joinpath("initrd")
     subprocess.run(cmd.split(), capture_output=True)
-    shutil.copy(mnt_path.joinpath("casper/vmlinuz"), kernel_path)
-    shutil.copy(mnt_path.joinpath("casper/initrd"), initrd_path)
-    umount_cmd = f"umount {mnt_path}"
-    logging.info(f"Running: {umount_cmd}")
-    subprocess.run(umount_cmd.split(), capture_output=True)
+    shutil.copy("./casper/vmlinuz", kernel_path)
+    shutil.copy("./casper/initrd", initrd_path)
+    shutil.rmtree("casper", ignore_errors=True)
     return (kernel_path, initrd_path)
 
 
