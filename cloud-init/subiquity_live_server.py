@@ -22,6 +22,7 @@ https://github.com/canonical/pycloudlib.
 """
 
 import argparse
+from functools import partial
 import json
 import logging
 import os
@@ -31,6 +32,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from enum import Enum
 from functools import wraps
@@ -241,9 +243,7 @@ def extract_kernel_initrd_from_iso(tmpdir: Path, iso_path: Path) -> Tuple[Path, 
     try:
         subprocess.check_call("command -v bsdtar", shell=True)
     except Exception:
-        raise RuntimeError(
-            "Could not find bsdtar: sudo apt install libarchive-tools"
-        )
+        raise RuntimeError("Could not find bsdtar: sudo apt install libarchive-tools")
     cmd = f"bsdtar -x -f {iso_path} casper"
     logging.info(f"Running: {cmd}")
     kernel_path = tmpdir.joinpath("vmlinuz")
@@ -264,11 +264,17 @@ def get_open_port(start_port: int = 2222, end_port: int = 8000) -> int:
     return 2222
 
 
-def stream_cmd_stdout(cmd):
-    process = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE)
+def stream_cmd_stdout(cmd, stdout=None):
+    if stdout is None:
+        stdout = subprocess.PIPE
+    process = subprocess.Popen(
+        cmd, shell=False, stdout=stdout, stdin=subprocess.DEVNULL
+    )
     stdout_lines = []
     while True:
-        output = process.stdout.readline()
+        output = None
+        if process.stdout:
+            output = process.stdout.readline()
         if process.poll() is not None:
             break
         if output:
@@ -289,6 +295,7 @@ def launch_kvm(
     seed_path: Optional[Path] = None,
     kernel_cmdline: Optional[str] = "",
     cmdline: Optional[list] = None,
+    stdout=None,
 ) -> KVMInstance:
     """use qemu-kvm to setup and launch a test VM with optional kernel params"""
     cmd = [
@@ -332,12 +339,11 @@ def launch_kvm(
         cmd += cmdline
     if "-daemonize" not in cmd:
         cmd.append("-nographic")
-        run_cmd = stream_cmd_stdout
+        run_cmd = partial(stream_cmd_stdout, stdout=stdout)
     else:
         run_cmd = subprocess.check_output
     logging.info(f"Running: {' '.join(cmd)}")
     try:
-
         resp = run_cmd(cmd)
     except subprocess.CalledProcessError as e:
         logging.error(
@@ -439,7 +445,7 @@ def main(args):
             local_images_dir=args.local_images_dir,
         )
         ssh_port = get_open_port()
-        kvm1 = launch_kvm(
+        kvm = launch_kvm(
             vm_name=vm_name,
             tmpdir=tdir,
             ram_size=ram_size,
@@ -452,39 +458,45 @@ def main(args):
             kernel_cmdline="console=ttyS0 autoinstall",
         )
         vm_name = vm_name.replace("ephemeral", "firstboot")
-        kvm2 = launch_kvm(
-            vm_name=vm_name,
-            tmpdir=tdir,
-            ram_size=ram_size,
-            disk_img_path=disk_img_path,
-            ssh_port=ssh_port,
-            username="ubuntu",
-            private_key=private_key,
-            cmdline=["-daemonize"],
-        )
-        time.sleep(30)
-        ci_status = kvm2.wait_for_cloud_init()
-        print("===== Validate ephemeral boot state =====")
-        ephemeral_boot_log = kvm2.get_file("/var/log/installer/cloud-init.log")
-        log_errors_and_warnings(ephemeral_boot_log)
-        with open("ephemeral-cloud-init.log", "w") as stream:
-            stream.write(ephemeral_boot_log)
-        print("===== Validate first boot state =====")
-        status_long = str(kvm2.execute(["cloud-init", "status", "--long"]))
-        assert "boot_status_code: disabled-by-marker-file" in status_long
-        assert "target-test" in str(kvm2.execute(["hostname"]))
-        disabled_file = kvm2.get_file("/etc/cloud/cloud-init.disabled")
-        assert "Disabled by Ubuntu live installer" in disabled_file
-        assert ci_status["errors"] == [], "Unexpected errors:" + " ".join(
-            ci_status["errors"]
-        )
-        first_boot_log = kvm2.get_file("/var/log/cloud-init.log")
-        with open("first-boot-cloud-init.log", "w") as stream:
-            stream.write(first_boot_log)
-        userdata = yaml.safe_load(
-            kvm2.execute(["sudo", "cloud-init", "query", "userdata"]).decode()
-        )
-        kvm2.shutdown()
+        with open("first-boot-console.log", "w+") as first_boot_log:
+            x = threading.Thread(
+                target=launch_kvm,
+                kwargs={
+                    "vm_name": vm_name,
+                    "tmpdir": tdir,
+                    "ram_size": ram_size,
+                    "disk_img_path": disk_img_path,
+                    "ssh_port": ssh_port,
+                    "username": "ubuntu",
+                    "private_key": private_key,
+                    "stdout": first_boot_log,
+                },
+            )
+            x.start()
+            time.sleep(30)
+            kvm.username = "ubuntu"  # First boot uses ubuntu default user
+            ci_status = kvm.wait_for_cloud_init()
+            print("===== Validate ephemeral boot state =====")
+            ephemeral_boot_log = kvm.get_file("/var/log/installer/cloud-init.log")
+            log_errors_and_warnings(ephemeral_boot_log)
+            with open("ephemeral-cloud-init.log", "w") as stream:
+                stream.write(ephemeral_boot_log)
+            print("===== Validate first boot state =====")
+            status_long = str(kvm.execute(["cloud-init", "status", "--long"]))
+            assert "boot_status_code: disabled-by-marker-file" in status_long
+            assert "target-test" in str(kvm.execute(["hostname"]))
+            disabled_file = kvm.get_file("/etc/cloud/cloud-init.disabled")
+            assert "Disabled by Ubuntu live installer" in disabled_file
+            assert ci_status["errors"] == [], "Unexpected errors:" + " ".join(
+                ci_status["errors"]
+            )
+            first_boot_log = kvm.get_file("/var/log/cloud-init.log")
+            with open("first-boot-cloud-init.log", "w") as stream:
+                stream.write(first_boot_log)
+            userdata = yaml.safe_load(
+                kvm.execute(["sudo", "cloud-init", "query", "userdata"]).decode()
+            )
+            kvm.shutdown()
         if log_errors_and_warnings(first_boot_log):
             sys.exit(1)
         if log_errors_and_warnings(first_boot_log):
