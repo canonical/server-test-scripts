@@ -1,0 +1,36 @@
+#!/bin/bash
+set -uxe
+# This meant to run each Sun->Mon night checking what it might need to update
+[[ "$(LC_ALL=C date +%A)" == "Monday" ]] || exit 1
+echo "Sanity check passed, this is a Monday"
+
+path="$(dirname "$0")"
+defaultoptions="--log info --cachefile /tmp/esm-stats-new.cache --append --connectionenv ~/work/credentials/esm-stats/ps5-prod-esm-cache-ro.novarc ~/work/credentials/esm-stats/ps4.5-prod-esm-cache-ro.novarc"
+
+wend="$(date -d 'last Monday' +'%Y-%m-%d')"
+wstart="$(date -d 'last Sunday' +'%Y-%m-%d')"
+echo "Weekly run - collecting last week from ${wstart} to ${wend}"
+# shellcheck disable=SC2086
+"${path}/server-pro-statistics.py" \
+    --date-start "${wstart}" \
+    --date-end "${wend}" \
+    --date-format "%Y-%W" \
+    --resultsheet "Server Pro Statistics - 2023" \
+    ${defaultoptions}
+
+# only run the second part on the first Monday of a month
+[[ $(date +%d) -gt 7 ]] || exit
+echo "Sanity check passed, this is the first Monday of a month"
+
+# shellcheck disable=SC2016
+mend="$(date -d '$(date +%Y/%m/01) - 1 day 00:00' +'%Y-%m-01')"
+# shellcheck disable=SC2016
+mstart="$(date -d '$(date +%Y/%m/01) - 1 day 00:00' +'%Y-%m-%d')"
+echo "Monthly run - collecting last month from ${mstart} to ${mend}"
+# shellcheck disable=SC2086
+"${path}/server-pro-statistics.py" \
+    --date-start "${mstart}" \
+    --date-end "${mend}" \
+    --date-format "%Y-%b" \
+    --resultsheet "Server Pro Statistics - Monthly" \
+    ${defaultoptions}
