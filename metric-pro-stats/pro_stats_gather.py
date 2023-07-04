@@ -427,7 +427,7 @@ def pkg_to_data(pkg, datestr, tname):
     return data
 
 
-def logs_to_data(logfile, directory, datestr, tname):
+def log_to_data(logfile, directory, datestr, tname):
     """Extracts the gzipped log and returns triples per get request."""
 
     pkgmatch = re.compile(r'/?([\w\-]*)?/ubuntu/pool/main/\w*/'  # 1 service
@@ -435,10 +435,13 @@ def logs_to_data(logfile, directory, datestr, tname):
                           r'([a-zA-Z0-9\.\-\+]*)\_'              # 3 binary
                           r'([a-zA-Z0-9~+\-\.]*)\_'              # 4 version
                           r'([a-z0-9]*)\.deb')                   # 5 arch
+    mp.current_process().name = f'LOG-{tname}-{os.getpid()}'
     LOGGER.info('Reading logfile %s', logfile)
+    VerToRelCache.load_cache()
     with gzip.open(os.path.join(directory, logfile), 'rt',
                    encoding='utf-8') as unzipped_logfile:
         pkglist = []
+        linecount = 0
         for line in unzipped_logfile:
             logfields = line.split()
             httpstatus = logfields[7]
@@ -452,9 +455,16 @@ def logs_to_data(logfile, directory, datestr, tname):
                 pkglist.append(pkgdata)
             else:
                 LOGGER.debug('no match on %s', line)
+            linecount += 1
+            if linecount % 1000 == 0:
+                LOGGER.info('%d lines processed, %d entries so far',
+                            linecount, len(pkglist))
 
-        LOGGER.info('%s: found %s entries', logfile, len(pkglist))
-        return pkglist
+        LOGGER.info('Completed logfile %s: found %s entries overall',
+                    logfile, len(pkglist))
+
+    VerToRelCache.combine_and_serialize()
+    return pkglist
 
 
 def process_extracted_data(pkg_list, date_csv_file):
@@ -542,11 +552,18 @@ def setup_parser():
         "(Default: none - will neither load nor save the version mapping)")
 
     parser.add_argument(
-        "--concurrency",
+        "--lconcurrency",
+        type=int,
+        default=8,
+        help="Number of concurrent processes that will be used to process "
+             "logfiles of a group. (Default: 8)")
+    parser.add_argument(
+        "--gconcurrency",
         type=int,
         default=4,
-        help="Number of concurrent processes that will be used. "
-        "(Default: 4)")
+        help="Number of concurrent processes that iterate on groups (depends "
+             "on --date-format in the given time range (Default: 4)")
+
     parser.add_argument(
         "--downloadstreams",
         type=int,
@@ -589,11 +606,13 @@ def get_time_range():
 
 
 def get_and_extract_data(ctime, result_tmpdir):
-    """Fetch, extract and store the data for a given date."""
+    """Fetch, extract and store the data for a given date.
+
+    This uses concurrency as well and on this level it helps
+    to speed up processing multiple logfiles for a single group."""
     tname = ctime["name"]
     mp.current_process().name = f'GED-{tname}'
     LOGGER.info('New Process handling %s', ctime)
-    VerToRelCache.load_cache()
     pdata = []
     with tempfile.TemporaryDirectory(dir=result_tmpdir,
                                      prefix=f'{tname}.') as tmpdir:
@@ -603,17 +622,28 @@ def get_and_extract_data(ctime, result_tmpdir):
 
         LOGGER.info('Extracting data from %d access logs for %s',
                     len(logs), tname)
-        lines = []
-        for log in logs:
-            datestr = ctime["start"].strftime("%Y-%m-%d")
-            lines.extend(logs_to_data(log, tmpdir, datestr, tname))
-        pdata.extend(lines)
+
+        datestr = ctime["start"].strftime("%Y-%m-%d")
+        number_of_logs = len(logs)
+        with ccf.ProcessPoolExecutor(ARGS.lconcurrency) as executor:
+            workers = [executor.submit(log_to_data, log, tmpdir,
+                                       datestr, tname)
+                       for log in logs]
+            completed_logs = 0
+            lines = []
+            for work in ccf.as_completed(workers):
+                completed_logs += 1
+                lines.extend(work.result())
+                print(f'Job {completed_logs} '
+                      f'({completed_logs/number_of_logs*100:.2f}%) complete '
+                      f'- {len(lines)} lines so far')
+
+            pdata.extend(lines)
 
     date_csv_file = os.path.join(result_tmpdir, f'{tname}.csv')
     processed_entries = process_extracted_data(pdata, date_csv_file)
 
     print(f'Got {processed_entries} log entries for {tname}')
-    VerToRelCache.combine_and_serialize()
     return processed_entries
 
 
@@ -621,11 +651,13 @@ def schedule_data_extraction(tmpdir):
     """Iterate over days and extract summarized data to csv files.
 
     This maps the processing onto multiple cpus to speed it up.
+    Concurrent execution on this level helps if many groups are
+    created e.g. running a per-week format across a full year.
     """
 
     timerange = get_time_range()
     number_of_jobs = len(timerange)
-    with ccf.ProcessPoolExecutor(ARGS.concurrency) as executor:
+    with ccf.ProcessPoolExecutor(ARGS.gconcurrency) as executor:
         workers = [executor.submit(get_and_extract_data,
                                    single_time, tmpdir)
                    for single_time in timerange]
@@ -634,8 +666,8 @@ def schedule_data_extraction(tmpdir):
         for work in ccf.as_completed(workers):
             completed_jobs += 1
             results += work.result()
-            print(f'Job {completed_jobs} '
-                  f'({completed_jobs/number_of_jobs*100:.2f}%) complete '
+            print(f'Job {completed_jobs} done '
+                  f'({completed_jobs/number_of_jobs*100:.2f}% complete) '
                   f'- {results} results so far')
 
 
