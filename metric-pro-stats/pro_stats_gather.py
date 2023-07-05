@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright © 2022 Christian Ehrhardt <christian.ehrhardt@canonical.com>
 # License:
