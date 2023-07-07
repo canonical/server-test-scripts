@@ -7,6 +7,8 @@ import os
 import re
 import sys
 
+from statistics import mean
+
 from influxdb import InfluxDBClient
 
 
@@ -187,6 +189,28 @@ def parse_meminfo_measurement(fname, point):
     }
 
 
+def parse_servicesecurity_measurement(fname, point):
+    """Parse output of systemd-analyze into avg and buckets."""
+
+    with open(fname, "r", encoding="utf-8") as rawdataf:
+        next(rawdataf)
+        ssec_lines = rawdataf.readlines()
+        ssec_exposure = []
+        ssec_predicate = []
+        for ssec_line in ssec_lines:
+            elements = ssec_line.split()
+            ssec_exposure.append(float(elements[1]))
+            ssec_predicate.append(elements[2])
+
+    point["fields"] = {
+            "mean":  float(mean(ssec_exposure)),
+            "OK":   int(ssec_predicate.count("OK")),
+            "MEDIUM": int(ssec_predicate.count("MEDIUM")),
+            "EXPOSED": int(ssec_predicate.count("EXPOSED")),
+            "UNSAFE": int(ssec_predicate.count("UNSAFE")),
+    }
+
+
 def main(fname, metrictype, dryrun):
     """Take raw measurement, parse it, feed it to InfluxDB."""
 
@@ -229,6 +253,10 @@ def main(fname, metrictype, dryrun):
         parse_disk_measurement(fname, point)
     elif metrictype == "metric_packages":
         parse_packages_measurement(fname, point)
+    elif metrictype == "metric_userservicesecurity":
+        parse_servicesecurity_measurement(fname, point)
+    elif metrictype == "metric_systemservicesecurity":
+        parse_servicesecurity_measurement(fname, point)
     else:
         data = None
         print(f"WARNING: unknown metric type {metrictype}!")
