@@ -136,6 +136,14 @@ do_measurement_meminfo() {
   Cexec cat /proc/meminfo > "${resultfile}"
 }
 
+do_measurement_servicesecurity() {
+  # Check systemd service isolation feature usage
+  resultfile=$(get_result_filename "userservicesecurity" "txt")
+  Cexec systemd-analyze security --no-pager --user > "${resultfile}"
+  resultfile=$(get_result_filename "systemservicesecurity" "txt")
+  Cexec systemd-analyze security --no-pager --system > "${resultfile}"
+}
+
 do_measurement_ports() {
   resultfile=$(get_result_filename "ports" "txt")
   Cexec ss -lntup > "${resultfile}"
@@ -194,6 +202,7 @@ do_measurement_ports
 do_measurement_processcount
 do_measurement_disk
 do_measurement_package
+do_measurement_servicesecurity
 
 install_dependencies
 do_measurement_ssh_noninteractive
@@ -212,5 +221,6 @@ do_measurement_ports
 do_measurement_processcount
 do_measurement_disk
 do_measurement_package
+do_measurement_servicesecurity
 
 cleanup
