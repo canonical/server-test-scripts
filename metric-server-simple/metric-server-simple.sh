@@ -139,7 +139,8 @@ do_measurement_meminfo() {
 do_measurement_servicesecurity() {
   # Check systemd service isolation feature usage
   resultfile=$(get_result_filename "userservicesecurity" "txt")
-  Cexec systemd-analyze security --no-pager --user > "${resultfile}"
+  # this needs a login session to work
+  Cexec su ubuntu --login -c 'systemd-analyze security --no-pager --user' > "${resultfile}"
   resultfile=$(get_result_filename "systemservicesecurity" "txt")
   Cexec systemd-analyze security --no-pager --system > "${resultfile}"
 }
