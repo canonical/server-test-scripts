@@ -187,6 +187,13 @@ do_install_services() {
       openvpn strongswan
 }
 
+do_log_service_status() {
+    # We sometimes had bad service startup, putting this info to the log
+    # helps to sourt out what might be wrong, especially when not easily
+    # reproducible.
+    systemctl status --all
+}
+
 cleanup
 setup_lxd_minimal_remote
 setup_container
@@ -223,5 +230,7 @@ do_measurement_processcount
 do_measurement_disk
 do_measurement_package
 do_measurement_servicesecurity
+
+do_log_service_status
 
 cleanup
