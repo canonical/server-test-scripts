@@ -193,7 +193,7 @@ do_log_service_status() {
     # reproducible.
     # Ignore the RC which often is 4 meaning that a unit was referenced
     # but not found e.g. boot.automount in containers
-    systemctl status --all --no-pager || true
+    Cexec systemctl status --all --no-pager || true
 }
 
 cleanup
