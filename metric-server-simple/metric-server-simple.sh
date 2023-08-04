@@ -191,7 +191,9 @@ do_log_service_status() {
     # We sometimes had bad service startup, putting this info to the log
     # helps to sourt out what might be wrong, especially when not easily
     # reproducible.
-    systemctl status --all
+    # Ignore the RC which often is 4 meaning that a unit was referenced
+    # but not found e.g. boot.automount in containers
+    systemctl status --all --no-pager || true
 }
 
 cleanup
