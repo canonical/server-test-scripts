@@ -170,6 +170,17 @@ do_measurement_package() {
   Cexec dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n > "${resultfile}"
 }
 
+do_measurement_apt() {
+  # We do not want to track the fluctuating sizes of cache accidentially when
+  # looking at packages / disk size. But OTOH we want to get a signal if
+  # this massively changes. So it need to go to a separate value.
+  resultfile=$(get_result_filename "apt" "txt")
+  Cexec du /var/cache/apt/ /var/lib/apt/ --max-depth=3 > "${resultfile}"
+  # and now that data is collected, clear it
+  Cexec apt clean
+  Cexec rm -rf /var/lib/apt/lists/*
+}
+
 do_install_services() {
   # This isn't very advanced, it installs various services in their default
   # configuration to recheck if any of them changed their default behavior
@@ -185,7 +196,6 @@ do_install_services() {
       nginx apache2 squid python3-django \
       dovecot-imapd dovecot-pop3d postfix \
       openvpn strongswan
-  Cexec apt clean
 }
 
 do_log_service_status() {
@@ -226,6 +236,8 @@ Cexec dd of=/proc/sys/vm/drop_caches <<<'3'
 sleep 5s
 
 STAGE="loaded"
+do_measurement_apt
+
 do_measurement_cpustat
 do_measurement_meminfo
 do_measurement_ports
