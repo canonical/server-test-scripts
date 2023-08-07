@@ -185,6 +185,7 @@ do_install_services() {
       nginx apache2 squid python3-django \
       dovecot-imapd dovecot-pop3d postfix \
       openvpn strongswan
+  Cexec apt clean
 }
 
 do_log_service_status() {
