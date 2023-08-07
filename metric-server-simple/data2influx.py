@@ -125,7 +125,7 @@ def parse_cpustat_measurement(fname, point):
 
 
 def parse_disk_measurement(fname, point):
-    """Parse raw data of vmstat output and extract measurement."""
+    """Parse raw data of df output and extract measurement."""
 
     with open(fname, "r", encoding="utf-8") as rawdataf:
         disk_lines = rawdataf.readlines()
@@ -137,6 +137,24 @@ def parse_disk_measurement(fname, point):
 
     point["fields"] = {
             "usedmb": int(disk_entry[2]),
+    }
+
+
+def parse_apt_measurement(fname, point):
+    """Parse raw data of du on apt dirs and extract measurement."""
+
+    with open(fname, "r", encoding="utf-8") as rawdataf:
+        apt_lines = rawdataf.readlines()
+        for apt_line in apt_lines:
+            apt_entries = apt_line.split()
+            if apt_entries[1] == "/var/lib/apt/":
+                apt_list_size = int(apt_entries[0])
+            if apt_entries[1] == "/var/cache/apt/":
+                apt_cache_size = int(apt_entries[0])
+
+    point["fields"] = {
+            "cache": apt_cache_size,
+            "lists": apt_list_size,
     }
 
 
@@ -251,6 +269,8 @@ def main(fname, metrictype, dryrun):
         parse_ports_measurement(fname, point)
     elif metrictype == "metric_disk":
         parse_disk_measurement(fname, point)
+    elif metrictype == "metric_apt":
+        parse_apt_measurement(fname, point)
     elif metrictype == "metric_packages":
         parse_packages_measurement(fname, point)
     elif metrictype == "metric_userservicesecurity":
