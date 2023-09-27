@@ -77,7 +77,7 @@ def pkg_version_greater_than(v1, v2):
 
 
 def main():
-    warn = False
+    rc = 0
     lp = Launchpad.login_anonymously("ccache-check", "production")
     openssh_ppa_proposed = CcachePPA(
         lp, "canonical-server", "openssh-server-default-ccache-proposed")
@@ -102,13 +102,13 @@ def main():
                 f"WARNING: Latest version in archive "
                 f"({latest_version_in_archive[0]}) is higher than version "
                 f"{version} from ppa {pocket}")
-            warn = True
+            rc = 1
         print()
-    if warn:
+    if rc != 0:
         print("ACTION NEEDED")
     else:
         print("ALL GOOD")
-    return warn
+    return rc
 
 if __name__ == "__main__":
     sys.exit(main())
