@@ -3,6 +3,7 @@
 import sys
 
 from subprocess import check_output, call
+
 try:
     from launchpadlib.launchpad import Launchpad
 except ImportError:
@@ -11,7 +12,6 @@ except ImportError:
 
 
 class RmadisonPackage(object):
-
     def __init__(self, package):
         self.package = package
         self.rmadison = self._get_rmadison()
@@ -25,9 +25,7 @@ class RmadisonPackage(object):
         for line in data.decode("utf-8").split("\n"):
             if not line:
                 continue
-            _, version, pocket, _ = [
-                x.strip() for x in line.split("|")
-            ]
+            _, version, pocket, _ = [x.strip() for x in line.split("|")]
             pocket_version[pocket] = version
         return pocket_version
 
@@ -39,28 +37,37 @@ class RmadisonPackage(object):
         return version
 
     def get_latest_version_in_series(self, series):
-        latest_version = (None,None)
+        latest_version = (None, None)
         for pocket in [
-            series, f"{series}-updates", f"{series}-security",
-            f"{series}-proposed"]:
-            if pkg_version_greater_than(self.get_version(pocket), latest_version[0]):
+            series,
+            f"{series}-updates",
+            f"{series}-security",
+            f"{series}-proposed",
+        ]:
+            if pkg_version_greater_than(
+                self.get_version(pocket), latest_version[0]
+            ):
                 latest_version = (self.get_version(pocket), pocket)
         return latest_version
 
-        
-class CcachePPA(object):
 
-    def __init__(self, lp, ppa_owner, ppa_name, series="jammy", package="openssh"):
+class CcachePPA(object):
+    def __init__(
+        self, lp, ppa_owner, ppa_name, series="jammy", package="openssh"
+    ):
         self.lp = lp
         self.package = package
         self.distro_series = self.lp.distributions["ubuntu"].getSeries(
-            name_or_version=series)
+            name_or_version=series
+        )
         self.archive = self.lp.people[ppa_owner].getPPAByName(name=ppa_name)
 
     def get_latest_version(self):
         sources = self.archive.getPublishedSources(
-            source_name=self.package, distro_series=self.distro_series,
-            status="Published")
+            source_name=self.package,
+            distro_series=self.distro_series,
+            status="Published",
+        )
         assert len(sources) == 1
         return sources[0].source_package_version.strip()
 
@@ -80,9 +87,11 @@ def main():
     rc = 0
     lp = Launchpad.login_anonymously("ccache-check", "production")
     openssh_ppa_proposed = CcachePPA(
-        lp, "canonical-server", "openssh-server-default-ccache-proposed")
+        lp, "canonical-server", "openssh-server-default-ccache-proposed"
+    )
     openssh_ppa_release = CcachePPA(
-        lp, "canonical-server", "openssh-server-default-ccache")
+        lp, "canonical-server", "openssh-server-default-ccache"
+    )
     openssh_ppa_testing = CcachePPA(lp, "ahasenack", "openssh-ccache-testing")
     ppa_version = {}
     ppa_version["testing"] = openssh_ppa_testing.get_latest_version()
@@ -90,18 +99,20 @@ def main():
     ppa_version["release"] = openssh_ppa_release.get_latest_version()
 
     openssh_archive = RmadisonPackage("openssh")
-    latest_version_in_archive = (
-        openssh_archive.get_latest_version_in_series("jammy"))
+    latest_version_in_archive = openssh_archive.get_latest_version_in_series(
+        "jammy"
+    )
 
     print(f"Latest version in jammy is {latest_version_in_archive}")
     print()
-    for pocket,version in ppa_version.items():
+    for pocket, version in ppa_version.items():
         print(f"Latest version in {pocket} ccache ppa is {version}")
         if pkg_version_greater_than(latest_version_in_archive[0], version):
             print(
                 f"WARNING: Latest version in archive "
                 f"({latest_version_in_archive[0]}) is higher than version "
-                f"{version} from ppa {pocket}")
+                f"{version} from ppa {pocket}"
+            )
             rc = 1
         print()
     if rc != 0:
@@ -109,6 +120,7 @@ def main():
     else:
         print("ALL GOOD")
     return rc
+
 
 if __name__ == "__main__":
     sys.exit(main())
