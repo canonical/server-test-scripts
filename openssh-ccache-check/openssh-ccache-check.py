@@ -92,7 +92,7 @@ def main():
     openssh_ppa_release = CcachePPA(
         lp, "canonical-server", "openssh-server-default-ccache"
     )
-    openssh_ppa_testing = CcachePPA(lp, "ahasenack", "openssh-ccache-testing")
+    openssh_ppa_testing = CcachePPA(lp, "canonical-server", "openssh-server-default-ccache-testing")
     ppa_version = {}
     ppa_version["testing"] = openssh_ppa_testing.get_latest_version()
     ppa_version["proposed"] = openssh_ppa_proposed.get_latest_version()
