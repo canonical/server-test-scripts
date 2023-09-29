@@ -4,6 +4,10 @@ import sys
 
 from subprocess import check_output, call
 
+# to differentiate in jenkins between a failure in executing this script, and a
+# "script worked fine, but there is action needed" situation
+JENKINS_UNSTABLE_RETURN = 99
+
 try:
     from launchpadlib.launchpad import Launchpad
 except ImportError:
@@ -113,7 +117,7 @@ def main():
                 f"({latest_version_in_archive[0]}) is higher than version "
                 f"{version} from ppa {pocket}"
             )
-            rc = 1
+            rc = JENKINS_UNSTABLE_RETURN
         print()
     if rc != 0:
         print("ACTION NEEDED")
