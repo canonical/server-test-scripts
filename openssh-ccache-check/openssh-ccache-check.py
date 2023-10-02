@@ -121,6 +121,7 @@ def main():
         print()
     if rc != 0:
         print("ACTION NEEDED")
+        print("Please see Canonical Spec US066 for details")
     else:
         print("ALL GOOD")
     return rc
