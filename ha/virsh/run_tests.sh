@@ -5,7 +5,7 @@
 # shellcheck disable=SC1091
 source /etc/profile.d/libvirt-uri.sh
 
-test_failed=0
+test_failed=()
 for file in $TESTS; do
   if [[ "$file" == "fence_ipmilan_test.sh" ]]; then
     continue
@@ -29,13 +29,13 @@ for file in $TESTS; do
   fi
 
   if ! bash "$file"; then
-    test_failed=1
+    test_failed+=("$file")
   fi
   ./delete-cluster.sh
 done
 
-if [ $test_failed -eq 1 ]; then
-  echo -e "\033[0;31mThere are failing tests\033[0m"
+if [ ${#test_failed[@]} -gt 0 ]; then
+  echo -e "\033[0;31mThere are failing tests: [ ${test_failed[@]} ]\033[0m"
   exit 3
 fi
 
