@@ -18,7 +18,7 @@ eveything for you! Make sure you have the following packages installed:
 
 Moreover, a SSH key is needed in your host to be added to the `authorized_keys`
 file of each node. By default, the script will try to use
-`/home/$(whoami)/.ssh/id_rsa.pub` as your public SSH key.
+`${HOME}/.ssh/id_rsa.pub` as your public SSH key.
 
 The setup takes some time but when it is done you will be ready to ssh into the
 nodes and the Corosync/Pacemaker cluster will be all set. You can check the
