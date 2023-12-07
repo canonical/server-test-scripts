@@ -8,7 +8,7 @@ VM_NAME="test"
 WORK_DIR=$(pwd)
 CONFIG_DIR="${WORK_DIR}/config"
 IMAGES_DIR="${WORK_DIR}/images"
-PUB_KEY_FILE="/home/$(whoami)/.ssh/id_rsa.pub"
+PUB_KEY_FILE="${HOME}/.ssh/id_rsa.pub"
 
 CLOUD_IMAGE_FILENAME="${UBUNTU_SERIES}-server-cloudimg-amd64.img"
 CLOUD_IMAGE_URL="https://cloud-images.ubuntu.com/${UBUNTU_SERIES}/current/${CLOUD_IMAGE_FILENAME}"
