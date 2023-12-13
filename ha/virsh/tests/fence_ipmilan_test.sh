@@ -92,7 +92,8 @@ oneTimeTearDown() {
 run_fence_ipmi() {
   action="${1}"
   run_command_in_node "${IP_TESTER}" "fence_ipmilan --ip=${IP_HOST} --ipport=${PORT} \
-	  --username=${USER} --password=${PASSWD} --lanplus --verbose --action=${action}"
+	  --username=${USER} --password=${PASSWD} --lanplus --verbose --action=${action} \
+    --power-timeout=60"
 }
 
 test_simulator_is_running() {
