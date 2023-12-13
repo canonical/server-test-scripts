@@ -65,7 +65,7 @@ oneTimeSetUp() {
 
   setup_vbmc
   create_vm "${SIMULATOR}"
-  vbmc add "${SIMULATOR}" --port "${PORT}"
+  vbmc add "${SIMULATOR}" --port "${PORT}" --username "${USER}" --password "${PASSWD}"
   vbmc start "${SIMULATOR}"
 
   create_vm "${TESTER}"
