@@ -26,7 +26,14 @@ setup_vbmc() {
 
   # Make sure there's no lingering vbmcd process
   pkill vbmcd 2>/dev/null || true
-  while (pkill -0 vbmcd); do sleep 1; done
+  kill_vbmcd() {
+    if (pkill -0 vbmcd); then
+      return 1
+    else
+      return 0
+    fi
+  }
+  backoff kill_vbmcd
 
   vbmcd
 }
@@ -37,8 +44,11 @@ create_vm() {
 }
 
 get_tester_ip() {
-  sleep 30
   IP_TESTER=$(virsh domifaddr "${TESTER}" | grep ipv4 | xargs | cut -d ' ' -f4 | cut -d '/' -f1)
+  if grep -Eq '([0-9]{1,3}\.){3}[0-9]{1,3}' <<< ${IP_TESTER}; then
+    return 0
+  fi
+  return 1
 }
 
 setup_tester() {
@@ -59,7 +69,7 @@ oneTimeSetUp() {
   vbmc start "${SIMULATOR}"
 
   create_vm "${TESTER}"
-  get_tester_ip
+  backoff get_tester_ip
   setup_tester
 
   # shellcheck disable=SC2086,SC2116
