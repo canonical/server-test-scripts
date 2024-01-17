@@ -9,16 +9,19 @@
 # shellcheck disable=SC1090
 . "$(dirname "$0")/../vm_utils.sh"
 
-
-setup_pgsql() {
-  PG_HBA="\
+PG_HBA="\
 host    all             all     127.0.0.1/32        trust\n\
 host    all             all     192.168.0.0/16      trust\n\
 host    replication     all     192.168.0.0/16      trust"
+
+setup_cluster() {
   # we do not need VM03 here: let's put it in maintainance mode
   run_command_in_node "${IP_VM01}" "sudo pcs cluster node remove ${VM03}"
   # TODO: once the pgsql agent is promoted, we will need the base resource-agents instead of the extra ones
   run_in_all_nodes "DEBIAN_FRONTEND=noninteractive sudo apt-get install -y resource-agents-extra postgresql >/dev/null"
+}
+
+setup_main_server() {
   run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set listen_addresses '*'"
   run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set wal_level hot_standby"
   run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set synchronous_commit  on"
@@ -47,7 +50,9 @@ host    replication     all     192.168.0.0/16      trust"
   run_command_in_node "${IP_VM01}" "sudo -u postgres touch /var/lib/postgresql/14/tmp/recovery.conf"
   run_command_in_node "${IP_VM01}" "sudo systemctl restart postgresql"
   sleep 10
-  # VM02 setup:
+}
+
+setup_replica() {
   run_command_in_node "${IP_VM02}" "sudo systemctl stop postgresql"
   run_command_in_node "${IP_VM02}" "sudo sh -c 'rm -rf /var/lib/postgresql/14/main/*'"
   run_command_in_node "${IP_VM02}" "sudo -u postgres pg_basebackup -h ${IP_VM01} -U postgres -D /var/lib/postgresql/14/main -X stream -P -v"
@@ -66,6 +71,9 @@ host    replication     all     192.168.0.0/16      trust"
   run_command_in_node "${IP_VM02}" "sudo sed -i \"$ a ${PG_HBA}\" /etc/postgresql/14/main/pg_hba.conf"
   run_command_in_node "${IP_VM02}" "sudo systemctl start postgresql"
   sleep 10
+}
+
+start_ha_pgsql_cluster() {
   run_command_in_node "${IP_VM01}" "sudo pcs property set stonith-enabled=false"
   run_command_in_node "${IP_VM01}" "sudo pcs property set no-quorum-policy=ignore"
   run_command_in_node "${IP_VM01}" "sudo pcs resource defaults update resource-stickiness='INFINITY'"
@@ -99,7 +107,10 @@ host    replication     all     192.168.0.0/16      trust"
 
 oneTimeSetUp() {
   get_network_data_nic1
-  setup_pgsql
+  setup_cluster
+  setup_main_server
+  setup_replica
+  start_ha_pgsql_cluster
 }
 
 test_postgresql_is_started() {
