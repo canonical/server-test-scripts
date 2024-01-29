@@ -51,7 +51,15 @@ setup_container() {
 
   # Wait for cloud-init to finish
   # Run as root as the ubuntu (uid 1000) user may not be ready yet.
-  Cexec cloud-init status --wait >/dev/null
+  #
+  # From Noble onwards, "cloud-init status --wait" can return other
+  # than zero.  We should only error out if the return code is 1.
+  if ! Cexec cloud-init status --wait >/dev/null; then
+    if [ "$?" -eq 1 ]; then
+      echo "ERROR: cloud-init failed to initialize"
+      exit 1
+    fi
+  fi
 
   # Silence known spikes
   Cexec systemctl mask --now unattended-upgrades.service
