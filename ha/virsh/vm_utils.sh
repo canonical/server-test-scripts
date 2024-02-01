@@ -151,6 +151,7 @@ block_until_cloud_init_is_done() {
   # set debconf frontend to Noninteractive
   run_command_in_node "${NODE}" "flock /var/cache/debconf/config.dat true"
   run_command_in_node "${NODE}" "echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections"
-  run_command_in_node "${NODE}" "cloud-init status --wait"
+  run_command_in_node "${NODE}" " if ! cloud-init status --wait; then if [ "$?" -eq 1 ]; \
+    then echo 'ERROR: cloud-init failed to initialize'; exit 1; fi; fi"
   sleep 5
 }
