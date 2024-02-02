@@ -155,3 +155,25 @@ block_until_cloud_init_is_done() {
     then echo 'ERROR: cloud-init failed to initialize'; exit 1; fi; fi"
   sleep 5
 }
+
+backoff() {
+  # Exponential backoff function. Positional args:
+  # CONDITION_FUNCTION_NAME: Function to determine wheather to backoff. It must
+  # return 0 when no waiting is needed or 1 when we want to wait.
+  # BACKOFF_FACTOR: Factor for exponential backoff function. Default value: 2.
+  # MAX_RETRIES: Maximum number of retries. This defaults to 7 so we wait at
+  # most 254 seconds with the last wait being of 128 seconds.
+  CONDITION_FUNCTION_NAME="${1}"
+  BACKOFF_FACTOR="${2:-2}"
+  MAX_RETRIES="${3:-7}"
+  for i in $(seq 0 ${MAX_RETRIES}); do
+    if [ i -gt 0 ]; then
+      sleep $((BACKOFF_FACTOR ** i))
+    fi
+    if $CONDITION_FUNCTION_NAME; then
+      return 0
+    fi
+  done
+  echo "WARNING: wait condition not matched for ${CONDITION_FUNCTION_NAME}"
+  return 1
+}
