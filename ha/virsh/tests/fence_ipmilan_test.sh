@@ -53,7 +53,7 @@ get_tester_ip() {
 
 setup_tester() {
   run_command_in_node "${IP_TESTER}" "sudo apt-get update && \
-	  sudo apt-get install -y ipmitool fence-agents-base"
+    sudo apt-get install -y ipmitool fence-agents-base"
 }
 
 oneTimeSetUp() {
@@ -65,7 +65,7 @@ oneTimeSetUp() {
 
   setup_vbmc
   create_vm "${SIMULATOR}"
-  vbmc add "${SIMULATOR}" --port "${PORT}"
+  vbmc add "${SIMULATOR}" --port "${PORT}" --username "${USER}" --password "${PASSWD}"
   vbmc start "${SIMULATOR}"
 
   create_vm "${TESTER}"
@@ -92,7 +92,8 @@ oneTimeTearDown() {
 run_fence_ipmi() {
   action="${1}"
   run_command_in_node "${IP_TESTER}" "fence_ipmilan --ip=${IP_HOST} --ipport=${PORT} \
-	  --username=${USER} --password=${PASSWD} --lanplus --verbose --action=${action}"
+    --username=${USER} --password=${PASSWD} --lanplus --verbose --action=${action} \
+    --power-timeout=60"
 }
 
 test_simulator_is_running() {
