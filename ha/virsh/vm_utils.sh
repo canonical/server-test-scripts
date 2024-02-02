@@ -167,7 +167,7 @@ backoff() {
   BACKOFF_FACTOR="${2:-2}"
   MAX_RETRIES="${3:-7}"
   for i in $(seq 0 ${MAX_RETRIES}); do
-    if [ i -gt 0 ]; then
+    if [ $i -gt 0 ]; then
       sleep $((BACKOFF_FACTOR ** i))
     fi
     if $CONDITION_FUNCTION_NAME; then
