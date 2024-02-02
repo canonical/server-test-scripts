@@ -14,61 +14,71 @@ host    all             all     127.0.0.1/32        trust\n\
 host    all             all     192.168.0.0/16      trust\n\
 host    replication     all     192.168.0.0/16      trust"
 
+if [[ "${UBUNTU_SERIES}" = "noble" ]]; then
+  # the pgsql agent is in main starting from noble (24.04)
+  # TODO: once the pgsql agent is promoted, we will need the base resource-agents instead of the extra ones
+  RESOURCE_AGENTS_PKG=resource-agents-extra
+else
+  RESOURCE_AGENTS_PKG=resource-agents-extra
+fi
+
 setup_cluster() {
   # we do not need VM03 here: let's put it in maintainance mode
   run_command_in_node "${IP_VM01}" "sudo pcs cluster node remove ${VM03}"
-  # TODO: once the pgsql agent is promoted, we will need the base resource-agents instead of the extra ones
-  run_in_all_nodes "DEBIAN_FRONTEND=noninteractive sudo apt-get install -y resource-agents-extra postgresql >/dev/null"
+  run_in_all_nodes "DEBIAN_FRONTEND=noninteractive sudo apt-get install -y "${RESOURCE_AGENTS_PKG}" postgresql >/dev/null"
+  PGSQL_VERSION=$(run_command_in_node "${IP_VM01}" "pg_config --version")
+  # PostgreSQL 16.1 (Ubuntu 16.1-1build1)
+  PGSQL_VERSION=$(echo "${PGSQL_VERSION}" | sed -E -n 's/PostgreSQL ([0-9]+)\..*/\1/p')
 }
 
 setup_main_server() {
-  run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set listen_addresses '*'"
-  run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set wal_level hot_standby"
-  run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set synchronous_commit  on"
-  run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set archive_mode on"
-  run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set archive_command 'cp %p /var/lib/postgresql/14/main/pg_archive/%f'"
-  run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set max_wal_senders 5"
+  run_command_in_node "${IP_VM01}" "sudo pg_conftool "${PGSQL_VERSION}" main set listen_addresses '*'"
+  run_command_in_node "${IP_VM01}" "sudo pg_conftool "${PGSQL_VERSION}" main set wal_level hot_standby"
+  run_command_in_node "${IP_VM01}" "sudo pg_conftool "${PGSQL_VERSION}" main set synchronous_commit  on"
+  run_command_in_node "${IP_VM01}" "sudo pg_conftool "${PGSQL_VERSION}" main set archive_mode on"
+  run_command_in_node "${IP_VM01}" "sudo pg_conftool "${PGSQL_VERSION}" main set archive_command 'cp %p /var/lib/postgresql/"${PGSQL_VERSION}"/main/pg_archive/%f'"
+  run_command_in_node "${IP_VM01}" "sudo pg_conftool "${PGSQL_VERSION}" main set max_wal_senders 5"
   # wal_keep_segments was renamed
   # https://www.postgresql.org/docs/13/release-13.html
-  run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set wal_keep_size 512"
-  run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set hot_standby on"
-  run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set restart_after_crash off"
+  run_command_in_node "${IP_VM01}" "sudo pg_conftool "${PGSQL_VERSION}" main set wal_keep_size 512"
+  run_command_in_node "${IP_VM01}" "sudo pg_conftool "${PGSQL_VERSION}" main set hot_standby on"
+  run_command_in_node "${IP_VM01}" "sudo pg_conftool "${PGSQL_VERSION}" main set restart_after_crash off"
   # replication_timeout was renamed
   # https://www.postgresql.org/docs/9.3/release-9-3.html
-  run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set wal_sender_timeout 5000"
-  run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set wal_receiver_status_interval 2"
-  run_command_in_node "${IP_VM01}" "sudo pg_conftool -- 14 main set max_standby_streaming_delay -1"
-  run_command_in_node "${IP_VM01}" "sudo pg_conftool -- 14 main set max_standby_archive_delay -1"
-  run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set synchronous_commit on"
-  run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set restart_after_crash off"
-  run_command_in_node "${IP_VM01}" "sudo pg_conftool 14 main set hot_standby_feedback on"
-  run_command_in_node "${IP_VM01}" "sudo sed -i \"$ a ${PG_HBA}\" /etc/postgresql/14/main/pg_hba.conf"
+  run_command_in_node "${IP_VM01}" "sudo pg_conftool "${PGSQL_VERSION}" main set wal_sender_timeout 5000"
+  run_command_in_node "${IP_VM01}" "sudo pg_conftool "${PGSQL_VERSION}" main set wal_receiver_status_interval 2"
+  run_command_in_node "${IP_VM01}" "sudo pg_conftool -- "${PGSQL_VERSION}" main set max_standby_streaming_delay -1"
+  run_command_in_node "${IP_VM01}" "sudo pg_conftool -- "${PGSQL_VERSION}" main set max_standby_archive_delay -1"
+  run_command_in_node "${IP_VM01}" "sudo pg_conftool "${PGSQL_VERSION}" main set synchronous_commit on"
+  run_command_in_node "${IP_VM01}" "sudo pg_conftool "${PGSQL_VERSION}" main set restart_after_crash off"
+  run_command_in_node "${IP_VM01}" "sudo pg_conftool "${PGSQL_VERSION}" main set hot_standby_feedback on"
+  run_command_in_node "${IP_VM01}" "sudo sed -i \"$ a ${PG_HBA}\" /etc/postgresql/"${PGSQL_VERSION}"/main/pg_hba.conf"
   # create archive and tmp directories
-  run_command_in_node "${IP_VM01}" "sudo -u postgres mkdir -p /var/lib/postgresql/14/main/pg_archive"
-  run_command_in_node "${IP_VM01}" "sudo -u postgres mkdir -p /var/lib/postgresql/14/tmp"
+  run_command_in_node "${IP_VM01}" "sudo -u postgres mkdir -p /var/lib/postgresql/"${PGSQL_VERSION}"/main/pg_archive"
+  run_command_in_node "${IP_VM01}" "sudo -u postgres mkdir -p /var/lib/postgresql/"${PGSQL_VERSION}"/tmp"
   # workaround for entry added in the resource agent. This is added in the main config file to workaround postgresql >= 12 changes
-  run_command_in_node "${IP_VM01}" "sudo -u postgres touch /var/lib/postgresql/14/tmp/recovery.conf"
+  run_command_in_node "${IP_VM01}" "sudo -u postgres touch /var/lib/postgresql/"${PGSQL_VERSION}"/tmp/recovery.conf"
   run_command_in_node "${IP_VM01}" "sudo systemctl restart postgresql"
   sleep 10
 }
 
 setup_replica() {
   run_command_in_node "${IP_VM02}" "sudo systemctl stop postgresql"
-  run_command_in_node "${IP_VM02}" "sudo sh -c 'rm -rf /var/lib/postgresql/14/main/*'"
-  run_command_in_node "${IP_VM02}" "sudo -u postgres pg_basebackup -h ${IP_VM01} -U postgres -D /var/lib/postgresql/14/main -X stream -P -v"
-  run_command_in_node "${IP_VM02}" "sudo -u postgres mkdir -p /var/lib/postgresql/14/main/pg_archive"
-  run_command_in_node "${IP_VM02}" "sudo -u postgres mkdir -p /var/lib/postgresql/14/tmp"
+  run_command_in_node "${IP_VM02}" "sudo sh -c 'rm -rf /var/lib/postgresql/"${PGSQL_VERSION}"/main/*'"
+  run_command_in_node "${IP_VM02}" "sudo -u postgres pg_basebackup -h ${IP_VM01} -U postgres -D /var/lib/postgresql/"${PGSQL_VERSION}"/main -X stream -P -v"
+  run_command_in_node "${IP_VM02}" "sudo -u postgres mkdir -p /var/lib/postgresql/"${PGSQL_VERSION}"/main/pg_archive"
+  run_command_in_node "${IP_VM02}" "sudo -u postgres mkdir -p /var/lib/postgresql/"${PGSQL_VERSION}"/tmp"
   # workaround for entry added in the resource agent. These are added in the main config file to workaround postgresql >= 12 changes
-  run_command_in_node "${IP_VM02}" "sudo -u postgres touch /var/lib/postgresql/14/tmp/recovery.conf"
-  run_command_in_node "${IP_VM02}" "sudo -u postgres touch /var/lib/postgresql/14/tmp/rep_mode.conf"
+  run_command_in_node "${IP_VM02}" "sudo -u postgres touch /var/lib/postgresql/"${PGSQL_VERSION}"/tmp/recovery.conf"
+  run_command_in_node "${IP_VM02}" "sudo -u postgres touch /var/lib/postgresql/"${PGSQL_VERSION}"/tmp/rep_mode.conf"
   # recovery.conf was integrated into postgresql.conf back in postgresql 12; so this differs from the guides
   # the standby_mode option was removed and replaced with adding a standby.signal file in the data directory
-  run_command_in_node "${IP_VM02}" "sudo touch /var/lib/postgresql/14/main/standby.signal"
-  run_command_in_node "${IP_VM02}" "sudo pg_conftool 14 main set primary_conninfo 'host=${IP_VM01} port=5432 user=postgres application_name=${VM02}'"
-  run_command_in_node "${IP_VM02}" "sudo pg_conftool 14 main set restore_command 'cp /var/lib/postgresql/14/main/pg_archive/%f %p'"
-  run_command_in_node "${IP_VM02}" "sudo pg_conftool 14 main set recovery_target_timeline 'latest'"
-  run_command_in_node "${IP_VM02}" "sudo pg_conftool 14 main set listen_addresses '*'"
-  run_command_in_node "${IP_VM02}" "sudo sed -i \"$ a ${PG_HBA}\" /etc/postgresql/14/main/pg_hba.conf"
+  run_command_in_node "${IP_VM02}" "sudo touch /var/lib/postgresql/"${PGSQL_VERSION}"/main/standby.signal"
+  run_command_in_node "${IP_VM02}" "sudo pg_conftool "${PGSQL_VERSION}" main set primary_conninfo 'host=${IP_VM01} port=5432 user=postgres application_name=${VM02}'"
+  run_command_in_node "${IP_VM02}" "sudo pg_conftool "${PGSQL_VERSION}" main set restore_command 'cp /var/lib/postgresql/"${PGSQL_VERSION}"/main/pg_archive/%f %p'"
+  run_command_in_node "${IP_VM02}" "sudo pg_conftool "${PGSQL_VERSION}" main set recovery_target_timeline 'latest'"
+  run_command_in_node "${IP_VM02}" "sudo pg_conftool "${PGSQL_VERSION}" main set listen_addresses '*'"
+  run_command_in_node "${IP_VM02}" "sudo sed -i \"$ a ${PG_HBA}\" /etc/postgresql/"${PGSQL_VERSION}"/main/pg_hba.conf"
   run_command_in_node "${IP_VM02}" "sudo systemctl start postgresql"
   sleep 10
 }
@@ -79,18 +89,18 @@ start_ha_pgsql_cluster() {
   run_command_in_node "${IP_VM01}" "sudo pcs resource defaults update resource-stickiness='INFINITY'"
   run_command_in_node "${IP_VM01}" "sudo pcs resource defaults update migration-threshold='1'"
   # https://github.com/ClusterLabs/resource-agents/issues/620
-  #  use /usr/lib/postgresql/14/bin/pg_ctl instead of /usr/bin/pg_ctlcluster for pgctl
+  #  use /usr/lib/postgresql/"${PGSQL_VERSION}"/bin/pg_ctl instead of /usr/bin/pg_ctlcluster for pgctl
   # tmpdir must be set for pg >= 12 support: https://github.com/ClusterLabs/resource-agents/pull/1452/files
   run_command_in_node "${IP_VM01}" "sudo pcs resource create pgsql ocf:heartbeat:pgsql \
-   pgctl='/usr/lib/postgresql/14/bin/pg_ctl' \
+   pgctl='/usr/lib/postgresql/"${PGSQL_VERSION}"/bin/pg_ctl' \
    psql='/usr/bin/psql' \
-   pgdata='/var/lib/postgresql/14/main' \
-   tmpdir='/var/lib/postgresql/14/tmp' \
-   config='/etc/postgresql/14/main/postgresql.conf' \
+   pgdata='/var/lib/postgresql/"${PGSQL_VERSION}"/main' \
+   tmpdir='/var/lib/postgresql/"${PGSQL_VERSION}"/tmp' \
+   config='/etc/postgresql/"${PGSQL_VERSION}"/main/postgresql.conf' \
    socketdir='/var/run/postgresql' \
    rep_mode='sync' \
    node_list='${VM01} ${VM02}' \
-   restore_command='cp /var/lib/postgresql/14/main/pg_archive/%f %p' \
+   restore_command='cp /var/lib/postgresql/"${PGSQL_VERSION}"/main/pg_archive/%f %p' \
    primary_conninfo_opt='keepalives_idle=60 keepalives_interval=5 keepalives_count=5' \
    master_ip='${IP_VM01}' \
    restart_on_promote='true' \
@@ -142,6 +152,9 @@ test_read_write_expectations() {
   run_command_in_node "${IP_VM01}" "sudo -u postgres psql -c 'create database ha_test;' > /dev/null 2>&1"
   run_command_in_node "${IP_VM01}" "sudo -u postgres psql -c \"create user ha_user with encrypted password 'ha_pass';\" > /dev/null 2>&1"
   run_command_in_node "${IP_VM01}" "sudo -u postgres psql -c 'grant all privileges on database ha_test to ha_user' > /dev/null 2>&1"
+  # This is needed starting from postgresql-15 due to
+  # https://www.postgresql.org/docs/14/ddl-schemas.html#DDL-SCHEMAS-PATTERNS
+  run_command_in_node "${IP_VM01}" "sudo -u postgres psql -c 'ALTER DATABASE ha_test OWNER TO ha_user;' > /dev/null 2>&1"
   run_command_in_node "${IP_VM03}" "echo '${IP_VM01}:5432:ha_test:ha_user:ha_pass' > .pgpass"
   run_command_in_node "${IP_VM03}" "echo '${IP_VM02}:5432:ha_test:ha_user:ha_pass' >> .pgpass"
   run_command_in_node "${IP_VM03}" "chmod 0600 .pgpass"
