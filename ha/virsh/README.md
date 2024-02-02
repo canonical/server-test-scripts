@@ -16,7 +16,8 @@ lxc launch ubuntu-daily:jammy ha-jammy --vm --config limits.memory=16GB --device
 Setting up the environment:
 
 ```
-$ sudo apt install -y wget qemu qemu-utils libvirt-clients virtinst uuid-runtime cloud-image-utils shunit2 qemu-kvm libvirt-daemon-system bridge-utils
+$ sudo apt install -y wget qemu qemu-utils libvirt-clients virtinst uuid-runtime cloud-image-utils shunit2 qemu-kvm \
+  libvirt-daemon-system bridge-utils python3-venv python3-dev libvirt-dev gcc
 $ ssh-keygen
 $ sudo systemctl enable libvirtd
 $ sudo systemctl start libvirtd
