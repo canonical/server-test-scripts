@@ -52,8 +52,7 @@ get_tester_ip() {
 }
 
 setup_tester() {
-  run_command_in_node "${IP_TESTER}" "sudo apt-get update && \
-    sudo apt-get install -y ipmitool fence-agents-base"
+  (run_command_in_node "${IP_TESTER}" "sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ipmitool fence-agents-base")
 }
 
 oneTimeSetUp() {
@@ -70,7 +69,7 @@ oneTimeSetUp() {
 
   create_vm "${TESTER}"
   backoff get_tester_ip
-  setup_tester
+  backoff setup_tester
 
   # shellcheck disable=SC2086,SC2116
   PREFIX=$(echo ${IP_TESTER%.*})
