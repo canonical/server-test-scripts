@@ -16,8 +16,7 @@ host    replication     all     192.168.0.0/16      trust"
 
 if [[ "${UBUNTU_SERIES}" = "noble" ]]; then
   # the pgsql agent is in main starting from noble (24.04)
-  # TODO: once the pgsql agent is promoted, we will need the base resource-agents instead of the extra ones
-  RESOURCE_AGENTS_PKG=resource-agents-extra
+  RESOURCE_AGENTS_PKG=resource-agents-base
 else
   RESOURCE_AGENTS_PKG=resource-agents-extra
 fi
