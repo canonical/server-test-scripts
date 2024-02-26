@@ -22,6 +22,11 @@ CLUSTER_NAME="test-cluster"
 HA_NETWORK="ha-${UBUNTU_SERIES::1}-${AGENT}"
 HA_NETWORK=${HA_NETWORK::15}
 
+DHCP_CLIENT="dhcpcd"
+if [[ "${UBUNTU_SERIES}" == "jammy" ]] || [[ "${UBUNTU_SERIES}" == "mantic" ]]; then
+  DHCP_CLIENT="dhclient"
+fi
+
 get_network_data_nic1() {
   IP_VM01=$(virsh domifaddr "${VM01}" | grep ipv4 | xargs | cut -d ' ' -f4 | cut -d '/' -f1)
   MAC_VM01=$(virsh domifaddr "${VM01}" | grep ipv4 | xargs | cut -d ' ' -f2)
@@ -69,7 +74,7 @@ get_vm_services_ip_addresses() {
 
   # Workaround to get an IP address in the second network interface
   network_interface=$(get_name_second_nic "${IP_VM_SERVICES}")
-  run_command_in_node "${IP_VM_SERVICES}" "sudo dhclient ${network_interface}"
+  run_command_in_node "${IP_VM_SERVICES}" "sudo ${DHCP_CLIENT} ${network_interface}"
   sleep 10
   IP2_VM_SERVICES=$(virsh domifaddr "${VM_SERVICES}" | grep ipv4 | xargs | cut -d ' ' -f8 | cut -d '/' -f1)
 }

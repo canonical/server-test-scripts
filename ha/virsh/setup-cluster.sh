@@ -85,7 +85,7 @@ get_nodes_ip_and_mac_addresses() {
   # done automatically during VM creation.
   for ip in "${IP_VM01}" "${IP_VM02}" "${IP_VM03}"; do
     network_interface=$(get_name_second_nic "${ip}")
-    run_command_in_node "${ip}" "sudo dhclient ${network_interface}"
+    run_command_in_node "${ip}" "sudo ${DHCP_CLIENT} ${network_interface}"
   done
 
   get_network_data_nic2
