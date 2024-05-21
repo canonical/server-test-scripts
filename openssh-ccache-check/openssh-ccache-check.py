@@ -50,9 +50,7 @@ class RmadisonPackage(object):
             f"{series}-security",
             f"{series}-proposed",
         ]:
-            if pkg_version_greater_than(
-                self.get_version(pocket), latest_version[0]
-            ):
+            if pkg_version_greater_than(self.get_version(pocket), latest_version[0]):
                 latest_version = (self.get_version(pocket), pocket)
         return latest_version
 
@@ -98,13 +96,21 @@ def main():
     openssh_ppa_release = CcachePPA(
         lp, "canonical-server", "openssh-server-default-ccache"
     )
-    openssh_ppa_testing = CcachePPA(lp, "canonical-server", "openssh-server-default-ccache-testing")
+    openssh_ppa_testing = CcachePPA(
+        lp, "canonical-server", "openssh-server-default-ccache-testing"
+    )
     openssh_archive = RmadisonPackage("openssh")
-    ppa_version = {series:{} for series in SERIES_TO_MONITOR}
+    ppa_version = {series: {} for series in SERIES_TO_MONITOR}
     for series in SERIES_TO_MONITOR:
-        ppa_version[series]["testing"] = openssh_ppa_testing.get_latest_version_in_series(series)
-        ppa_version[series]["proposed"] = openssh_ppa_proposed.get_latest_version_in_series(series)
-        ppa_version[series]["release"] = openssh_ppa_release.get_latest_version_in_series(series)
+        ppa_version[series][
+            "testing"
+        ] = openssh_ppa_testing.get_latest_version_in_series(series)
+        ppa_version[series][
+            "proposed"
+        ] = openssh_ppa_proposed.get_latest_version_in_series(series)
+        ppa_version[series][
+            "release"
+        ] = openssh_ppa_release.get_latest_version_in_series(series)
         latest_version_in_archive = openssh_archive.get_latest_version_in_series(series)
 
         print(f"Latest version in {series} is {latest_version_in_archive}")
