@@ -56,20 +56,18 @@ class RmadisonPackage(object):
 
 
 class CcachePPA(object):
-    def __init__(
-        self, lp, ppa_owner, ppa_name, series="jammy", package="openssh"
-    ):
+    def __init__(self, lp, ppa_owner, ppa_name, package="openssh"):
         self.lp = lp
         self.package = package
-        self.distro_series = self.lp.distributions["ubuntu"].getSeries(
-            name_or_version=series
-        )
         self.archive = self.lp.people[ppa_owner].getPPAByName(name=ppa_name)
 
-    def get_latest_version(self):
+    def get_latest_version_in_series(self, series):
+        distro_series = self.lp.distributions["ubuntu"].getSeries(
+            name_or_version=series
+        )
         sources = self.archive.getPublishedSources(
             source_name=self.package,
-            distro_series=self.distro_series,
+            distro_series=distro_series,
             status="Published",
         )
         assert len(sources) == 1
@@ -98,9 +96,9 @@ def main():
     )
     openssh_ppa_testing = CcachePPA(lp, "canonical-server", "openssh-server-default-ccache-testing")
     ppa_version = {}
-    ppa_version["testing"] = openssh_ppa_testing.get_latest_version()
-    ppa_version["proposed"] = openssh_ppa_proposed.get_latest_version()
-    ppa_version["release"] = openssh_ppa_release.get_latest_version()
+    ppa_version["testing"] = openssh_ppa_testing.get_latest_version_in_series("jammy")
+    ppa_version["proposed"] = openssh_ppa_proposed.get_latest_version_in_series("jammy")
+    ppa_version["release"] = openssh_ppa_release.get_latest_version_in_series("jammy")
 
     openssh_archive = RmadisonPackage("openssh")
     latest_version_in_archive = openssh_archive.get_latest_version_in_series(
