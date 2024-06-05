@@ -8,6 +8,8 @@ from subprocess import check_output, call
 # "script worked fine, but there is action needed" situation
 JENKINS_UNSTABLE_RETURN = 99
 
+SERIES_TO_MONITOR = ["jammy", "noble"]
+
 try:
     from launchpadlib.launchpad import Launchpad
 except ImportError:
@@ -48,31 +50,29 @@ class RmadisonPackage(object):
             f"{series}-security",
             f"{series}-proposed",
         ]:
-            if pkg_version_greater_than(
-                self.get_version(pocket), latest_version[0]
-            ):
+            if pkg_version_greater_than(self.get_version(pocket), latest_version[0]):
                 latest_version = (self.get_version(pocket), pocket)
         return latest_version
 
 
 class CcachePPA(object):
-    def __init__(
-        self, lp, ppa_owner, ppa_name, series="jammy", package="openssh"
-    ):
+    def __init__(self, lp, ppa_owner, ppa_name, package="openssh"):
         self.lp = lp
         self.package = package
-        self.distro_series = self.lp.distributions["ubuntu"].getSeries(
-            name_or_version=series
-        )
         self.archive = self.lp.people[ppa_owner].getPPAByName(name=ppa_name)
 
-    def get_latest_version(self):
+    def get_latest_version_in_series(self, series):
+        distro_series = self.lp.distributions["ubuntu"].getSeries(
+            name_or_version=series
+        )
         sources = self.archive.getPublishedSources(
             source_name=self.package,
-            distro_series=self.distro_series,
+            distro_series=distro_series,
             status="Published",
         )
-        assert len(sources) == 1
+        if len(sources) == 0:
+            # nothing published
+            return None
         return sources[0].source_package_version.strip()
 
 
@@ -96,29 +96,35 @@ def main():
     openssh_ppa_release = CcachePPA(
         lp, "canonical-server", "openssh-server-default-ccache"
     )
-    openssh_ppa_testing = CcachePPA(lp, "canonical-server", "openssh-server-default-ccache-testing")
-    ppa_version = {}
-    ppa_version["testing"] = openssh_ppa_testing.get_latest_version()
-    ppa_version["proposed"] = openssh_ppa_proposed.get_latest_version()
-    ppa_version["release"] = openssh_ppa_release.get_latest_version()
-
-    openssh_archive = RmadisonPackage("openssh")
-    latest_version_in_archive = openssh_archive.get_latest_version_in_series(
-        "jammy"
+    openssh_ppa_testing = CcachePPA(
+        lp, "canonical-server", "openssh-server-default-ccache-testing"
     )
+    openssh_archive = RmadisonPackage("openssh")
+    ppa_version = {series: {} for series in SERIES_TO_MONITOR}
+    for series in SERIES_TO_MONITOR:
+        ppa_version[series][
+            "testing"
+        ] = openssh_ppa_testing.get_latest_version_in_series(series)
+        ppa_version[series][
+            "proposed"
+        ] = openssh_ppa_proposed.get_latest_version_in_series(series)
+        ppa_version[series][
+            "release"
+        ] = openssh_ppa_release.get_latest_version_in_series(series)
+        latest_version_in_archive = openssh_archive.get_latest_version_in_series(series)
 
-    print(f"Latest version in jammy is {latest_version_in_archive}")
-    print()
-    for pocket, version in ppa_version.items():
-        print(f"Latest version in {pocket} ccache ppa is {version}")
-        if pkg_version_greater_than(latest_version_in_archive[0], version):
-            print(
-                f"WARNING: Latest version in archive "
-                f"({latest_version_in_archive[0]}) is higher than version "
-                f"{version} from ppa {pocket}"
-            )
-            rc = JENKINS_UNSTABLE_RETURN
+        print(f"Latest version in {series} is {latest_version_in_archive}")
         print()
+        for pocket, version in ppa_version[series].items():
+            print(f"Latest version in {series} {pocket} ccache ppa is {version}")
+            if pkg_version_greater_than(latest_version_in_archive[0], version):
+                print(
+                    f"WARNING: Latest version in archive "
+                    f"({latest_version_in_archive[0]}) is higher than version "
+                    f"{version} from {series} ppa {pocket}"
+                )
+                rc = JENKINS_UNSTABLE_RETURN
+            print()
     if rc != 0:
         print("ACTION NEEDED")
         print("Please see Canonical Spec US066 for details")
