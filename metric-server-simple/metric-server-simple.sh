@@ -18,7 +18,7 @@ INSTNAME=${INSTNAME-metric-server-simple-$RELEASE-$WHAT-$INSTTYPE}
 cleanup() {
   if lxc info "$INSTNAME" >/dev/null 2>&1; then
     echo "Cleaning up: $INSTNAME"
-    retry -t 3 -d 20,60,120 -- lxc delete "$INSTNAME" --force
+    retry -t 3 -d 30 -- lxc delete "$INSTNAME" --force
   fi
 }
 
