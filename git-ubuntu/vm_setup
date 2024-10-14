@@ -7,8 +7,8 @@ set -e
 VERBOSITY=0
 
 rand_name=$(uuidgen -r | cut -c1-8)
-VM_NAME="${1:-focal-$rand_name}"
-RELEASE="focal"
+VM_NAME="${1:-noble-$rand_name}"
+RELEASE="noble"
 
 error() { echo "$@" 1>&2; }
 fail() { [ $# -eq 0 ] || error "$@"; exit 1; }
