@@ -150,7 +150,7 @@ def collect_bootspeed_data(instance):
             f"criticalchain_{service.replace('-', '_').replace('.', '_')}"
         ] = instance.execute(f"systemd-analyze critical-chain {service}")
     data["file_journalctl.log"] = instance.execute(
-        "journalctl -o short-precise"
+        "journalctl -o short-precise -b 0"
     )
     data["file_cloud_init.log"] = instance.execute(
         "cat /var/log/cloud-init.log"
