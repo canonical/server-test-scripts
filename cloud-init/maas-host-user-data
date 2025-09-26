@@ -1,0 +1,179 @@
+#!/bin/bash
+# User-data to setup a MAAS host and launch custom images with cloud-init:
+# 1. create custom maas image stream for RELEASE with cloud-init from a PPA
+# 2. launch VM in lxc
+set -xe
+
+RELEASE={{RELEASE}}
+PPA={{PPA}}
+
+cat > /tmp/lxd.cfg <<EOF
+config:
+  core.https_address: '[::]:8443'
+  core.trust_password: password
+networks:
+- config:
+    ipv4.address: 10.10.10.1/24
+    ipv6.address: none
+  description: ""
+  name: lxdbr0
+  type: ""
+  project: default
+storage_pools:
+- config:
+    size: 24GB
+  description: ""
+  name: default
+  driver: btrfs  # only doing this to workaround an error about zpool not being found even when installed
+profiles:
+- config: {}
+  description: ""
+  devices:
+    eth0:
+      name: eth0
+      network: lxdbr0
+      type: nic
+    root:
+      path: /
+      pool: default
+      type: disk
+  name: default
+projects: []
+cluster: null
+EOF
+
+until apt install -y jq; do
+  echo "Retrying apt install -y jq..."
+  sleep 1
+done
+
+# Setup custom image url
+git clone --single-branch --branch master --depth 1 https://git.launchpad.net/maas-images maas-images
+cd maas-images
+./system-setup
+./tools/build-stream --arch amd64 --ppa ${PPA} $RELEASE
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nginx
+sudo rm -rf /var/www/html/images
+sudo mv build/images /var/www/html/
+sudo tee /etc/nginx/sites-available/default <<EOF
+server {
+    listen 80;
+    server_name maas-images;
+    location / {
+        root /var/www/html/images;
+        autoindex on;
+        try_files \$uri \$uri/ =404;
+    }
+}
+EOF
+sudo systemctl restart nginx
+
+# Get all the snap things
+snap wait system seed.loaded
+# snap will throw errors early in boot. If you didn't spend forever
+# setting up the image server, this sleep is probably necessary
+# sleep 10
+snap install maas --channel=3.6/stable
+snap install maas-test-db --channel=3.6/stable
+# Note that later versions of LXD will complain about the use of
+# `core.trust_password` that we set above
+snap install lxd --channel=5.0/stable
+
+# Initialize LXD
+cat /tmp/lxd.cfg | lxd init --preseed
+lxd waitready
+
+# Get uplink interface/IP
+export IP_ADDRESS
+IP_ADDRESS=$(ip -j route show default | jq -r '.[].prefsrc')
+export INTERFACE
+INTERFACE=$(ip -j route show default | jq -r '.[].dev')
+
+# Initialise MAAS
+maas init region+rack --database-uri maas-test-db:/// --maas-url "http://${IP_ADDRESS}:5240/MAAS"
+sleep 15  # honestly no idea...
+
+# Create MAAS admin and grab API key
+maas createadmin --username admin --password admin --email admin
+export APIKEY
+APIKEY=$(maas apikey --username admin)
+
+# MAAS admin login
+maas login admin 'http://localhost:5240/MAAS/' "$APIKEY"
+
+# Configure MAAS networking (gateway, DHCP, VLANs, DNS)
+export SUBNET=10.10.10.0/24
+export FABRIC_ID
+FABRIC_ID=$(maas admin subnet read "$SUBNET" | jq -r ".vlan.fabric_id")
+export VLAN_TAG
+VLAN_TAG=$(maas admin subnet read "$SUBNET" | jq -r ".vlan.vid")
+export PRIMARY_RACK
+PRIMARY_RACK=$(maas admin rack-controllers read | jq -r ".[] | .system_id")
+maas admin subnet update "$SUBNET" gateway_ip=10.10.10.1
+maas admin ipranges create type=dynamic start_ip=10.10.10.200 end_ip=10.10.10.254
+maas admin vlan update "$FABRIC_ID" "$VLAN_TAG" dhcp_on=True primary_rack="$PRIMARY_RACK"
+maas admin maas set-config name=upstream_dns value=8.8.8.8
+maas admin maas set-config name=commissioning_distro_series value=$RELEASE
+
+# We could get fancy and set up IP forwarding such that we can ssh directly
+# from our host to the LXD VMs that can be created by MAAS, but I don't
+# care enough currently.
+# See https://raw.githubusercontent.com/canonical/maas-multipass/main/maas.yml
+
+# Automatically create and add ssh keys to MAAS
+# This isn't necessary if we're just going to run lxc exec commands
+# rather than trying to ssh into our containers
+ssh-keygen -q -t rsa -N "" -f "/root/.ssh/id_rsa"
+chown ubuntu:ubuntu /root/.ssh/id_rsa /root/.ssh/id_rsa.pub
+chmod 600 /root/.ssh/id_rsa
+chmod 644 /root/.ssh/id_rsa.pub
+maas admin sshkeys create key="$(cat /root/.ssh/id_rsa.pub)"
+
+# Use custom image stream
+maas admin boot-source delete 1
+wget http://${IP_ADDRESS}/gpg.key -O /var/snap/maas/current/custom-stream-gpg.key
+maas admin boot-sources create url="http://${IP_ADDRESS}/" keyring_filename="/var/snap/maas/current/custom-stream-gpg.key"
+maas admin boot-source-selections create 2 os="ubuntu" release="$RELEASE" arches="amd64" subarches="*" labels="*"
+maas admin boot-resources import
+while true; do
+    STATUS=$(maas admin boot-resources is-importing)
+    [ "$STATUS" = "false" ] && break
+    sleep 5
+done
+
+# Create LXD host and machine
+export HOST_ID
+HOST_ID=$(maas admin vm-hosts create name="lxd_host" password=password type=lxd power_address="https://${IP_ADDRESS}:8443" project=default | jq -r ".id")
+export MACHINE_ID
+MACHINE_ID=$(maas admin vm-host compose "$HOST_ID" cores=1 memory=2048 storage=8 | jq -r ".system_id")
+while true; do
+    STATUS=$(maas admin machine read "$MACHINE_ID" | jq -r .status_name)
+    [ "$STATUS" = "Ready" ] && break
+    sleep 5
+done
+maas admin machine deploy "$MACHINE_ID" distro_series=ubuntu/$RELEASE
+while true; do
+    STATUS=$(maas admin machine read "$MACHINE_ID" | jq -r .status_name)
+    [ "$STATUS" = "Deployed" ] && break
+    sleep 5
+done
+
+# At this point we can use `maas admin machine read "$MACHINE_ID"` to get an ip address
+# or the hostname will be the same name as the lxd VM that can be `lxc exec`ed.
+
+# From the host, we can do something like:
+#   $ export VM_NAME=$(lxc exec maas -- lxc list --format json | jq -r ".[0].name")
+#   $ lxc exec maas -- lxc exec $VM_NAME -- cloud-init --version
+#   /usr/bin/cloud-init 100.0.0.daily-202508222033-9648ad628~ubuntu22.04.1
+
+# Additional deployment logs:
+# On MAAS machine:
+#   maas admin machine get-curtin-config <id>
+# On deployed machine:
+#   /root/curtin-install-cfg.yaml
+#   /root/curtin-install.log
+# Also check:
+#  journalctl SYSLOG_IDENTIFIER=maas-regiond
+#  journalctl SYSLOG_IDENTIFIER=maas-rackd
+# or more generally:
+#  journactl -u maas
