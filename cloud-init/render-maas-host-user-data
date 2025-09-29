@@ -1,0 +1,10 @@
+#!/bin/bash
+# Render cloud-init user-data to stdout which creates a MAAS host and launches
+# a single VM from an images which contains cloud-init from the specified
+# Ubuntu RELEASE and PPA
+RELEASE=${1:-noble}
+PPA=${2:-ppa:cloud-init-dev/proposed}
+
+parent_path=$(dirname "${BASH_SOURCE[0]}")
+# Note using % as delimiter because PPA will likely contain forward slash
+sed -e "s%{{RELEASE}}%${RELEASE}%" -e "s%{{PPA}}%${PPA}%" ${parent_path}/maas-host-user-data.tmpl
