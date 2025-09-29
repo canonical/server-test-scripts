@@ -1,0 +1,10 @@
+description: "Profile for KVM MAAS host used by cloud-init SRU testing"
+config:
+  limits.cpu: "4"
+  limits.memory: 16GiB
+devices:
+  root:
+    path: /
+    pool: default
+    size: 50GiB
+    type: disk
