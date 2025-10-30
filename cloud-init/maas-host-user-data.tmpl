@@ -101,6 +101,12 @@ APIKEY=$(maas apikey --username admin)
 # MAAS admin login
 maas login admin 'http://localhost:5240/MAAS/' "$APIKEY"
 
+# Setup proxy
+PROXY_IP=$(getent hosts squid.internal | awk '(NR == 1){ print $1 }')
+maas admin maas set-config name=enable_http_proxy value=true
+maas admin maas set-config name=http_proxy value=http://${PROXY_IP}:3128/
+
+
 # Configure MAAS networking (gateway, DHCP, VLANs, DNS)
 export SUBNET=10.10.10.0/24
 export FABRIC_ID
