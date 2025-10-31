@@ -155,14 +155,20 @@ MACHINE_ID=$(maas admin vm-host compose "$HOST_ID" cores=1 memory=2048 storage=8
 while true; do
     STATUS=$(maas admin machine read "$MACHINE_ID" | jq -r .status_name)
     [ "$STATUS" = "Ready" ] && break
+    [ "$STATUS" = "Failed commissioning" ] && break
     sleep 5
 done
-maas admin machine deploy "$MACHINE_ID" distro_series=ubuntu/$RELEASE
-while true; do
-    STATUS=$(maas admin machine read "$MACHINE_ID" | jq -r .status_name)
-    [ "$STATUS" = "Deployed" ] && break
-    sleep 5
-done
+if [ "$STATUS" = "Ready" ]; then
+    maas admin machine deploy "$MACHINE_ID" distro_series=ubuntu/$RELEASE
+    while true; do
+        STATUS=$(maas admin machine read "$MACHINE_ID" | jq -r .status_name)
+        [ "$STATUS" = "Deployed" ] && break
+        sleep 5
+    done
+else
+    echo "ERROR: Unable to compose machine. $STATUS"
+    exit 1
+fi
 
 # At this point we can use `maas admin machine read "$MACHINE_ID"` to get an ip address
 # or the hostname will be the same name as the lxd VM that can be `lxc exec`ed.
