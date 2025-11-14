@@ -1,0 +1,17 @@
+Date,Service,Release,Source,Version,Architecture,Binary,Version
+2022-10-01,infra,xenial,linux-meta-lts-xenial,4.4.0.210.183,i386,linux-cloud-tools-generic-lts-xenial,1
+2022-10-01,infra,xenial,linux-meta-hwe,4.15.0.143.139,amd64,linux-headers-generic-hwe-16.04,164
+2022-10-01,infra,xenial,linux-meta-hwe2,4.15.0.143.139,amd64,linux-headers-generic-hwe-16.04-edge,164
+2022-10-01,fips,k-unknown,linux-meta-hwe3,4.15.0.143.139,amd64,linux-headers-generic-unavailable,164
+2022-10-01,fips,focal,linux-hwe4,5.4.0-1089.97+esm1,amd64,linux-tools-5.4.0-1089-aws-fips,164
+2022-10-01,realtime,focal,linux-hwe4,5.4.0-1089.97+esm1,amd64,linux-tools-5.4.0-1089-aws-realtime,164
+2022-10-01,apps,bionic,npm,3.5.2-0ubuntu4.1.18.04.1~esm1,all,npm,3
+2022-10-01,fips,bionic,openssh,7.9p1-10~ubuntu18.04.fips.0.2,amd64,openssh-client,19
+2022-10-01,cc,bionic,ubuntu-commoncriteria,1.0.18.04.1,all,ubuntu-commoncriteria,3
+2022-10-01,fips,bionic,openssl-recert,1.1.1-1ubuntu2.fips.2.1~18.04.6.2,amd64,libssl-dev,2
+2022-10-01,ros,bionic,python3-catkin-pkg-modules,0.4.23+18.04.4-0,all,python3-catkin-pkg-modules,2
+2022-10-01,apps,bionic,389-ds-base,1.3.7.10-1ubuntu1+esm1,all,389-ds,4
+2022-10-01,apps,bionic,adminer,4.6.2-1ubuntu0.1~esm1,all,adminer,4
+2022-10-01,apps,bionic,ansible,2.5.1+dfsg-1ubuntu0.1+esm1,all,ansible,22
+2022-10-01,apps,bionic,ant,1.10.5-3~18.04.1~esm1,all,ant,30
+2022-10-01,apps,xenial,containerd,1.2.6-0ubuntu1~16.04.6+esm2,amd64,containerd,2
